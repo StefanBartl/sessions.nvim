@@ -1,0 +1,307 @@
+*sessions.txt*   Branch- and project-aware Neovim sessions
+
+                                                                *sessions.nvim*
+
+Author:   Stefan Bartl
+License:  MIT
+Homepage: https://github.com/stefanbartl/sessions.nvim
+
+==============================================================================
+CONTENTS                                                    *sessions-contents*
+
+  1. Introduction ................. |sessions-introduction|
+  2. Requirements ................. |sessions-requirements|
+  3. Setup ........................ |sessions-setup|
+  4. Configuration ................ |sessions-config|
+  5. Commands ..................... |sessions-commands|
+  6. Keymaps ...................... |sessions-keymaps|
+  7. Public API ................... |sessions-api|
+  8. Session naming ............... |sessions-naming|
+  9. Metadata ..................... |sessions-metadata|
+ 10. Git integration .............. |sessions-git|
+ 11. Health check ................ |sessions-health|
+
+==============================================================================
+1. INTRODUCTION                                         *sessions-introduction*
+
+sessions.nvim saves and restores Neovim sessions using only built-in Neovim
+primitives (|:mksession| / |:source|). It adds three things that the built-in
+alone cannot provide:
+
+  - Branch-aware naming: automatically appends the current git branch to the
+    session name, so switching branches restores a different workspace.
+
+  - Project-aware naming: detects the project root from markers like `.git`
+    and prefixes the session name with the project basename.
+
+  - Session metadata: writes a companion JSON file with the save timestamp,
+    working directory, branch, and buffer list for statusline/picker use.
+
+  - Clean save: blacklisted buftypes/filetypes/paths are wiped before
+    |:mksession| so they are never serialised.
+
+  - E445 fix: modified buffers are hidden (not discarded) before loading a
+    session to avoid the "cannot close, buffer modified" error.
+
+==============================================================================
+2. REQUIREMENTS                                         *sessions-requirements*
+
+  - Neovim 0.9+
+  - Optional: lib.nvim (enhanced notifications, map helpers, git helpers)
+
+==============================================================================
+3. SETUP                                                    *sessions-setup*
+
+Minimal: >lua
+  require("sessions").setup()
+<
+
+With lazy.nvim: >lua
+  {
+    "stefanbartl/sessions.nvim",
+    dependencies = { "stefanbartl/lib.nvim" },  -- optional
+    opts = {},
+  }
+<
+
+==============================================================================
+4. CONFIGURATION                                           *sessions-config*
+
+Default values: >lua
+  require("sessions").setup({
+    -- Where session files are stored.
+    root = vim.fn.stdpath("data") .. "/sessions",
+
+    -- Fallback session name when auto-resolve yields nothing.
+    default_name = "last",
+
+    -- Append current git branch to the auto-resolved name.
+    branch_aware = true,
+
+    -- Prefix auto-resolved name with the project root basename.
+    project_aware = true,
+
+    -- Files used to detect a project root (searched upward from cwd).
+    project_markers = {
+      ".git", "pyproject.toml", "package.json",
+      "Makefile", "Cargo.toml", "go.mod",
+    },
+
+    -- Passed to vim.opt.sessionoptions before every save/load.
+    sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
+
+    -- Automatically load the contextual session on startup (no file args).
+    autoload = false,
+
+    -- Automatically save the contextual session on exit.
+    autosave = true,
+
+    -- Write a companion .json metadata file alongside each .vim session.
+    metadata = true,
+
+    -- Callbacks invoked after save/load (errors are swallowed via pcall).
+    hooks = {
+      on_save = nil,  -- fun(name: string, path: string)
+      on_load = nil,  -- fun(name: string, path: string)
+    },
+
+    -- Buffers matching these criteria are wiped before :mksession.
+    blacklist = {
+      buftypes  = { "quickfix", "nofile", "prompt" },
+      filetypes = { "gitcommit", "gitrebase" },
+      paths     = { "/tmp/", "/private/tmp/" },
+    },
+
+    -- Keymaps. Set to false to disable all keymaps.
+    keymaps = {
+      save    = "<leader>ssa",
+      load    = "<leader>slo",
+      save_ts = "<leader>sst",
+      list    = "<leader>sli",
+    },
+  })
+<
+
+==============================================================================
+5. COMMANDS                                               *sessions-commands*
+
+                                                               *:SessionSave*
+:SessionSave [name]
+    Save the current session. If [name] is omitted the name is auto-resolved
+    from project root and/or git branch (see |sessions-naming|).
+
+                                                      *:SessionSaveTimestamp*
+:SessionSaveTimestamp
+    Save a snapshot with a timestamp suffix (e.g. `sess-20251231-120000`).
+    Useful for creating restore points before a risky refactor.
+
+                                                               *:SessionLoad*
+:SessionLoad [name]
+    Load a session. [name] supports tab completion from saved sessions. If
+    [name] is omitted the name is auto-resolved identically to |:SessionSave|.
+
+                                                             *:SessionDelete*
+:SessionDelete <name>
+    Permanently delete a session file (and its metadata companion).
+
+                                                             *:SessionRename*
+:SessionRename <old> <new>
+    Rename a session, including its metadata file.
+
+                                                               *:SessionList*
+:SessionList
+    Print all saved sessions, annotated with the active session (*), save
+    timestamp, and branch name from metadata when available.
+
+                                                            *:SessionCurrent*
+:SessionCurrent
+    Print the name of the currently active session, or report that none is
+    active.
+
+                                                        *:SessionToggleTrack*
+:SessionToggleTrack [name]
+    Toggle `git update-index --skip-worktree` on the named session file.
+    Useful when |sessions-config| `root` lives inside a git-tracked config
+    directory: mark transient sessions as skip-worktree so they are not
+    committed, but keep permanent sessions tracked.
+
+    If [name] is omitted, the currently active session (or `default_name`) is
+    used. The `root` directory must be inside a git repository.
+
+==============================================================================
+6. KEYMAPS                                                 *sessions-keymaps*
+
+Default keymaps (Normal mode):
+
+  <leader>ssa   :SessionSave
+  <leader>slo   :SessionLoad
+  <leader>sst   :SessionSaveTimestamp
+  <leader>sli   :SessionList
+
+Disable all keymaps: >lua
+  require("sessions").setup({ keymaps = false })
+<
+
+Disable individual keymaps: >lua
+  require("sessions").setup({
+    keymaps = { save = false, load = "<leader>sl" },
+  })
+<
+
+==============================================================================
+7. PUBLIC API                                                  *sessions-api*
+
+All functions return explicit booleans plus a result/error string so callers
+can react without parsing notification messages.
+
+`require("sessions").setup(opts?)`
+    Configure and activate the plugin (idempotent).
+
+`require("sessions").save(name?)` → `boolean, string|nil`
+    Save a session. Returns `(true, path)` on success, `(false, err)` on
+    failure.
+
+`require("sessions").load(name?)` → `boolean, string|nil, string[]|nil`
+    Load a session. Third return value lists buffer names that had unsaved
+    changes and were hidden (not discarded) to allow the load.
+
+`require("sessions").list()` → `string[]`
+    Return absolute paths to all stored `.vim` session files.
+
+`require("sessions").delete(name)` → `boolean, string|nil`
+    Delete a session and its metadata.
+
+`require("sessions").rename(old, new)` → `boolean, string|nil`
+    Rename a session and its metadata.
+
+`require("sessions").current()` → `string|nil`
+    Return the name of the active session, or nil. Suitable for statusline
+    use: >lua
+      local sessions = require("sessions")
+      -- in your statusline component:
+      local name = sessions.current()
+      return name and (" " .. name) or ""
+<
+
+`require("sessions").metadata(name)` → `Sessions.Meta|nil`
+    Return the metadata table for a saved session, or nil if no metadata
+    file exists.
+
+==============================================================================
+8. SESSION NAMING                                           *sessions-naming*
+
+When no explicit name is passed to |:SessionSave| or |:SessionLoad|, the name
+is derived from the current context:
+
+  project_aware = true, branch_aware = true (default):
+    `{project}_{branch}`   e.g. `myapp_feature-login`
+
+  project_aware = true, branch_aware = false:
+    `{project}`            e.g. `myapp`
+
+  project_aware = false, branch_aware = true:
+    `{branch}`             e.g. `feature-login`
+
+  both false:
+    `default_name`         e.g. `last`
+
+  Not inside a git repo / no project marker found:
+    Falls back toward `default_name`.
+
+Characters unsafe for filenames (slashes, spaces, etc.) are replaced with
+`-` or `_`. This makes `feature/login` → `feature-login` and
+`my project` → `my-project`.
+
+==============================================================================
+9. METADATA                                               *sessions-metadata*
+
+When `metadata = true` (default), sessions.nvim writes a hidden JSON file
+alongside each `.vim` session file:
+
+  `{root}/.{name}.json`
+
+Contents: >json
+  {
+    "saved_at": "2025-12-31T12:00:00Z",
+    "cwd":      "/home/user/myproject",
+    "branch":   "feature/login",
+    "buffers":  ["/home/user/myproject/src/main.lua", ...]
+  }
+<
+
+The metadata is used by |:SessionList| to display timestamps and branches.
+You can read it programmatically via `require("sessions").metadata(name)`.
+
+==============================================================================
+10. GIT INTEGRATION                                          *sessions-git*
+
+|:SessionToggleTrack| is designed for the workflow where `root` points inside
+a git-tracked config directory (e.g. `stdpath("config") .. "/sessions"`).
+
+Scenario: you want to sync named sessions across machines via git but exclude
+the `last` auto-save, because `last` contains absolute paths that only exist
+on one machine.
+
+  1. Set root to a path inside your config repo:
+     `root = vim.fn.stdpath("config") .. "/sessions"`
+
+  2. Commit your named sessions normally.
+
+  3. Run `:SessionToggleTrack last` to mark `last.vim` as skip-worktree.
+     The file stays on disk but git ignores local changes to it.
+
+  4. On a different machine, run `:SessionToggleTrack last` again to start
+     tracking it there too if you want.
+
+==============================================================================
+11. HEALTH CHECK                                            *sessions-health*
+
+Run: >vim
+  :checkhealth sessions
+<
+
+Reports: Neovim version, optional dependency availability, active
+configuration, session root status, and whether all commands are registered.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
