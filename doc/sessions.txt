@@ -12,14 +12,15 @@ CONTENTS                                                    *sessions-contents*
   1. Introduction ................. |sessions-introduction|
   2. Requirements ................. |sessions-requirements|
   3. Setup ........................ |sessions-setup|
-  4. Configuration ................ |sessions-config|
-  5. Commands ..................... |sessions-commands|
-  6. Keymaps ...................... |sessions-keymaps|
-  7. Public API ................... |sessions-api|
-  8. Session naming ............... |sessions-naming|
-  9. Metadata ..................... |sessions-metadata|
- 10. Git integration .............. |sessions-git|
- 11. Health check ................ |sessions-health|
+  4. Quick Start .................. |sessions-quick-start|
+  5. Configuration ................ |sessions-config|
+  6. Commands ..................... |sessions-commands|
+  7. Keymaps ...................... |sessions-keymaps|
+  8. Public API ................... |sessions-api|
+  9. Session naming ............... |sessions-naming|
+ 10. Metadata ..................... |sessions-metadata|
+ 11. Git integration .............. |sessions-git|
+ 12. Health check ................ |sessions-health|
 
 ==============================================================================
 1. INTRODUCTION                                         *sessions-introduction*
@@ -89,7 +90,40 @@ For all other workflows, `event = "VimEnter"` or `cmd = { ... }` is
 preferred.
 
 ==============================================================================
-4. CONFIGURATION                                           *sessions-config*
+4. QUICK START                                         *sessions-quick-start*
+
+Save a session (either via :SessionSave or autosave on exit): >vim
+  :SessionSave
+  :quit
+<
+
+Restore the session: >bash
+  # Auto-resolved name (project + branch aware)
+  nvim +SessionLoad
+
+  # Explicit session name
+  nvim +SessionLoad last
+  nvim +SessionLoad myntest
+  nvim +SessionLoad myapp_feature-login
+<
+
+Common workflow — branch-aware sessions: >bash
+  # Work on main branch (auto-named: myapp_main)
+  git checkout main
+  nvim +SessionLoad         # loads myapp_main
+
+  # Switch to feature branch (auto-named: myapp_feature-auth)
+  git checkout feature-auth
+  nvim +SessionLoad         # loads myapp_feature-auth (different workspace)
+<
+
+**Important:** To use `nvim +SessionLoad` (command-line arguments), your
+plugin spec must have `lazy = false`. See |sessions-setup| for details.
+
+==============================================================================
+5. CONFIGURATION                                           *sessions-config*
+
+
 
 Default values (pass to setup(opts)): >lua
   {
@@ -145,7 +179,7 @@ Default values (pass to setup(opts)): >lua
 <
 
 ==============================================================================
-5. COMMANDS                                               *sessions-commands*
+6. COMMANDS                                               *sessions-commands*
 
                                                                *:SessionSave*
 :SessionSave [name]
@@ -191,7 +225,7 @@ Default values (pass to setup(opts)): >lua
     used. The `root` directory must be inside a git repository.
 
 ==============================================================================
-6. KEYMAPS                                                 *sessions-keymaps*
+7. KEYMAPS                                                 *sessions-keymaps*
 
 Keymaps are **disabled by default**. Enable them in setup: >lua
   require("sessions").setup({
@@ -214,7 +248,7 @@ To disable individual keymaps: >lua
 <
 
 ==============================================================================
-7. PUBLIC API                                                  *sessions-api*
+8. PUBLIC API                                                  *sessions-api*
 
 All functions return explicit booleans plus a result/error string so callers
 can react without parsing notification messages.
@@ -254,7 +288,7 @@ require("sessions").metadata(name)                      -> Sessions.Meta|nil
         branch = "feature-branch", buffers = [...] }
 
 ==============================================================================
-8. SESSION NAMING                                           *sessions-naming*
+9. SESSION NAMING                                           *sessions-naming*
 
 When no explicit name is passed to |:SessionSave| or |:SessionLoad|, the name
 is derived from the current context:
@@ -279,7 +313,7 @@ Characters unsafe for filenames (slashes, spaces, etc.) are replaced with
 `my-project`.
 
 ==============================================================================
-9. METADATA                                               *sessions-metadata*
+10. METADATA                                               *sessions-metadata*
 
 When `metadata = true` (default), sessions.nvim writes a hidden JSON file
 alongside each `.vim` session file:
@@ -298,7 +332,7 @@ The metadata is used by |:SessionList| to display timestamps and branches.
 You can read it programmatically via require("sessions").metadata(name).
 
 ==============================================================================
-10. GIT INTEGRATION                                          *sessions-git*
+11. GIT INTEGRATION                                          *sessions-git*
 
 |:SessionToggleTrack| is designed for the workflow where `root` points inside
 a git-tracked config directory (e.g. `stdpath("config") .. "/sessions"`).
@@ -319,7 +353,7 @@ on one machine.
      tracking it there too if you want.
 
 ==============================================================================
-11. HEALTH CHECK                                            *sessions-health*
+12. HEALTH CHECK                                            *sessions-health*
 
 Run: >vim
   :checkhealth sessions

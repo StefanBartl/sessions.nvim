@@ -21,6 +21,7 @@ the built-in `:mksession` / `:source`.
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Commands](#commands)
 - [Keymaps](#keymaps)
@@ -121,6 +122,49 @@ use {
 | **`lazy = false`** | High (immediate) | ✓ | ✓ | Want `nvim +SessionLoad` to work, or instant command availability |
 
 **Note:** Command-line args like `nvim +SessionLoad` execute **before** lazy-loading hooks, so you need `lazy = false` for those to work. For all other use cases, `cmd` or `event = "VimEnter"` is recommended.
+
+---
+
+## Quick Start
+
+**Save a session**
+```bash
+nvim my-file.lua          # work on files...
+# :SessionSave            # inside Neovim, or just exit and let autosave do it
+```
+
+**Restore the session**
+```bash
+# Auto-resolved (project + branch aware):
+nvim +SessionLoad
+
+# Explicit session name:
+nvim +SessionLoad last
+nvim +SessionLoad myntest
+nvim +SessionLoad myapp_feature-login
+```
+
+**Workflow example**
+
+Save when exiting (autosave on by default):
+```bash
+nvim src/main.lua        # work, then exit (auto-saved as "last")
+nvim +SessionLoad        # restore the workspace
+```
+
+Switch branches and restore the right session:
+```bash
+# Session auto-named by branch: "myapp_main"
+git checkout main
+nvim +SessionLoad        # loads "myapp_main" (auto-resolved)
+
+# Switch to feature branch: "myapp_feature-auth"
+git checkout feature-auth
+nvim +SessionLoad        # loads "myapp_feature-auth"
+```
+
+**Requirements for `nvim +SessionLoad`:**
+Must use `lazy = false` in your plugin spec (see [Installation](#installation)).
 
 ---
 
