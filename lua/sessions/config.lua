@@ -24,12 +24,7 @@ local DEFAULTS = {
     filetypes = { "gitcommit", "gitrebase" },
     paths = { "/tmp/", "/private/tmp/" },
   },
-  keymaps = {
-    save    = "<leader>ssa",
-    load    = "<leader>slo",
-    save_ts = "<leader>sst",
-    list    = "<leader>sli",
-  },
+  keymaps = false, -- set to a table to enable keymaps
 }
 
 ---@type Sessions.Config

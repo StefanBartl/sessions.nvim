@@ -57,22 +57,32 @@ the built-in `:mksession` / `:source`.
 
 **lazy.nvim**
 
-*Load at startup (eager):*
+*Default (lazy-loaded on command use):*
 ```lua
 {
   "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" },
-  lazy = false,
+  dependencies = { "stefanbartl/lib.nvim" }, -- optional
+  cmd = { "SessionSave", "SessionLoad", "SessionDelete", "SessionRename", "SessionList", "SessionCurrent", "SessionToggleTrack" },
   opts = {},
 }
 ```
 
-*Load after UI init (recommended for session auto-load/auto-save):*
+*Load after UI init (recommended for autoload/autosave):*
 ```lua
 {
   "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" },
+  dependencies = { "stefanbartl/lib.nvim" }, -- optional
   event = "VimEnter",
+  opts = {},
+}
+```
+
+*Load at startup (for `nvim +SessionLoad` command-line args):*
+```lua
+{
+  "stefanbartl/sessions.nvim",
+  dependencies = { "stefanbartl/lib.nvim" }, -- optional
+  lazy = false,
   opts = {},
 }
 ```
@@ -104,11 +114,13 @@ use {
 
 **When to use which:**
 
-| Variant | Startup impact | Commands available | When to use |
-|---|---|---|---|
-| **Default (lazy)** | Minimal | On first `:SessionLoad` / `:SessionSave` | Large config, many plugins |
-| **`lazy = false`** | Loads immediately | Right from the start | Small plugin, want instant availability |
-| **`event = "VimEnter"`** | After UI init | After editor UI ready | **Recommended** — autoload/autosave timing, minimal impact |
+| Variant | Startup impact | Commands via `:Cmd` | Commands via `nvim +Cmd` | When to use |
+|---|---|---|---|---|
+| **`cmd` (lazy)** | Minimal | ✓ (loads on use) | ✗ | Large config, many plugins |
+| **`event = "VimEnter"`** | Minimal (after UI) | ✓ (loads at VimEnter) | ✗ | **Recommended** — autoload/autosave timing |
+| **`lazy = false`** | High (immediate) | ✓ | ✓ | Want `nvim +SessionLoad` to work, or instant command availability |
+
+**Note:** Command-line args like `nvim +SessionLoad` execute **before** lazy-loading hooks, so you need `lazy = false` for those to work. For all other use cases, `cmd` or `event = "VimEnter"` is recommended.
 
 ---
 
@@ -162,14 +174,8 @@ require("sessions").setup({
     -- %TEMP% is automatically added on Windows.
   },
 
-  -- Normal-mode keymaps. Set individual keys to false to disable them,
-  -- or set the whole table to false to disable all keymaps.
-  keymaps = {
-    save    = "<leader>ssa",
-    load    = "<leader>slo",
-    save_ts = "<leader>sst",
-    list    = "<leader>sli",
-  },
+  -- Normal-mode keymaps. Disabled by default. Set to a table to enable:
+  keymaps = false, -- or { save = "<leader>ssa", load = "<leader>slo", ... }
 })
 ```
 
@@ -192,16 +198,27 @@ require("sessions").setup({
 
 ## Keymaps
 
-Default Normal-mode keymaps:
+Keymaps are **disabled by default**. Enable them in your setup:
 
-| Key | Action |
-|---|---|
-| `<leader>ssa` | `:SessionSave` |
-| `<leader>slo` | `:SessionLoad` |
-| `<leader>sst` | `:SessionSaveTimestamp` |
-| `<leader>sli` | `:SessionList` |
+```lua
+require("sessions").setup({
+  keymaps = {
+    save    = "<leader>ssa",
+    load    = "<leader>slo",
+    save_ts = "<leader>sst",
+    list    = "<leader>sli",
+  },
+})
+```
 
-Disable all: `keymaps = false`
+Or disable individual keymaps:
+```lua
+keymaps = {
+  save = "<leader>ssa",
+  load = false,  -- disabled
+  -- ...
+}
+```
 
 ---
 
