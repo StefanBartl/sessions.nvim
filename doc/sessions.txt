@@ -25,8 +25,7 @@ CONTENTS                                                    *sessions-contents*
 1. INTRODUCTION                                         *sessions-introduction*
 
 sessions.nvim saves and restores Neovim sessions using only built-in Neovim
-primitives (|:mksession| / |:source|). It adds three things that the built-in
-alone cannot provide:
+primitives (|:mksession| / |:source|). Key features:
 
   - Branch-aware naming: automatically appends the current git branch to the
     session name, so switching branches restores a different workspace.
@@ -52,72 +51,49 @@ alone cannot provide:
 ==============================================================================
 3. SETUP                                                    *sessions-setup*
 
-Minimal: >lua
+Minimal setup: >lua
   require("sessions").setup()
 <
-**lazy.nvim**
 
-*Load at startup (eager):*
-```lua
-{
-  "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" },
-  lazy = false,
-  opts = {},
-}
-```
+With lazy.nvim (lazy-loaded on command use): >lua
+  {
+    "stefanbartl/sessions.nvim",
+    dependencies = { "stefanbartl/lib.nvim" }, -- optional
+    cmd = { "SessionSave", "SessionLoad", "SessionDelete", "SessionRename",
+            "SessionList", "SessionCurrent", "SessionToggleTrack" },
+    opts = {},
+  }
+<
 
-*Load after UI init (recommended for session auto-load/auto-save):*
-```lua
-{
-  "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" },
-  event = "VimEnter",
-  opts = {},
-}
-```
+With lazy.nvim (loaded at VimEnter, recommended for autoload/autosave): >lua
+  {
+    "stefanbartl/sessions.nvim",
+    dependencies = { "stefanbartl/lib.nvim" }, -- optional
+    event = "VimEnter",
+    opts = {},
+  }
+<
 
-**pckr / packer**
+With lazy.nvim (eager, needed for `nvim +SessionLoad` command-line args): >lua
+  {
+    "stefanbartl/sessions.nvim",
+    dependencies = { "stefanbartl/lib.nvim" }, -- optional
+    lazy = false,
+    opts = {},
+  }
+<
 
-*Default setup:*
-```lua
-use {
-  "stefanbartl/sessions.nvim",
-  requires = { "stefanbartl/lib.nvim" }, -- optional
-  config = function()
-    require("sessions").setup()
-  end,
-}
-```
-
-*With immediate load (packer equivalent of `lazy = false`):*
-```lua
-use {
-  "stefanbartl/sessions.nvim",
-  requires = { "stefanbartl/lib.nvim" },
-  module_pattern = "sessions", -- eager
-  config = function()
-    require("sessions").setup()
-  end,
-}
-```
-
-**When to use which:**
-
-| Variant | Startup impact | Commands available | When to use |
-|---|---|---|---|
-| **Default (lazy)** | Minimal | On first `:SessionLoad` / `:SessionSave` | Large config, many plugins |
-| **`lazy = false`** | Loads immediately | Right from the start | Small plugin, want instant availability |
-| **`event = "VimEnter"`** | After UI init | After editor UI ready | **Recommended** — autoload/autosave timing, minimal impact |
-
----
+Note: Command-line arguments like `nvim +SessionLoad` execute **before**
+lazy-loading triggers, so they require `lazy = false` in the plugin spec.
+For all other workflows, `event = "VimEnter"` or `cmd = { ... }` is
+preferred.
 
 ==============================================================================
 4. CONFIGURATION                                           *sessions-config*
 
-Default values: >lua
-  require("sessions").setup({
-    -- Where session files are stored.
+Default values (pass to setup(opts)): >lua
+  {
+    -- Absolute path for session storage (user-local by default).
     root = vim.fn.stdpath("data") .. "/sessions",
 
     -- Fallback session name when auto-resolve yields nothing.
@@ -126,10 +102,10 @@ Default values: >lua
     -- Append current git branch to the auto-resolved name.
     branch_aware = true,
 
-    -- Prefix auto-resolved name with the project root basename.
+    -- Prefix auto-resolved name with the detected project root basename.
     project_aware = true,
 
-    -- Files used to detect a project root (searched upward from cwd).
+    -- Files searched upward from cwd to detect a project root.
     project_markers = {
       ".git", "pyproject.toml", "package.json",
       "Makefile", "Cargo.toml", "go.mod",
@@ -138,16 +114,16 @@ Default values: >lua
     -- Passed to vim.opt.sessionoptions before every save/load.
     sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
 
-    -- Automatically load the contextual session on startup (no file args).
+    -- Auto-load the contextual session when Neovim starts without file args.
     autoload = false,
 
-    -- Automatically save the contextual session on exit.
+    -- Auto-save the contextual session on VimLeavePre.
     autosave = true,
 
-    -- Write a companion .json metadata file alongside each .vim session.
+    -- Write a .{name}.json companion file next to each .vim session.
     metadata = true,
 
-    -- Callbacks invoked after save/load (errors are swallowed via pcall).
+    -- Callbacks invoked after save/load (errors swallowed via pcall).
     hooks = {
       on_save = nil,  -- fun(name: string, path: string)
       on_load = nil,  -- fun(name: string, path: string)
@@ -158,16 +134,14 @@ Default values: >lua
       buftypes  = { "quickfix", "nofile", "prompt" },
       filetypes = { "gitcommit", "gitrebase" },
       paths     = { "/tmp/", "/private/tmp/" },
+      -- %TEMP% is automatically added on Windows.
     },
 
-    -- Keymaps. Set to false to disable all keymaps.
-    keymaps = {
-      save    = "<leader>ssa",
-      load    = "<leader>slo",
-      save_ts = "<leader>sst",
-      list    = "<leader>sli",
-    },
-  })
+    -- Normal-mode keymaps. Disabled by default (keymaps = false).
+    -- Set to a table to enable specific keymaps.
+    keymaps = false,
+    -- or: { save = "<leader>ssa", load = "<leader>slo", ... }
+  }
 <
 
 ==============================================================================
@@ -219,21 +193,24 @@ Default values: >lua
 ==============================================================================
 6. KEYMAPS                                                 *sessions-keymaps*
 
-Default keymaps (Normal mode):
-
-  <leader>ssa   :SessionSave
-  <leader>slo   :SessionLoad
-  <leader>sst   :SessionSaveTimestamp
-  <leader>sli   :SessionList
-
-Disable all keymaps: >lua
-  require("sessions").setup({ keymaps = false })
+Keymaps are **disabled by default**. Enable them in setup: >lua
+  require("sessions").setup({
+    keymaps = {
+      save    = "<leader>ssa",
+      load    = "<leader>slo",
+      save_ts = "<leader>sst",
+      list    = "<leader>sli",
+    },
+  })
 <
 
-Disable individual keymaps: >lua
-  require("sessions").setup({
-    keymaps = { save = false, load = "<leader>sl" },
-  })
+To disable individual keymaps: >lua
+  keymaps = {
+    save = "<leader>ssa",
+    load = false,  -- disabled
+    save_ts = "<leader>sst",
+    list = "<leader>sli",
+  }
 <
 
 ==============================================================================
@@ -242,27 +219,26 @@ Disable individual keymaps: >lua
 All functions return explicit booleans plus a result/error string so callers
 can react without parsing notification messages.
 
-`require("sessions").setup(opts?)`
+require("sessions").setup(opts?)
     Configure and activate the plugin (idempotent).
 
-`require("sessions").save(name?)` → `boolean, string|nil`
-    Save a session. Returns `(true, path)` on success, `(false, err)` on
-    failure.
+require("sessions").save(name?)                       -> ok, path_or_err
+    Save a session. Returns (true, path) on success, (false, err) on failure.
 
-`require("sessions").load(name?)` → `boolean, string|nil, string[]|nil`
+require("sessions").load(name?)                   -> ok, path_or_err, hidden
     Load a session. Third return value lists buffer names that had unsaved
     changes and were hidden (not discarded) to allow the load.
 
-`require("sessions").list()` → `string[]`
+require("sessions").list()                              -> string[]
     Return absolute paths to all stored `.vim` session files.
 
-`require("sessions").delete(name)` → `boolean, string|nil`
+require("sessions").delete(name)                        -> ok, err
     Delete a session and its metadata.
 
-`require("sessions").rename(old, new)` → `boolean, string|nil`
+require("sessions").rename(old, new)                    -> ok, err
     Rename a session and its metadata.
 
-`require("sessions").current()` → `string|nil`
+require("sessions").current()                           -> string|nil
     Return the name of the active session, or nil. Suitable for statusline
     use: >lua
       local sessions = require("sessions")
@@ -271,9 +247,11 @@ can react without parsing notification messages.
       return name and (" " .. name) or ""
 <
 
-`require("sessions").metadata(name)` → `Sessions.Meta|nil`
+require("sessions").metadata(name)                      -> Sessions.Meta|nil
     Return the metadata table for a saved session, or nil if no metadata
-    file exists.
+    file exists. Metadata structure:
+      { saved_at = "2025-12-31T12:00:00Z", cwd = "/path/to/project",
+        branch = "feature-branch", buffers = [...] }
 
 ==============================================================================
 8. SESSION NAMING                                           *sessions-naming*
@@ -281,24 +259,24 @@ can react without parsing notification messages.
 When no explicit name is passed to |:SessionSave| or |:SessionLoad|, the name
 is derived from the current context:
 
-  project_aware = true, branch_aware = true (default):
-    `{project}_{branch}`   e.g. `myapp_feature-login`
+  project_aware=true, branch_aware=true (default):
+    `{project}_{branch}`            e.g. `myapp_feature-login`
 
-  project_aware = true, branch_aware = false:
-    `{project}`            e.g. `myapp`
+  project_aware=true, branch_aware=false:
+    `{project}`                     e.g. `myapp`
 
-  project_aware = false, branch_aware = true:
-    `{branch}`             e.g. `feature-login`
+  project_aware=false, branch_aware=true:
+    `{branch}`                      e.g. `feature-login`
 
   both false:
-    `default_name`         e.g. `last`
+    `default_name`                  e.g. `last`
 
   Not inside a git repo / no project marker found:
     Falls back toward `default_name`.
 
 Characters unsafe for filenames (slashes, spaces, etc.) are replaced with
-`-` or `_`. This makes `feature/login` → `feature-login` and
-`my project` → `my-project`.
+`-` or `_`. Example: `feature/login` → `feature-login`, `my project` →
+`my-project`.
 
 ==============================================================================
 9. METADATA                                               *sessions-metadata*
@@ -306,19 +284,18 @@ Characters unsafe for filenames (slashes, spaces, etc.) are replaced with
 When `metadata = true` (default), sessions.nvim writes a hidden JSON file
 alongside each `.vim` session file:
 
-  `{root}/.{name}.json`
+  {root}/.{name}.json
 
-Contents: >json
+Example contents:
   {
     "saved_at": "2025-12-31T12:00:00Z",
     "cwd":      "/home/user/myproject",
     "branch":   "feature/login",
     "buffers":  ["/home/user/myproject/src/main.lua", ...]
   }
-<
 
 The metadata is used by |:SessionList| to display timestamps and branches.
-You can read it programmatically via `require("sessions").metadata(name)`.
+You can read it programmatically via require("sessions").metadata(name).
 
 ==============================================================================
 10. GIT INTEGRATION                                          *sessions-git*
@@ -331,7 +308,7 @@ the `last` auto-save, because `last` contains absolute paths that only exist
 on one machine.
 
   1. Set root to a path inside your config repo:
-     `root = vim.fn.stdpath("config") .. "/sessions"`
+     root = vim.fn.stdpath("config") .. "/sessions"
 
   2. Commit your named sessions normally.
 
@@ -349,7 +326,7 @@ Run: >vim
 <
 
 Reports: Neovim version, optional dependency availability, active
-configuration, session root status, and whether all commands are registered.
+configuration, session root status, session count, and command registration.
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
