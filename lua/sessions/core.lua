@@ -53,14 +53,19 @@ local function apply_sessionoptions()
 end
 
 ---@param name string|nil
+---@param use_auto_resolve boolean|nil
 ---@return Sessions.Info
-local function resolve(name)
+local function resolve(name, use_auto_resolve)
   local cfg = require("sessions.config").cfg
   local n
   if type(name) == "string" and name ~= "" then
     n = name
-  else
+  elseif use_auto_resolve then
+    -- Auto-resolve project/branch for save operations
     n = require("sessions.git").resolve_name(cfg)
+  else
+    -- Use default name (last) for load operations
+    n = cfg.default_name
   end
   return { name = n, path = cfg.root .. "/" .. n .. ".vim" }
 end
@@ -128,7 +133,7 @@ function M.save(name)
   ensure_dir(cfg.root)
   wipe_blacklisted()
 
-  local si = resolve(name)
+  local si = resolve(name, true)  -- use_auto_resolve = true for save
   local ok, err = pcall(vim.cmd.mksession, { args = { si.path }, bang = true })
   if not ok then
     return false, err
@@ -154,7 +159,7 @@ end
 ---@return string[]|nil hidden_modified_bufs
 function M.load(name)
   local cfg = require("sessions.config").cfg
-  local si = resolve(name)
+  local si = resolve(name, false)  -- use_auto_resolve = false, use default_name ("last")
 
   if fn.filereadable(si.path) == 0 then
     return false, "no such session: " .. si.path

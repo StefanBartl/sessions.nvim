@@ -8,7 +8,9 @@ local M = {}
 function M.current_branch()
   local ok, git = pcall(require, "lib.nvim.git")
   if ok then
-    return git.current_branch()
+    local branch = git.current_branch()
+    -- Guard against lib.nvim returning error-like strings
+    return (branch and branch ~= "" and not branch:lower():find("error")) and branch or nil
   end
   if vim.system then
     local res = vim.system({ "git", "symbolic-ref", "--short", "HEAD" }, { text = true }):wait()
@@ -17,10 +19,15 @@ function M.current_branch()
     end
     return nil
   end
-  local out = vim.fn.system("git symbolic-ref --short HEAD 2>/dev/null")
+  -- Fallback: vim.fn.system (check error code, reject error-like output)
+  local out = vim.fn.system("git symbolic-ref --short HEAD")
   if vim.v.shell_error ~= 0 then return nil end
   out = vim.trim(out)
-  return out ~= "" and out or nil
+  -- Reject if it looks like an error message
+  if out == "" or out:lower():find("error") or out:lower():find("not a") then
+    return nil
+  end
+  return out
 end
 
 ---@param markers string[]
@@ -28,11 +35,20 @@ end
 function M.project_root(markers)
   local ok, find_upward = pcall(require, "lib.nvim.fs.find_upward_dir")
   if ok then
-    return find_upward(markers, vim.fn.getcwd())
+    local root = find_upward(markers, vim.fn.getcwd())
+    -- Guard against lib.nvim returning error-like strings
+    if root and root ~= "" and not root:lower():find("error") then
+      return root
+    end
+    return nil
   end
+  -- Fallback: vim.fs.find (Neovim built-in)
   local found = vim.fs.find(markers, { path = vim.fn.getcwd(), upward = true })
   if found and found[1] then
-    return vim.fs.dirname(found[1])
+    local dir = vim.fs.dirname(found[1])
+    if dir and dir ~= "" then
+      return dir
+    end
   end
   return nil
 end
