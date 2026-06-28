@@ -144,11 +144,19 @@ nvim +SessionLoad myntest
 nvim +SessionLoad myapp_feature-login
 ```
 
-**Workflow example**
+**Workflow example (with autosave enabled)**
 
-Save when exiting (autosave on by default):
+First, enable autosave in your setup:
+```lua
+require("sessions").setup({
+  autosave = true,
+  autosave_name = "last",
+})
+```
+
+Then use it:
 ```bash
-nvim src/main.lua        # work, then exit (auto-saved as "last")
+nvim src/main.lua        # work, then exit (auto-saved to "last")
 nvim +SessionLoad        # restore the workspace
 ```
 
@@ -198,8 +206,11 @@ require("sessions").setup({
   -- Auto-load the contextual session when Neovim starts without file args.
   autoload = false,
 
-  -- Auto-save the contextual session on VimLeavePre.
-  autosave = true,
+  -- Auto-save to a fixed session name on VimLeavePre (false = disabled).
+  autosave = false,
+
+  -- Session name for autosave (used when autosave = true).
+  autosave_name = "last",
 
   -- Write a .{name}.json companion file next to each session.
   metadata = true,

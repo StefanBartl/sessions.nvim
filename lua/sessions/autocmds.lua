@@ -32,9 +32,13 @@ function M.enable()
     api.nvim_create_autocmd("VimLeavePre", {
       group = aug,
       callback = function()
-        require("sessions.core").save(nil)
+        -- Save to fixed autosave_name (default "last") if set, otherwise don't save
+        local name = cfg.autosave_name
+        if name then
+          require("sessions.core").save(name)
+        end
       end,
-      desc = "sessions.nvim: autosave contextual session on exit",
+      desc = "sessions.nvim: autosave to fixed session name on exit",
     })
   end
 end

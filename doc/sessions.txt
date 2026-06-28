@@ -151,8 +151,11 @@ Default values (pass to setup(opts)): >lua
     -- Auto-load the contextual session when Neovim starts without file args.
     autoload = false,
 
-    -- Auto-save the contextual session on VimLeavePre.
-    autosave = true,
+    -- Auto-save to a fixed session name on VimLeavePre (false = disabled).
+    autosave = false,
+
+    -- Session name for autosave (used when autosave = true).
+    autosave_name = "last",
 
     -- Write a .{name}.json companion file next to each .vim session.
     metadata = true,

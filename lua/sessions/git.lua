@@ -38,10 +38,25 @@ function M.project_root(markers)
 end
 
 --- Sanitize a string for use as a filesystem-safe session name segment.
+--- Filters out ANSI color codes, error patterns, and non-filename-safe chars.
 ---@param s string
 ---@return string
 function M.sanitize(s)
-  return s:gsub("[/\\%s]", "-"):gsub("[^%w%-_]", "_")
+  if not s or s == "" then return "" end
+  -- Remove ANSI escape sequences (colors, formatting)
+  s = s:gsub("\27%[[0-9;]*m", "")
+  -- Reject strings that look like error messages
+  if s:lower():find("error") or s:lower():find("could not") or
+     s:lower():find("not found") or s:lower():find("permission") then
+    return ""
+  end
+  -- Replace unsafe chars: slashes, backslashes, whitespace
+  s = s:gsub("[/\\%s]", "-")
+  -- Replace other unsafe chars with underscore
+  s = s:gsub("[^%w%-_]", "_")
+  -- Clean up multiple consecutive dashes/underscores
+  s = s:gsub("[-_]+", "-")
+  return s
 end
 
 --- Resolve auto session name from project root and/or branch.
@@ -55,7 +70,11 @@ function M.resolve_name(cfg)
     if root then
       local basename = vim.fn.fnamemodify(root, ":t")
       if basename and basename ~= "" then
-        parts[#parts + 1] = M.sanitize(basename)
+        local sanitized = M.sanitize(basename)
+        -- Only add if sanitize() didn't filter it out
+        if sanitized ~= "" then
+          parts[#parts + 1] = sanitized
+        end
       end
     end
   end
@@ -63,7 +82,11 @@ function M.resolve_name(cfg)
   if cfg.branch_aware then
     local branch = M.current_branch()
     if branch then
-      parts[#parts + 1] = M.sanitize(branch)
+      local sanitized = M.sanitize(branch)
+      -- Only add if sanitize() didn't filter it out
+      if sanitized ~= "" then
+        parts[#parts + 1] = sanitized
+      end
     end
   end
 

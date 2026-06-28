@@ -26,7 +26,8 @@
 ---@field project_markers string[]       Filenames used to detect a project root (upward search)
 ---@field sessionoptions string          Passed to vim.opt.sessionoptions before each save/load
 ---@field autoload boolean               Load the contextual session on VimEnter (no file args)
----@field autosave boolean               Save the contextual session on VimLeavePre
+---@field autosave boolean               Autosave session on VimLeavePre
+---@field autosave_name string           Fixed session name for autosave (e.g. "last")
 ---@field metadata boolean               Write a companion .json file with save context
 ---@field hooks Sessions.Hooks
 ---@field blacklist Sessions.Blacklist
