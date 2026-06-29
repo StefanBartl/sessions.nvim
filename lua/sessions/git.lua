@@ -54,28 +54,33 @@ function M.project_root(markers)
 end
 
 --- Sanitize a string for use as a filesystem-safe session name segment.
---- Filters out ANSI color codes, error patterns, and non-filename-safe chars.
+--- Uses WHITELIST approach: keep only safe chars (word chars, dash, underscore).
 ---@param s string
 ---@return string
 function M.sanitize(s)
   if not s or s == "" then return "" end
-  -- Remove ANSI escape sequences (colors, formatting)
+
+  -- Remove ANSI escape sequences FIRST (colors, formatting)
   s = s:gsub("\27%[[0-9;]*m", "")
-  -- Reject strings that look like error messages
-  if s:lower():find("error") or s:lower():find("could not") or
-     s:lower():find("not found") or s:lower():find("permission") then
-    return ""
-  end
-  -- Replace unsafe chars: slashes, backslashes, whitespace
-  s = s:gsub("[/\\%s]", "-")
-  -- Replace other unsafe chars with underscore
-  s = s:gsub("[^%w%-_]", "_")
-  -- Clean up multiple consecutive dashes/underscores
-  s = s:gsub("[-_]+", "-")
+  s = vim.trim(s)
+
+  if s == "" then return "" end
+
+  -- WHITELIST: Keep only alphanumeric, dash, underscore
+  -- Replace all other chars (incl. slashes, spaces, special chars)
+  s = s:gsub("[^%w%-_]", "-")
+
+  -- Clean up runs of dashes
+  s = s:gsub("-+", "-")
+
+  -- Remove leading/trailing dashes
+  s = s:gsub("^-+", ""):gsub("-+$", "")
+
   return s
 end
 
 --- Resolve auto session name from project root and/or branch.
+--- Returns default_name if no valid parts found (safe fallback).
 ---@param cfg Sessions.Config
 ---@return string
 function M.resolve_name(cfg)
@@ -83,11 +88,10 @@ function M.resolve_name(cfg)
 
   if cfg.project_aware then
     local root = M.project_root(cfg.project_markers)
-    if root then
+    if root and root ~= "" then
       local basename = vim.fn.fnamemodify(root, ":t")
       if basename and basename ~= "" then
         local sanitized = M.sanitize(basename)
-        -- Only add if sanitize() didn't filter it out
         if sanitized ~= "" then
           parts[#parts + 1] = sanitized
         end
@@ -97,18 +101,24 @@ function M.resolve_name(cfg)
 
   if cfg.branch_aware then
     local branch = M.current_branch()
-    if branch then
+    if branch and branch ~= "" then
       local sanitized = M.sanitize(branch)
-      -- Only add if sanitize() didn't filter it out
       if sanitized ~= "" then
         parts[#parts + 1] = sanitized
       end
     end
   end
 
+  -- Only return auto-resolved name if we have valid parts
+  -- Otherwise fall back to default_name (safe, prevents errors)
   if #parts > 0 then
-    return table.concat(parts, "_")
+    local resolved = table.concat(parts, "_")
+    -- Final sanity check: resolved name should be mostly alphanumeric
+    if resolved ~= "" and not resolved:match("^%-+$") then
+      return resolved
+    end
   end
+
   return cfg.default_name
 end
 
