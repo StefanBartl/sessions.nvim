@@ -149,7 +149,7 @@ Default values (pass to setup(opts)): >lua
     sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
 
     -- Auto-load the contextual session when Neovim starts without file args.
-    autoload = false,
+    autoload = true,
 
     -- Auto-save to a fixed session name on VimLeavePre (false = disabled).
     autosave = false,

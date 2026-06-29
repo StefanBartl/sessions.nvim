@@ -5,28 +5,7 @@ require("sessions.@types")
 local M = {}
 
 ---@type Sessions.Config
-local DEFAULTS = {
-  root = vim.fn.stdpath("data") .. "/sessions",
-  default_name = "last",
-  branch_aware = true,
-  project_aware = true,
-  project_markers = { ".git", "pyproject.toml", "package.json", "Makefile", "Cargo.toml", "go.mod" },
-  sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
-  autoload = false,
-  autosave = false,
-  autosave_name = "last",
-  metadata = true,
-  hooks = {
-    on_save = nil,
-    on_load = nil,
-  },
-  blacklist = {
-    buftypes = { "quickfix", "nofile", "prompt" },
-    filetypes = { "gitcommit", "gitrebase" },
-    paths = { "/tmp/", "/private/tmp/" },
-  },
-  keymaps = false, -- set to a table to enable keymaps
-}
+local DEFAULTS = require("sessions.config.DEFAULTS")
 
 ---@type Sessions.Config
 M.cfg = vim.deepcopy(DEFAULTS)

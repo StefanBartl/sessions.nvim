@@ -146,7 +146,7 @@ nvim +SessionLoad myapp_feature-login
 
 **Workflow example (with autosave enabled)**
 
-First, enable autosave in your setup:
+First, make sure autosave is enabled (it should be default) in your setup:
 ```lua
 require("sessions").setup({
   autosave = true,
@@ -207,7 +207,7 @@ require("sessions").setup({
   autoload = false,
 
   -- Auto-save to a fixed session name on VimLeavePre (false = disabled).
-  autosave = false,
+  autosave = true,
 
   -- Session name for autosave (used when autosave = true).
   autosave_name = "last",
