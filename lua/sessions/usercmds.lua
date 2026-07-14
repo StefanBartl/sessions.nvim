@@ -38,7 +38,11 @@ function M.enable()
     local ok, res = require("sessions.core").save(arg)
     if ok then n().info("saved: " .. (res or "?"))
     else      n().error("save failed: " .. (res or "?")) end
-  end, { nargs = "?", desc = "Save session [name]" })
+  end, {
+    nargs = "?",
+    complete = function() return complete_names() end,
+    desc = "Save session [name] (tab-complete to overwrite an existing one)",
+  })
 
   nc("SessionSaveTimestamp", function()
     local stamp = os.date("sess-%Y%m%d-%H%M%S")
