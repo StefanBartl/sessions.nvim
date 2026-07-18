@@ -16,20 +16,40 @@ the built-in `:mksession` / `:source`.
 
 ---
 
-## Table of Contents
+## Quick Start
 
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Commands](#commands)
-- [Keymaps](#keymaps)
-- [Public API](#public-api)
-- [Session Naming](#session-naming)
-- [Metadata](#metadata)
-- [Git Integration](#git-integration)
-- [Health Check](#health-check)
+```lua
+-- lazy.nvim
+{
+  "stefanbartl/sessions.nvim",
+  dependencies = { "stefanbartl/lib.nvim" }, -- optional
+  event = "VimEnter",
+  opts = {},
+}
+```
+
+```bash
+nvim my-file.lua          # work on files...
+# :SessionSave            # inside Neovim, or just exit and let autosave do it
+
+nvim +SessionLoad         # restore the workspace (auto-resolved by project + branch)
+```
+
+See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) for details, including the `nvim +SessionLoad` startup requirements.
+
+---
+
+## Documentation
+
+- [Installation](docs/installation.md) — requirements and plugin manager setup (lazy.nvim, pckr/packer).
+- [Quick Start](docs/quickstart.md) — saving, restoring, and branch-aware workflow examples.
+- [Configuration](docs/configuration.md) — all available setup options, defaults, and session naming rules.
+- [Commands](docs/commands.md) — the full `:Session*` command reference and keymap setup.
+- [Public API](docs/api.md) — the Lua API (`require("sessions")`) and a statusline example.
+- [Metadata](docs/metadata.md) — the `.{name}.json` companion file format and how to read it.
+- [Git Integration](docs/git-integration.md) — syncing named sessions across machines with `:SessionToggleTrack`.
+- [Troubleshooting](docs/troubleshooting.md) — using `:checkhealth sessions` to diagnose setup issues.
+- [Roadmap](docs/ROADMAP.md) — planned features and future direction.
 
 ---
 
@@ -44,335 +64,3 @@ the built-in `:mksession` / `:source`.
 - **`SessionToggleTrack`** — toggle `git skip-worktree` on a session file to sync named sessions via your config repo without committing transient state
 - **`:checkhealth sessions`** — self-diagnostic for setup verification
 - **Optional lib.nvim** — uses `lib.nvim.notify`, `lib.nvim.map`, and `lib.nvim.git` when available; falls back gracefully
-
----
-
-## Requirements
-
-- Neovim **0.9+**
-- *(optional)* [lib.nvim](https://github.com/stefanbartl/lib.nvim) — for enhanced notifications, keymaps, and git helpers
-
----
-
-## Installation
-
-**lazy.nvim**
-
-*Default (lazy-loaded on command use):*
-```lua
-{
-  "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" }, -- optional
-  cmd = { "SessionSave", "SessionLoad", "SessionDelete", "SessionRename", "SessionList", "SessionCurrent", "SessionToggleTrack" },
-  opts = {},
-}
-```
-
-*Load after UI init (recommended for autoload/autosave):*
-```lua
-{
-  "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" }, -- optional
-  event = "VimEnter",
-  opts = {},
-}
-```
-
-*Load at startup (for `nvim +SessionLoad` command-line args):*
-```lua
-{
-  "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" }, -- optional
-  lazy = false,
-  opts = {},
-}
-```
-
-**pckr / packer**
-
-*Default setup:*
-```lua
-use {
-  "stefanbartl/sessions.nvim",
-  requires = { "stefanbartl/lib.nvim" }, -- optional
-  config = function()
-    require("sessions").setup()
-  end,
-}
-```
-
-*With immediate load (packer equivalent of `lazy = false`):*
-```lua
-use {
-  "stefanbartl/sessions.nvim",
-  requires = { "stefanbartl/lib.nvim" },
-  module_pattern = "sessions", -- eager
-  config = function()
-    require("sessions").setup()
-  end,
-}
-```
-
-**When to use which:**
-
-| Variant | Startup impact | Commands via `:Cmd` | Commands via `nvim +Cmd` | When to use |
-|---|---|---|---|---|
-| **`cmd` (lazy)** | Minimal | ✓ (loads on use) | ✗ | Large config, many plugins |
-| **`event = "VimEnter"`** | Minimal (after UI) | ✓ (loads at VimEnter) | ✗ | **Recommended** — autoload/autosave timing |
-| **`lazy = false`** | High (immediate) | ✓ | ✓ | Want `nvim +SessionLoad` to work, or instant command availability |
-
-**Note:** Command-line args like `nvim +SessionLoad` execute **before** lazy-loading hooks, so you need `lazy = false` for those to work. For all other use cases, `cmd` or `event = "VimEnter"` is recommended.
-
----
-
-## Quick Start
-
-**Save a session**
-```bash
-nvim my-file.lua          # work on files...
-# :SessionSave            # inside Neovim, or just exit and let autosave do it
-```
-
-**Restore the session**
-```bash
-# Auto-resolved (project + branch aware):
-nvim +SessionLoad
-
-# Explicit session name:
-nvim +SessionLoad last
-nvim +SessionLoad myntest
-nvim +SessionLoad myapp_feature-login
-```
-
-**Workflow example (with autosave enabled)**
-
-First, make sure autosave is enabled (it should be default) in your setup:
-```lua
-require("sessions").setup({
-  autosave = true,
-  autosave_name = "last",
-})
-```
-
-Then use it:
-```bash
-nvim src/main.lua        # work, then exit (auto-saved to "last")
-nvim +SessionLoad        # restore the workspace
-```
-
-Switch branches and restore the right session:
-```bash
-# Session auto-named by branch: "myapp_main"
-git checkout main
-nvim +SessionLoad        # loads "myapp_main" (auto-resolved)
-
-# Switch to feature branch: "myapp_feature-auth"
-git checkout feature-auth
-nvim +SessionLoad        # loads "myapp_feature-auth"
-```
-
-**Requirements for `nvim +SessionLoad`:**
-Must use `lazy = false` in your plugin spec (see [Installation](#installation)).
-
----
-
-## Configuration
-
-All options and their defaults:
-
-```lua
-require("sessions").setup({
-  -- Directory where session files are stored.
-  root = vim.fn.stdpath("data") .. "/sessions",
-
-  -- Session name used when auto-resolution yields nothing.
-  default_name = "last",
-
-  -- Append the current git branch to the auto-resolved session name.
-  branch_aware = true,
-
-  -- Prefix the auto-resolved name with the detected project root basename.
-  project_aware = true,
-
-  -- Files searched upward from cwd to detect a project root.
-  project_markers = {
-    ".git", "pyproject.toml", "package.json",
-    "Makefile", "Cargo.toml", "go.mod",
-  },
-
-  -- Passed to vim.opt.sessionoptions before every save/load.
-  sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
-
-  -- Auto-load the contextual session when Neovim starts without file args.
-  autoload = false,
-
-  -- Auto-save to a fixed session name on VimLeavePre (false = disabled).
-  autosave = true,
-
-  -- Session name for autosave (used when autosave = true).
-  autosave_name = "last",
-
-  -- Write a .{name}.json companion file next to each session.
-  metadata = true,
-
-  -- Callbacks invoked after save/load (errors are swallowed via pcall).
-  hooks = {
-    on_save = nil, -- fun(name: string, path: string)
-    on_load = nil, -- fun(name: string, path: string)
-  },
-
-  -- Buffers matching these are wiped before :mksession.
-  blacklist = {
-    buftypes  = { "quickfix", "nofile", "prompt" },
-    filetypes = { "gitcommit", "gitrebase" },
-    paths     = { "/tmp/", "/private/tmp/" },
-    -- %TEMP% is automatically added on Windows.
-  },
-
-  -- Normal-mode keymaps. Disabled by default. Set to a table to enable:
-  keymaps = false, -- or { save = "<leader>ssa", load = "<leader>slo", ... }
-})
-```
-
----
-
-## Commands
-
-| Command | Description |
-|---|---|
-| `:SessionSave [name]` | Save session (auto-named if omitted) |
-| `:SessionSaveTimestamp` | Save with a `sess-YYYYMMDD-HHMMSS` suffix |
-| `:SessionLoad [name]` | Load session (tab-completes saved names) |
-| `:SessionDelete <name>` | Delete session + companion metadata |
-| `:SessionRename <old> <new>` | Rename session + companion metadata |
-| `:SessionList` | List sessions with timestamp and branch |
-| `:SessionCurrent` | Print the active session name |
-| `:SessionToggleTrack [name]` | Toggle `git skip-worktree` on a session file |
-
----
-
-## Keymaps
-
-Keymaps are **disabled by default**. Enable them in your setup:
-
-```lua
-require("sessions").setup({
-  keymaps = {
-    save    = "<leader>ssa",
-    load    = "<leader>slo",
-    save_ts = "<leader>sst",
-    list    = "<leader>sli",
-  },
-})
-```
-
-Or disable individual keymaps:
-```lua
-keymaps = {
-  save = "<leader>ssa",
-  load = false,  -- disabled
-  -- ...
-}
-```
-
----
-
-## Public API
-
-```lua
-local S = require("sessions")
-
-S.setup(opts?)                        -- configure and activate (idempotent)
-S.save(name?)   → ok, path_or_err    -- save; nil name = auto-resolve
-S.load(name?)   → ok, path_or_err, hidden_bufs
-S.list()        → string[]           -- absolute paths of all .vim files
-S.delete(name)  → ok, err            -- delete session + metadata
-S.rename(old, new) → ok, err
-S.current()     → string|nil         -- active session name (statusline use)
-S.metadata(name) → Sessions.Meta|nil -- { saved_at, cwd, branch, buffers }
-```
-
-**Statusline example**
-```lua
-require("lualine").setup({
-  sections = {
-    lualine_c = {
-      function()
-        local name = require("sessions").current()
-        return name and (" " .. name) or ""
-      end,
-    },
-  },
-})
-```
-
----
-
-## Session Naming
-
-When no explicit name is given, the name is resolved from context:
-
-| `project_aware` | `branch_aware` | Result |
-|---|---|---|
-| ✓ | ✓ | `myapp_feature-login` |
-| ✓ | ✗ | `myapp` |
-| ✗ | ✓ | `feature-login` |
-| ✗ | ✗ | `last` (default_name) |
-
-Unsafe filename characters (`/`, `\`, spaces) are replaced with `-` or `_`.
-`feature/login` → `feature-login`.
-
----
-
-## Metadata
-
-When `metadata = true` a hidden `.{name}.json` is written alongside each
-`.vim` file:
-
-```json
-{
-  "saved_at": "2025-12-31T12:00:00Z",
-  "cwd":      "/home/user/myapp",
-  "branch":   "feature/login",
-  "buffers":  ["/home/user/myapp/src/main.lua"]
-}
-```
-
-Used by `:SessionList` for timestamps and branch display. Access it in Lua:
-```lua
-local meta = require("sessions").metadata("myapp_feature-login")
--- meta.saved_at, meta.branch, meta.buffers, ...
-```
-
----
-
-## Git Integration
-
-`:SessionToggleTrack` solves the cross-device sync dilemma:
-
-- You want named sessions (e.g. `myapp_main`) committed to your config repo
-  so they sync to other machines.
-- You do **not** want `last.vim` committed because its absolute paths only
-  exist on the current machine and cause errors on others.
-
-**Setup:**
-```lua
-require("sessions").setup({
-  root = vim.fn.stdpath("config") .. "/sessions",
-})
-```
-
-Run `:SessionToggleTrack last` once to mark `last.vim` as skip-worktree.
-The file stays on disk, but git ignores changes to it. Run again to un-skip.
-
----
-
-## Health Check
-
-```vim
-:checkhealth sessions
-```
-
-Reports Neovim version compatibility, optional dependency status, active
-configuration, session root accessibility, session count, and command
-registration.
