@@ -42,6 +42,10 @@ function M.setup(opts)
   local cfg = require("sessions.config").cfg
   if cfg.keymaps ~= false then
     require("sessions.keymaps").attach(cfg.keymaps or {})
+
+    if cfg.which_key and cfg.which_key.enable then
+      pcall(require("sessions.which_key").setup, cfg.keymaps or {})
+    end
   end
 
   vim.g.loaded_sessions_nvim = 1

@@ -22,4 +22,5 @@ return {
     paths = { "/tmp/", "/private/tmp/" },
   },
   keymaps = false, -- set to a table to enable keymaps
+  which_key = { enable = true },
 }
