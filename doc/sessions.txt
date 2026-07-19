@@ -59,9 +59,8 @@ Minimal setup: >lua
 With lazy.nvim (lazy-loaded on command use): >lua
   {
     "stefanbartl/sessions.nvim",
-    dependencies = { "stefanbartl/lib.nvim" }, -- optional
-    cmd = { "SessionSave", "SessionLoad", "SessionDelete", "SessionRename",
-            "SessionList", "SessionCurrent", "SessionToggleTrack" },
+    dependencies = { "stefanbartl/lib.nvim" },
+    cmd = { "Session", "LastSession" },
     opts = {},
   }
 <
@@ -69,56 +68,68 @@ With lazy.nvim (lazy-loaded on command use): >lua
 With lazy.nvim (loaded at VimEnter, recommended for autoload/autosave): >lua
   {
     "stefanbartl/sessions.nvim",
-    dependencies = { "stefanbartl/lib.nvim" }, -- optional
+    dependencies = { "stefanbartl/lib.nvim" },
     event = "VimEnter",
     opts = {},
   }
 <
 
-With lazy.nvim (eager, needed for `nvim +SessionLoad` command-line args): >lua
+With lazy.nvim (eager, needed for `nvim +LastSession` / `nvim '+Session load'`
+command-line args): >lua
   {
     "stefanbartl/sessions.nvim",
-    dependencies = { "stefanbartl/lib.nvim" }, -- optional
+    dependencies = { "stefanbartl/lib.nvim" },
     lazy = false,
     opts = {},
   }
 <
 
-Note: Command-line arguments like `nvim +SessionLoad` execute **before**
+Note: Command-line arguments like `nvim +LastSession` execute **before**
 lazy-loading triggers, so they require `lazy = false` in the plugin spec.
 For all other workflows, `event = "VimEnter"` or `cmd = { ... }` is
-preferred.
+preferred. lib.nvim is now a REQUIRED dependency (the |:Session| /
+|:LastSession| commands are built on lib.nvim.usercmd.composer).
 
 ==============================================================================
 4. QUICK START                                         *sessions-quick-start*
 
-Save a session (either via :SessionSave or autosave on exit): >vim
-  :SessionSave
+Save a session (either via :Session save or autosave on exit): >vim
+  :Session save
   :quit
 <
 
 Restore the session: >bash
-  # Auto-resolved name (project + branch aware)
-  nvim +SessionLoad
+  # Auto-resolved name (project + branch aware) -- needs quoting, it's two words
+  nvim '+Session load'
 
-  # Explicit session name
-  nvim +SessionLoad last
-  nvim +SessionLoad myntest
-  nvim +SessionLoad myapp_feature-login
+  # The fixed "last" session -- no quoting needed, its own command
+  nvim +LastSession
+
+  # Explicit session name -- needs quoting
+  nvim '+Session load myntest'
+  nvim '+Session load myapp_feature-login'
 <
+
+:Session is one command with subcommands, built via
+lib.nvim.usercmd.composer. A bare Neovim CLI `+cmd` flag is a single shell
+word, so any invocation containing a space needs to be quoted as one shell
+argument. |:LastSession| is a plain, separate, single-word command
+specifically so the single most common case (restore the last session)
+never needs quoting.
 
 Common workflow — branch-aware sessions: >bash
   # Work on main branch (auto-named: myapp_main)
   git checkout main
-  nvim +SessionLoad         # loads myapp_main
+  nvim '+Session load'         # loads myapp_main
 
   # Switch to feature branch (auto-named: myapp_feature-auth)
   git checkout feature-auth
-  nvim +SessionLoad         # loads myapp_feature-auth (different workspace)
+  nvim '+Session load'         # loads myapp_feature-auth (different workspace)
 <
 
-**Important:** To use `nvim +SessionLoad` (command-line arguments), your
-plugin spec must have `lazy = false`. See |sessions-setup| for details.
+**Important:** To use `nvim +LastSession` / `nvim '+Session load'`
+(command-line arguments), your plugin spec must have `lazy = false`. See
+|sessions-setup| for details.
 
 ==============================================================================
 5. CONFIGURATION                                           *sessions-config*
@@ -184,41 +195,39 @@ Default values (pass to setup(opts)): >lua
 ==============================================================================
 6. COMMANDS                                               *sessions-commands*
 
-                                                               *:SessionSave*
-:SessionSave [name]
+One command, :Session <subcommand> (built via lib.nvim.usercmd.composer,
+with <Tab> completion — session-name args complete dynamically from the
+current saved-session list), plus a standalone |:LastSession| convenience
+command.
+                                                                  *:Session*
+:Session save [name]                                        *:Session-save*
     Save the current session. If [name] is omitted the name is auto-resolved
     from project root and/or git branch (see |sessions-naming|).
 
-                                                      *:SessionSaveTimestamp*
-:SessionSaveTimestamp
+:Session save-timestamp                            *:Session-save-timestamp*
     Save a snapshot with a timestamp suffix (e.g. `sess-20251231-120000`).
     Useful for creating restore points before a risky refactor.
 
-                                                               *:SessionLoad*
-:SessionLoad [name]
+:Session load [name]                                        *:Session-load*
     Load a session. [name] supports tab completion from saved sessions. If
-    [name] is omitted the name is auto-resolved identically to |:SessionSave|.
+    [name] is omitted the name is auto-resolved identically to
+    |:Session-save|.
 
-                                                             *:SessionDelete*
-:SessionDelete <name>
+:Session delete <name>                                    *:Session-delete*
     Permanently delete a session file (and its metadata companion).
 
-                                                             *:SessionRename*
-:SessionRename <old> <new>
+:Session rename <old> <new>                                *:Session-rename*
     Rename a session, including its metadata file.
 
-                                                               *:SessionList*
-:SessionList
+:Session list                                                *:Session-list*
     Print all saved sessions, annotated with the active session (*), save
     timestamp, and branch name from metadata when available.
 
-                                                            *:SessionCurrent*
-:SessionCurrent
+:Session current                                          *:Session-current*
     Print the name of the currently active session, or report that none is
     active.
 
-                                                        *:SessionToggleTrack*
-:SessionToggleTrack [name]
+:Session toggle-track [name]                        *:Session-toggle-track*
     Toggle `git update-index --skip-worktree` on the named session file.
     Useful when |sessions-config| `root` lives inside a git-tracked config
     directory: mark transient sessions as skip-worktree so they are not
@@ -226,6 +235,16 @@ Default values (pass to setup(opts)): >lua
 
     If [name] is omitted, the currently active session (or `default_name`) is
     used. The `root` directory must be inside a git repository.
+
+                                                              *:LastSession*
+:LastSession
+    Load the session literally named "last" (equivalent to
+    |:Session-load| with `last` as the explicit name). A plain, separate,
+    single-word command specifically so `nvim +LastSession` works without
+    CLI-arg quoting — the general `nvim '+Session load ...'` form needs
+    quoting since it is multiple shell words. Pairs with `autosave_name =
+    "last"` (see |sessions-config|) for a "just restore where I left off"
+    workflow.
 
 ==============================================================================
 7. KEYMAPS                                                 *sessions-keymaps*
@@ -293,7 +312,7 @@ require("sessions").metadata(name)                      -> Sessions.Meta|nil
 ==============================================================================
 9. SESSION NAMING                                           *sessions-naming*
 
-When no explicit name is passed to |:SessionSave| or |:SessionLoad|, the name
+When no explicit name is passed to |:Session-save| or |:Session-load|, the name
 is derived from the current context:
 
   project_aware=true, branch_aware=true (default):
@@ -331,13 +350,13 @@ Example contents:
     "buffers":  ["/home/user/myproject/src/main.lua", ...]
   }
 
-The metadata is used by |:SessionList| to display timestamps and branches.
+The metadata is used by |:Session-list| to display timestamps and branches.
 You can read it programmatically via require("sessions").metadata(name).
 
 ==============================================================================
 11. GIT INTEGRATION                                          *sessions-git*
 
-|:SessionToggleTrack| is designed for the workflow where `root` points inside
+|:Session-toggle-track| is designed for the workflow where `root` points inside
 a git-tracked config directory (e.g. `stdpath("config") .. "/sessions"`).
 
 Scenario: you want to sync named sessions across machines via git but exclude
@@ -349,10 +368,10 @@ on one machine.
 
   2. Commit your named sessions normally.
 
-  3. Run `:SessionToggleTrack last` to mark `last.vim` as skip-worktree.
+  3. Run `:Session toggle-track last` to mark `last.vim` as skip-worktree.
      The file stays on disk but git ignores local changes to it.
 
-  4. On a different machine, run `:SessionToggleTrack last` again to start
+  4. On a different machine, run `:Session toggle-track last` again to start
      tracking it there too if you want.
 
 ==============================================================================

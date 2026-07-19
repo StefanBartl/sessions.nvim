@@ -40,8 +40,16 @@ function M.check()
     vim.health.warn("plugin not loaded — call require('sessions').setup()")
   end
 
-  -- optional lib.nvim dependency
-  vim.health.start("sessions.nvim — optional dependencies")
+  -- lib.nvim: required for the :Session/:LastSession commands (built on
+  -- lib.nvim.usercmd.composer); notify/map/git submodules stay soft-guarded.
+  vim.health.start("sessions.nvim — lib.nvim")
+
+  local lib_composer_ok = pcall(require, "lib.nvim.usercmd.composer")
+  if lib_composer_ok then
+    vim.health.ok("lib.nvim found — :Session/:LastSession available")
+  else
+    vim.health.error('lib.nvim not found — :Session/:LastSession will fail to load; install "StefanBartl/lib.nvim"')
+  end
 
   local lib_notify_ok = pcall(require, "lib.nvim.notify")
   if lib_notify_ok then
@@ -110,17 +118,15 @@ function M.check()
 
   -- commands
   vim.health.start("sessions.nvim — commands")
-  local cmds = {
-    "SessionSave", "SessionSaveTimestamp", "SessionLoad",
-    "SessionDelete", "SessionRename", "SessionList",
-    "SessionCurrent", "SessionToggleTrack",
-  }
-  for _, cmd in ipairs(cmds) do
-    if vim.fn.exists(":" .. cmd) == 2 then
-      vim.health.ok((":%s registered"):format(cmd))
-    else
-      vim.health.warn((":%s not found — call setup() first"):format(cmd))
-    end
+  if vim.fn.exists(":Session") == 2 then
+    vim.health.ok(":Session registered (save, save-timestamp, load, delete, rename, list, current, toggle-track)")
+  else
+    vim.health.warn(":Session not found — call setup() first")
+  end
+  if vim.fn.exists(":LastSession") == 2 then
+    vim.health.ok(":LastSession registered")
+  else
+    vim.health.warn(":LastSession not found — call setup() first")
   end
 end
 

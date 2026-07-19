@@ -10,29 +10,36 @@ shows up in which-key (if installed) and `:map` without further work. A
 
 | Mode | Config key | Suggested lhs   | Action |
 |------|------------|------------------|--------|
-| n    | `save`     | `<leader>ssa`    | `:SessionSave` |
-| n    | `load`     | `<leader>slo`    | `:SessionLoad` |
-| n    | `save_ts`  | `<leader>sst`    | Save with a timestamp suffix (`sess-YYYYMMDD-HHMMSS`) |
-| n    | `list`     | `<leader>sli`    | `:SessionList` |
+| n    | `save`     | `<leader>ssa`    | `:Session save` |
+| n    | `load`     | `<leader>slo`    | `:Session load` |
+| n    | `save_ts`  | `<leader>sst`    | `:Session save-timestamp` (`sess-YYYYMMDD-HHMMSS`) |
+| n    | `list`     | `<leader>sli`    | `:Session list` |
 
 Defined in `lua/sessions/bindings/keymaps/init.lua`. There are no defaults for the lhs
 strings themselves — every mapping is opt-in and only attached if you set it.
 
 ## User commands
 
+One command, `:Session <subcommand>` (built via
+[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+`<Tab>` completion), plus a standalone `:LastSession` convenience command.
+
 | Command                | Purpose |
 |--------------------------|---------|
-| `:SessionSave [name]`     | Save a session (tab-completes to overwrite an existing one) |
-| `:SessionSaveTimestamp`   | Save with a timestamp suffix |
-| `:SessionLoad [name]`     | Load a session |
-| `:SessionDelete <name>`   | Delete a session by name |
-| `:SessionRename <old> <new>` | Rename a session |
-| `:SessionList`            | List all saved sessions |
-| `:SessionCurrent`         | Print the active session name |
-| `:SessionToggleTrack [name]` | Toggle git `skip-worktree` on a session file, so named sessions can live in a config repo without being committed on machines where the paths don't exist |
+| `:Session save [name]`     | Save a session (tab-completes to overwrite an existing one) |
+| `:Session save-timestamp`   | Save with a timestamp suffix |
+| `:Session load [name]`     | Load a session |
+| `:Session delete <name>`   | Delete a session by name |
+| `:Session rename <old> <new>` | Rename a session |
+| `:Session list`            | List all saved sessions |
+| `:Session current`         | Print the active session name |
+| `:Session toggle-track [name]` | Toggle git `skip-worktree` on a session file, so named sessions can live in a config repo without being committed on machines where the paths don't exist |
+| `:LastSession`             | Load the session named "last" — pure convenience layer over `:Session load last`, so `nvim +LastSession` works without CLI-arg quoting |
 
 All defined in `lua/sessions/bindings/usercmds/init.lua`; registered
-unconditionally by `setup()`.
+unconditionally by `setup()`. Session-name arguments (`save`/`load`/`delete`/
+`rename`/`toggle-track`) tab-complete dynamically from the current list of
+saved sessions.
 
 ## Autocmds
 

@@ -1,7 +1,7 @@
 ---@module 'sessions.meta'
 --- Companion JSON metadata alongside each session file.
 --- Stored as .{name}.json in the same directory so it is hidden on Unix
---- and not confused with session files by :SessionList.
+--- and not confused with session files by :Session list.
 
 require("sessions.@types")
 

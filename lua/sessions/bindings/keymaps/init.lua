@@ -10,22 +10,19 @@ function M.attach(km)
   end
 
   if km.save then
-    set("n", km.save, "<cmd>SessionSave<cr>", { desc = "Session: save" })
+    set("n", km.save, "<cmd>Session save<cr>", { desc = "Session: save" })
   end
 
   if km.load then
-    set("n", km.load, "<cmd>SessionLoad<cr>", { desc = "Session: load" })
+    set("n", km.load, "<cmd>Session load<cr>", { desc = "Session: load" })
   end
 
   if km.save_ts then
-    set("n", km.save_ts, function()
-      local stamp = os.date("sess-%Y%m%d-%H%M%S")
-      vim.cmd("SessionSave " .. stamp)
-    end, { desc = "Session: save with timestamp" })
+    set("n", km.save_ts, "<cmd>Session save-timestamp<cr>", { desc = "Session: save with timestamp" })
   end
 
   if km.list then
-    set("n", km.list, "<cmd>SessionList<cr>", { desc = "Session: list" })
+    set("n", km.list, "<cmd>Session list<cr>", { desc = "Session: list" })
   end
 end
 
