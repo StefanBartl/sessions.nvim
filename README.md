@@ -9,7 +9,11 @@
 ```
 
 [![Neovim](https://img.shields.io/badge/Neovim-0.9+-57A143?logo=neovim&logoColor=white)](https://neovim.io)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+> 💡 Pairs well with [dap.nvim](https://github.com/StefanBartl/dap.nvim) and
+> [language.nvim](https://github.com/StefanBartl/language.nvim): sessions.nvim
+> restores your workspace by project + branch, so your debug configs and
+> spell/translate settings pick up right where you left off.
 
 Branch- and project-aware Neovim sessions — no external dependencies beyond
 the built-in `:mksession` / `:source`.
@@ -50,6 +54,7 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - [Git Integration](docs/git-integration.md) — syncing named sessions across machines with `:SessionToggleTrack`.
 - [Troubleshooting](docs/troubleshooting.md) — using `:checkhealth sessions` to diagnose setup issues.
 - [Roadmap](docs/ROADMAP.md) — planned features and future direction.
+- [Bindings](docs/BINDINGS.md) — every keymap and user command.
 
 ---
 

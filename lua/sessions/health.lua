@@ -64,6 +64,12 @@ function M.check()
     vim.health.info("lib.nvim.git not found — using git CLI fallback")
   end
 
+  if require("sessions.which_key").available() then
+    vim.health.ok("which-key available (keymap group label registered)")
+  else
+    vim.health.info("which-key not found (optional; keymap `desc` fields still work standalone)")
+  end
+
   -- configuration
   vim.health.start("sessions.nvim — configuration")
 

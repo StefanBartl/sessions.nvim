@@ -32,6 +32,7 @@
 ---@field hooks Sessions.Hooks
 ---@field blacklist Sessions.Blacklist
 ---@field keymaps Sessions.Keymaps|false Keymaps table or false to disable all keymaps
+---@field which_key { enable: boolean } Register a which-key group label for the keymap prefix
 
 ---@class Sessions.Info
 ---@field name string
