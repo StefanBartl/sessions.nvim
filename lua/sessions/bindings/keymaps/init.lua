@@ -1,4 +1,4 @@
----@module 'sessions.keymaps'
+---@module 'sessions.bindings.keymaps'
 
 local M = {}
 

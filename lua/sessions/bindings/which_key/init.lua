@@ -1,4 +1,4 @@
----@module 'sessions.which_key'
+---@module 'sessions.bindings.which_key'
 ---@brief Optional, guarded which-key group label for the session keymaps.
 ---@description
 --- which-key is a **soft** dependency: if it is not installed this is a no-op.
