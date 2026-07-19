@@ -1,6 +1,6 @@
 # Git Integration
 
-`:SessionToggleTrack` solves the cross-device sync dilemma:
+`:Session toggle-track` solves the cross-device sync dilemma:
 
 - You want named sessions (e.g. `myapp_main`) committed to your config repo
   so they sync to other machines.
@@ -15,5 +15,5 @@ require("sessions").setup({
 })
 ```
 
-Run `:SessionToggleTrack last` once to mark `last.vim` as skip-worktree.
+Run `:Session toggle-track last` once to mark `last.vim` as skip-worktree.
 The file stays on disk, but git ignores changes to it. Run again to un-skip.

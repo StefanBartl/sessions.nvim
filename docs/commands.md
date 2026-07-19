@@ -1,15 +1,21 @@
 # Commands
 
+One command, `:Session <subcommand>` (built via
+[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+`<Tab>` completion — session-name args complete dynamically), plus a
+standalone `:LastSession` convenience command.
+
 | Command | Description |
 |---|---|
-| `:SessionSave [name]` | Save session (auto-named if omitted) |
-| `:SessionSaveTimestamp` | Save with a `sess-YYYYMMDD-HHMMSS` suffix |
-| `:SessionLoad [name]` | Load session (tab-completes saved names) |
-| `:SessionDelete <name>` | Delete session + companion metadata |
-| `:SessionRename <old> <new>` | Rename session + companion metadata |
-| `:SessionList` | List sessions with timestamp and branch |
-| `:SessionCurrent` | Print the active session name |
-| `:SessionToggleTrack [name]` | Toggle `git skip-worktree` on a session file |
+| `:Session save [name]` | Save session (auto-named if omitted) |
+| `:Session save-timestamp` | Save with a `sess-YYYYMMDD-HHMMSS` suffix |
+| `:Session load [name]` | Load session (tab-completes saved names) |
+| `:Session delete <name>` | Delete session + companion metadata |
+| `:Session rename <old> <new>` | Rename session + companion metadata |
+| `:Session list` | List sessions with timestamp and branch |
+| `:Session current` | Print the active session name |
+| `:Session toggle-track [name]` | Toggle `git skip-worktree` on a session file |
+| `:LastSession` | Load the "last" session — convenience layer over `:Session load last`, unquoted-CLI-friendly (`nvim +LastSession`) |
 
 ## Keymaps
 

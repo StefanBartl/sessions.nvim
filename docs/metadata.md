@@ -12,7 +12,7 @@ When `metadata = true` a hidden `.{name}.json` is written alongside each
 }
 ```
 
-Used by `:SessionList` for timestamps and branch display. Access it in Lua:
+Used by `:Session list` for timestamps and branch display. Access it in Lua:
 ```lua
 local meta = require("sessions").metadata("myapp_feature-login")
 -- meta.saved_at, meta.branch, meta.buffers, ...
