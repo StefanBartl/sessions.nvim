@@ -131,9 +131,15 @@ function M.enable()
       if r.code == 0 then git_root = vim.trim(r.stdout or "") end
     end
     if not git_root or git_root == "" then
-      git_root = vim.trim(vim.fn.system(
-        "git -C " .. vim.fn.shellescape(cfg.root) .. " rev-parse --show-toplevel 2>/dev/null"
-      ))
+      local ok_argv, run_argv = pcall(require, "lib.nvim.cross.run_argv")
+      if ok_argv then
+        local ok_run, out = run_argv.run_blocking_captured({ "git", "-C", cfg.root, "rev-parse", "--show-toplevel" })
+        git_root = ok_run and vim.trim(out) or ""
+      else
+        git_root = vim.trim(vim.fn.system(
+          "git -C " .. vim.fn.shellescape(cfg.root) .. " rev-parse --show-toplevel 2>/dev/null"
+        ))
+      end
     end
     if git_root == "" then
       n().error("session root is not inside a git repo (required for SessionToggleTrack)")
@@ -144,6 +150,11 @@ function M.enable()
       if vim.system then
         local r = vim.system({ "git", "ls-files", "-v", "--", f }, { cwd = git_root, text = true }):wait()
         return ((r.stdout or ""):match("^S")) ~= nil
+      end
+      local ok_argv, run_argv = pcall(require, "lib.nvim.cross.run_argv")
+      if ok_argv then
+        local _, out = run_argv.run_blocking_captured({ "git", "-C", git_root, "ls-files", "-v", "--", f })
+        return (out or ""):match("^S") ~= nil
       end
       local out = vim.fn.system(
         "git -C " .. vim.fn.shellescape(git_root) .. " ls-files -v -- " .. vim.fn.shellescape(f)
@@ -160,8 +171,16 @@ function M.enable()
     if vim.system then
       code = vim.system(toggle_args, { cwd = git_root, text = true }):wait().code
     else
-      vim.fn.system(table.concat(vim.tbl_map(vim.fn.shellescape, toggle_args), " "))
-      code = vim.v.shell_error
+      local ok_argv, run_argv = pcall(require, "lib.nvim.cross.run_argv")
+      if ok_argv then
+        local cwd_args = { "git", "-C", git_root }
+        for _, a in ipairs(toggle_args) do cwd_args[#cwd_args + 1] = a end
+        local ok_run = run_argv.run_blocking(cwd_args)
+        code = ok_run and 0 or 1
+      else
+        vim.fn.system(table.concat(vim.tbl_map(vim.fn.shellescape, toggle_args), " "))
+        code = vim.v.shell_error
+      end
     end
 
     if code ~= 0 then
