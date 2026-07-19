@@ -36,15 +36,15 @@ function M.setup(opts)
 
   require("sessions.config").setup(opts)
 
-  require("sessions.usercmds").enable()
-  require("sessions.autocmds").enable()
+  require("sessions.bindings.usercmds").enable()
+  require("sessions.bindings.autocmds").enable()
 
   local cfg = require("sessions.config").cfg
   if cfg.keymaps ~= false then
-    require("sessions.keymaps").attach(cfg.keymaps or {})
+    require("sessions.bindings.keymaps").attach(cfg.keymaps or {})
 
     if cfg.which_key and cfg.which_key.enable then
-      pcall(require("sessions.which_key").setup, cfg.keymaps or {})
+      pcall(require("sessions.bindings.which_key").setup, cfg.keymaps or {})
     end
   end
 

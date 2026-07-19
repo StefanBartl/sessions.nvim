@@ -1,4 +1,4 @@
----@module 'sessions.usercmds'
+---@module 'sessions.bindings.usercmds'
 
 local M = {}
 

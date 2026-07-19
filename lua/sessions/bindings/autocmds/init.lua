@@ -1,4 +1,4 @@
----@module 'sessions.autocmds'
+---@module 'sessions.bindings.autocmds'
 
 local M = {}
 local api = vim.api
