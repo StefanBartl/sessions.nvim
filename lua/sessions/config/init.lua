@@ -13,6 +13,7 @@ M.cfg = vim.deepcopy(DEFAULTS)
 ---@param opts table|nil
 function M.setup(opts)
   M.cfg = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULTS), opts or {})
+  M.cfg.root = require("lib.nvim.cross.fs.expand_path")(M.cfg.root)
 
   -- Inject Windows %TEMP% into blacklist automatically
   local temp = vim.fn.expand("$TEMP")
