@@ -109,23 +109,25 @@ function M.enable()
         desc = "List all saved sessions",
         run  = function()
           local list = require("sessions.core").list()
-          if #list == 0 then print("No sessions saved."); return end
+          if #list == 0 then n().info("No sessions saved."); return end
           local current = require("sessions.core").current()
+          local lines = {}
           for _, p in ipairs(list) do
             local name = vim.fn.fnamemodify(p, ":t:r")
             local meta = require("sessions.core").metadata(name)
             local star   = (name == current) and " *" or "  "
             local ts     = (meta and meta.saved_at) and ("  " .. meta.saved_at) or ""
             local branch = (meta and meta.branch)   and ("  [" .. meta.branch .. "]") or ""
-            print(star .. name .. ts .. branch)
+            lines[#lines + 1] = star .. name .. ts .. branch
           end
+          n().info(table.concat(lines, "\n"))
         end },
 
       { path = { "current" },
         desc = "Print the active session name",
         run  = function()
           local cur = require("sessions.core").current()
-          print(cur and ("Current session: " .. cur) or "No session active.")
+          n().info(cur and ("Current session: " .. cur) or "No session active.")
         end },
 
       -- Toggle git skip-worktree on a session file so it can live in a config
