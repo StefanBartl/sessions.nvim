@@ -12,9 +12,27 @@ local M = {}
 ---@type string|nil
 local _current = nil
 
+---@type boolean
+local _dirty = false
+
 ---@return string|nil
 function M.current()
   return _current
+end
+
+---True when the active session's window/buffer layout has changed since the
+---last save/load (i.e. an autosave, if enabled, would capture something new).
+---@return boolean
+function M.dirty()
+  return _dirty
+end
+
+---Mark the active session dirty. Called by structural autocmds
+---(BufAdd/BufDelete/WinNew/...) registered in bindings.autocmds.
+function M.mark_dirty()
+  if _current then
+    _dirty = true
+  end
 end
 
 -- =========================================================
@@ -52,6 +70,22 @@ local function apply_sessionoptions()
   vim.opt.sessionoptions = require("sessions.config").cfg.sessionoptions
 end
 
+---@param opt_str string
+---@return string
+local function strip_tabpages(opt_str)
+  local parts = {}
+  for part in opt_str:gmatch("[^,]+") do
+    if part ~= "tabpages" then parts[#parts + 1] = part end
+  end
+  return table.concat(parts, ",")
+end
+
+---@param cfg Sessions.Config
+---@return boolean
+local function git_aware(cfg)
+  return cfg.branch_aware or cfg.project_aware
+end
+
 ---@param name string|nil
 ---@param use_auto_resolve boolean|nil
 ---@return Sessions.Info
@@ -61,11 +95,19 @@ local function resolve(name, use_auto_resolve)
   if type(name) == "string" and name ~= "" then
     n = name
   elseif use_auto_resolve then
-    -- Auto-resolve project/branch for save operations
-    n = require("sessions.git").resolve_name(cfg)
+    -- Save: auto-resolve project/branch name when configured. sessions.git
+    -- is only required here, so it never loads (and never shells out)
+    -- unless branch_aware or project_aware actually asks for it.
+    n = git_aware(cfg) and require("sessions.git").resolve_name(cfg) or cfg.default_name
   else
-    -- Use default name (last) for load operations
-    n = cfg.default_name
+    -- Load: prefer the remembered last-loaded session (if it still exists
+    -- on disk), falling back to default_name otherwise.
+    local remembered = require("sessions.state").read(cfg).last_loaded
+    if remembered and fn.filereadable(cfg.root .. "/" .. remembered .. ".vim") == 1 then
+      n = remembered
+    else
+      n = cfg.default_name
+    end
   end
   return { name = n, path = cfg.root .. "/" .. n .. ".vim" }
 end
@@ -134,15 +176,21 @@ function M.save(name)
   wipe_blacklisted()
 
   local si = resolve(name, true)  -- use_auto_resolve = true for save
+  local save_cwd = fn.getcwd()
   local ok, err = pcall(vim.cmd.mksession, { args = { si.path }, bang = true })
   if not ok then
     return false, err
   end
 
+  if cfg.relative_paths then
+    require("sessions.portable").make_relative(si.path, save_cwd)
+  end
+
   _current = si.name
+  _dirty = false
 
   if cfg.metadata then
-    local branch = require("sessions.git").current_branch()
+    local branch = git_aware(cfg) and require("sessions.git").current_branch() or nil
     require("sessions.meta").write(si.path, build_meta(branch))
   end
 
@@ -151,6 +199,42 @@ function M.save(name)
   end
 
   return true, si.path
+end
+
+--- Tab-scoped save: only the current tab's window layout, stored separately
+--- under root/.tabs/ so it can't collide with (or show up alongside) full
+--- sessions. Does not touch _current/_dirty/metadata — those track the
+--- full workspace session, not tab snapshots.
+---@param name string|nil  Explicit name; nil = auto-resolve
+---@return boolean ok
+---@return string|nil path_or_err
+function M.save_tab(name)
+  local cfg = require("sessions.config").cfg
+  ensure_dir(cfg.root .. "/.tabs")
+  wipe_blacklisted()
+
+  local si = resolve(name, true)
+  local path = cfg.root .. "/.tabs/" .. si.name .. ".vim"
+  local save_cwd = fn.getcwd()
+
+  -- Drop "tabpages" for this one save so :mksession only records the
+  -- current tab's windows, regardless of the user's configured sessionoptions.
+  vim.opt.sessionoptions = strip_tabpages(cfg.sessionoptions)
+  local ok, err = pcall(vim.cmd.mksession, { args = { path }, bang = true })
+  apply_sessionoptions()
+  if not ok then
+    return false, err
+  end
+
+  if cfg.relative_paths then
+    require("sessions.portable").make_relative(path, save_cwd)
+  end
+
+  if cfg.hooks.on_save then
+    pcall(cfg.hooks.on_save, si.name, path)
+  end
+
+  return true, path
 end
 
 ---@param name string|nil
@@ -172,12 +256,22 @@ function M.load(name)
   pcall(vim.cmd, "silent! only!")
   pcall(vim.cmd, "silent! tabonly!")
 
-  local ok, err = pcall(vim.cmd.source, si.path)
+  local source_path, is_temp = si.path, false
+  if cfg.relative_paths or next(cfg.root_remap) then
+    source_path, is_temp = require("sessions.portable").prepare_for_load(si.path, fn.getcwd(), cfg.root_remap)
+  end
+
+  local ok, err = pcall(vim.cmd.source, source_path)
+  if is_temp then
+    os.remove(source_path)
+  end
   if not ok then
     return false, err
   end
 
   _current = si.name
+  _dirty = false
+  require("sessions.state").set_last_loaded(cfg, si.name)
 
   if cfg.hooks.on_load then
     pcall(cfg.hooks.on_load, si.name, si.path)
@@ -186,11 +280,73 @@ function M.load(name)
   return true, si.path, hidden
 end
 
+--- Tab-scoped load: opens a new tab and restores a tab-scoped snapshot
+--- into it, leaving every other tab untouched (unlike M.load, which
+--- collapses to a single tab). Name is required — unlike full sessions,
+--- tab snapshots have no "remembered last" or default_name fallback.
+---@param name string  Tab-session name (as passed to M.save_tab)
+---@return boolean ok
+---@return string|nil path_or_err
+function M.load_tab(name)
+  if type(name) ~= "string" or name == "" then
+    return false, "tab session name required"
+  end
+
+  local cfg = require("sessions.config").cfg
+  local path = cfg.root .. "/.tabs/" .. name .. ".vim"
+
+  if fn.filereadable(path) == 0 then
+    return false, "no such tab session: " .. path
+  end
+
+  apply_sessionoptions()
+  vim.cmd("tabnew")
+
+  local source_path, is_temp = path, false
+  if cfg.relative_paths or next(cfg.root_remap) then
+    source_path, is_temp = require("sessions.portable").prepare_for_load(path, fn.getcwd(), cfg.root_remap)
+  end
+
+  local ok, err = pcall(vim.cmd.source, source_path)
+  if is_temp then
+    os.remove(source_path)
+  end
+  if not ok then
+    pcall(vim.cmd, "tabclose")
+    return false, err
+  end
+
+  if cfg.hooks.on_load then
+    pcall(cfg.hooks.on_load, name, path)
+  end
+
+  return true, path
+end
+
+---Resolve what `M.load(nil)` would load, without loading it. Used by the
+---`autoload = "ask"` prompt to show the target session name up front.
+---@return Sessions.Info info
+---@return boolean exists
+function M.peek()
+  local si = resolve(nil, false)
+  return si, fn.filereadable(si.path) == 1
+end
+
 ---@return string[]  Absolute paths to .vim session files
 function M.list()
   local cfg = require("sessions.config").cfg
   if not is_dir(cfg.root) then return {} end
   local files = fn.globpath(cfg.root, "*.vim", false, true)
+  table.sort(files)
+  return files
+end
+
+---@return string[]  Absolute paths to .vim tab-session files under root/.tabs/
+function M.list_tabs()
+  local cfg = require("sessions.config").cfg
+  local dir = cfg.root .. "/.tabs"
+  if not is_dir(dir) then return {} end
+  local files = fn.globpath(dir, "*.vim", false, true)
   table.sort(files)
   return files
 end
