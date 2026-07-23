@@ -25,7 +25,7 @@
 ---@field project_aware boolean          Prefix session name with detected project root basename
 ---@field project_markers string[]       Filenames used to detect a project root (upward search)
 ---@field sessionoptions string          Passed to vim.opt.sessionoptions before each save/load
----@field autoload boolean               Load the contextual session on VimEnter (no file args)
+---@field autoload boolean|"ask"         Load the contextual session on VimEnter (no file args); "ask" prompts first
 ---@field autosave boolean               Autosave session on VimLeavePre
 ---@field autosave_name string           Fixed session name for autosave (e.g. "last")
 ---@field metadata boolean               Write a companion .json file with save context

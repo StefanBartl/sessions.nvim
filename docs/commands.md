@@ -9,7 +9,7 @@ standalone `:LastSession` convenience command.
 |---|---|
 | `:Session save [name]` | Save session (auto-named if omitted) |
 | `:Session save-timestamp` | Save with a `sess-YYYYMMDD-HHMMSS` suffix |
-| `:Session load [name]` | Load session (tab-completes saved names) |
+| `:Session load [name]` | Load session (tab-completes saved names); omitted name loads the remembered last-loaded session, or `default_name` |
 | `:Session delete <name>` | Delete session + companion metadata |
 | `:Session rename <old> <new>` | Rename session + companion metadata |
 | `:Session list` | List sessions with timestamp and branch |

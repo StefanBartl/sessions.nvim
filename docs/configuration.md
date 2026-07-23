@@ -26,6 +26,8 @@ require("sessions").setup({
   sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
 
   -- Auto-load the contextual session when Neovim starts without file args.
+  -- Set to "ask" to show a floating y/n prompt before loading instead of
+  -- loading silently.
   autoload = false,
 
   -- Auto-save to a fixed session name on VimLeavePre (false = disabled).
@@ -69,3 +71,11 @@ When no explicit name is given, the name is resolved from context:
 
 Unsafe filename characters (`/`, `\`, spaces) are replaced with `-` or `_`.
 `feature/login` → `feature-login`.
+
+The naming table above governs `:Session save [name]` (no name given). It
+does **not** apply to loading: `:Session load` (no name) and autoload
+instead prefer the **remembered last-loaded session** — the name most
+recently passed to a successful `:Session load <name>` — persisted in a
+small `.state.json` file in `root`, so it survives restarts. Falls back to
+`default_name` if nothing has been loaded yet or the remembered session no
+longer exists on disk.

@@ -7,10 +7,6 @@
 - Preview shows buffer list + timestamp + branch from metadata
 - Multi-select delete
 
-### Autoload Improvements
-- `autoload = "ask"` mode: show a floating prompt "Restore session X?" on startup
-- Remember last-loaded session across restarts via a small state file
-
 ### Session Scoping
 - **Tab-scoped sessions** — save/restore only the current tab's windows
 - **Window-layout snapshots** — separate from full sessions, restore only splits
