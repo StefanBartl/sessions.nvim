@@ -84,15 +84,20 @@ local function resolve(name, use_auto_resolve)
   local n
   if type(name) == "string" and name ~= "" then
     n = name
-  elseif use_auto_resolve and git_aware(cfg) then
-    -- Auto-resolve project/branch for save operations. sessions.git is only
-    -- required here, so it never loads (and never shells out) unless one of
-    -- these config flags actually asks for it.
-    n = require("sessions.git").resolve_name(cfg)
+  elseif use_auto_resolve then
+    -- Save: auto-resolve project/branch name when configured. sessions.git
+    -- is only required here, so it never loads (and never shells out)
+    -- unless branch_aware or project_aware actually asks for it.
+    n = git_aware(cfg) and require("sessions.git").resolve_name(cfg) or cfg.default_name
   else
-    -- Use default name (last) for load operations, or when neither
-    -- branch_aware nor project_aware is enabled.
-    n = cfg.default_name
+    -- Load: prefer the remembered last-loaded session (if it still exists
+    -- on disk), falling back to default_name otherwise.
+    local remembered = require("sessions.state").read(cfg).last_loaded
+    if remembered and fn.filereadable(cfg.root .. "/" .. remembered .. ".vim") == 1 then
+      n = remembered
+    else
+      n = cfg.default_name
+    end
   end
   return { name = n, path = cfg.root .. "/" .. n .. ".vim" }
 end
@@ -207,12 +212,22 @@ function M.load(name)
 
   _current = si.name
   _dirty = false
+  require("sessions.state").set_last_loaded(cfg, si.name)
 
   if cfg.hooks.on_load then
     pcall(cfg.hooks.on_load, si.name, si.path)
   end
 
   return true, si.path, hidden
+end
+
+---Resolve what `M.load(nil)` would load, without loading it. Used by the
+---`autoload = "ask"` prompt to show the target session name up front.
+---@return Sessions.Info info
+---@return boolean exists
+function M.peek()
+  local si = resolve(nil, false)
+  return si, fn.filereadable(si.path) == 1
 end
 
 ---@return string[]  Absolute paths to .vim session files

@@ -70,4 +70,5 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - **`:Session delete` / `:Session rename`** — lifecycle commands missing from most session plugins
 - **`:Session toggle-track`** — toggle `git skip-worktree` on a session file to sync named sessions via your config repo without committing transient state
 - **`:checkhealth sessions`** — self-diagnostic for setup verification
+- **`autoload = "ask"`** — floating y/n prompt before restoring on startup; the remembered last-loaded session survives restarts even without it
 - **`lib.nvim`** — required for the `:Session`/`:LastSession` commands themselves; `lib.nvim.notify`, `lib.nvim.map`, and `lib.nvim.git` stay soft-guarded and fall back gracefully if those specific submodules aren't resolvable
