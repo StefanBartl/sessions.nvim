@@ -38,6 +38,11 @@
 ---@field name string
 ---@field path string
 
+---@class Sessions.StatuslineOpts
+---@field icon? string        Prefix before the session name (default "")
+---@field dirty_icon? string  Suffix shown when the session has unsaved layout changes (default " *")
+---@field empty? string       Returned when no session is active (default "")
+
 ---@class Sessions.Meta
 ---@field saved_at string   ISO-8601 timestamp
 ---@field cwd string        Working directory at save time

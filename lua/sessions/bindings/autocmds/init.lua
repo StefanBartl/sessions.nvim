@@ -60,6 +60,18 @@ function M.enable()
       group = aug,
       desc = "sessions.nvim: autosave to fixed session name on exit",
     })
+
+    -- Structural layout changes are what the next autosave would actually
+    -- capture, so mark the session dirty for statusline consumers
+    -- (see sessions.statusline) rather than tracking buffer `modified`.
+    for _, event in ipairs({ "BufAdd", "BufDelete", "WinNew", "WinClosed", "TabNewEntered", "TabClosed" }) do
+      create_autocmd(event, function()
+        require("sessions.core").mark_dirty()
+      end, {
+        group = aug,
+        desc = "sessions.nvim: mark session dirty for statusline",
+      })
+    end
   end
 end
 

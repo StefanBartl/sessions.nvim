@@ -13,17 +13,31 @@ S.current()     → string|nil         -- active session name (statusline use)
 S.metadata(name) → Sessions.Meta|nil -- { saved_at, cwd, branch, buffers }
 ```
 
-## Statusline example
+## Statusline
+
+`require("sessions.statusline").component(opts?)` returns a ready-made
+string: the active session name, with a dirty marker appended when the
+session's window/buffer layout has changed since the last save/load (i.e.
+what the next autosave would capture). Returns `""` when no session is
+active.
 
 ```lua
+---@class Sessions.StatuslineOpts
+---@field icon? string        Prefix before the session name (default "")
+---@field dirty_icon? string  Suffix when layout changed since last save (default " *")
+---@field empty? string       Returned when no session is active (default "")
+```
+
+```lua
+-- lualine
 require("lualine").setup({
   sections = {
     lualine_c = {
-      function()
-        local name = require("sessions").current()
-        return name and (" " .. name) or ""
-      end,
+      function() return require("sessions.statusline").component() end,
     },
   },
 })
+
+-- heirline
+{ provider = function() return require("sessions.statusline").component({ icon = " " }) end }
 ```
