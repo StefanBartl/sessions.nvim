@@ -55,6 +55,7 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - [Git Integration](docs/git-integration.md) — syncing named sessions across machines with `:Session toggle-track`.
 - [Portability](docs/portability.md) — `relative_paths` and `root_remap` for sessions synced across machines/OSes.
 - [Session Scoping](docs/session-scoping.md) — tab-scoped sessions and window-layout-only snapshots.
+- [Picker Integration](docs/picker.md) — `:SessionLoad` via Snacks.picker or Telescope, with preview and multi-select delete.
 - [Troubleshooting](docs/troubleshooting.md) — using `:checkhealth sessions` to diagnose setup issues.
 - [Roadmap](docs/ROADMAP.md) — planned features and future direction.
 - [Bindings](docs/BINDINGS.md) — every keymap and user command.
@@ -76,4 +77,5 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - **`relative_paths` / `root_remap`** — portable sessions that re-anchor to wherever they're loaded, or translate absolute path prefixes across machines/OSes
 - **`:Session save-tab` / `load-tab`** — save/restore just the current tab's windows, independent of the rest of your tabs
 - **`:Session save-layout` / `load-layout`** — reapply a favorite split arrangement to whatever's currently open, without touching buffers
+- **`:SessionLoad`** — session picker with live preview and multi-select delete, via Snacks.picker or Telescope (neither is a hard dependency)
 - **`lib.nvim`** — required for the `:Session`/`:LastSession` commands themselves; `lib.nvim.notify`, `lib.nvim.map`, and `lib.nvim.git` stay soft-guarded and fall back gracefully if those specific submodules aren't resolvable
