@@ -11,6 +11,7 @@ S.delete(name)  → ok, err            -- delete session + metadata
 S.rename(old, new) → ok, err
 S.current()     → string|nil         -- active session name (statusline use)
 S.metadata(name) → Sessions.Meta|nil -- { saved_at, cwd, branch, buffers }
+S.pick()                             -- open the session picker (see docs/picker.md)
 ```
 
 ## Statusline

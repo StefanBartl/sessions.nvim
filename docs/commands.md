@@ -20,6 +20,7 @@ standalone `:LastSession` convenience command.
 | `:Session save-layout <name>` | Save the current window-split structure only (no buffers/files) |
 | `:Session load-layout <name>` | Restore a window-split layout onto whatever buffers are currently open |
 | `:LastSession` | Load the "last" session — convenience layer over `:Session load last`, unquoted-CLI-friendly (`nvim +LastSession`) |
+| `:SessionLoad` | Open a session picker with live preview (Snacks.picker or Telescope) — see [Picker Integration](picker.md) |
 
 ## Keymaps
 

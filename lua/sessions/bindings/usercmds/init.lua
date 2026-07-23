@@ -204,6 +204,13 @@ function M.enable()
   require("lib.nvim.usercmd").create("LastSession", function()
     do_load("last")
   end, { desc = "Load the 'last' session (nvim +LastSession)" })
+
+  -- :SessionLoad — session picker with live preview (Snacks.picker or
+  -- telescope.nvim, whichever is installed). A plain zero-arg command, not
+  -- a :Session subcommand, matching :LastSession's convention.
+  require("lib.nvim.usercmd").create("SessionLoad", function()
+    require("sessions.picker").pick()
+  end, { desc = "Open the session picker with preview (Snacks/Telescope)" })
 end
 
 --- Extracted so composer can call it and so the logic is unit-testable

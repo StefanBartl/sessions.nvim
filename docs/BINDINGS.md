@@ -39,6 +39,7 @@ One command, `:Session <subcommand>` (built via
 | `:Session save-layout <name>` | Save the current window-split structure only, no buffers/files |
 | `:Session load-layout <name>` | Restore a window-split layout onto whatever buffers are currently open |
 | `:LastSession`             | Load the session named "last" — pure convenience layer over `:Session load last`, so `nvim +LastSession` works without CLI-arg quoting |
+| `:SessionLoad`             | Open a session picker with live preview (Snacks.picker or Telescope) — see [Picker Integration](picker.md) |
 
 All defined in `lua/sessions/bindings/usercmds/init.lua`; registered
 unconditionally by `setup()`. Session-name arguments (`save`/`load`/`delete`/

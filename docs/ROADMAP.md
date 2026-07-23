@@ -1,11 +1,6 @@
 # sessions.nvim — ROADMAP
 
-## Planned
-
-### Picker Integration
-- `:SessionLoad` via Snacks.picker or Telescope with live preview
-- Preview shows buffer list + timestamp + branch from metadata
-- Multi-select delete
+Nothing currently planned — see below for ideas under consideration.
 
 ## Deferred / Under Consideration
 
