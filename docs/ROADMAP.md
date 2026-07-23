@@ -23,9 +23,6 @@
 - `relative_paths` option: store paths relative to cwd in the .vim file (requires path rewriting)
 - `root_remap` config: `{ ["/home/user"] = "/Users/user" }` for cross-OS sync
 
-### Performance
-- Lazy-load `sessions.git` only when `branch_aware` or `project_aware` is enabled
-
 ## Deferred / Under Consideration
 
 - **Telescope extension** with session preview sidebar
