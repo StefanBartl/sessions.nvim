@@ -52,6 +52,12 @@ local function apply_sessionoptions()
   vim.opt.sessionoptions = require("sessions.config").cfg.sessionoptions
 end
 
+---@param cfg Sessions.Config
+---@return boolean
+local function git_aware(cfg)
+  return cfg.branch_aware or cfg.project_aware
+end
+
 ---@param name string|nil
 ---@param use_auto_resolve boolean|nil
 ---@return Sessions.Info
@@ -60,11 +66,14 @@ local function resolve(name, use_auto_resolve)
   local n
   if type(name) == "string" and name ~= "" then
     n = name
-  elseif use_auto_resolve then
-    -- Auto-resolve project/branch for save operations
+  elseif use_auto_resolve and git_aware(cfg) then
+    -- Auto-resolve project/branch for save operations. sessions.git is only
+    -- required here, so it never loads (and never shells out) unless one of
+    -- these config flags actually asks for it.
     n = require("sessions.git").resolve_name(cfg)
   else
-    -- Use default name (last) for load operations
+    -- Use default name (last) for load operations, or when neither
+    -- branch_aware nor project_aware is enabled.
     n = cfg.default_name
   end
   return { name = n, path = cfg.root .. "/" .. n .. ".vim" }
@@ -142,7 +151,7 @@ function M.save(name)
   _current = si.name
 
   if cfg.metadata then
-    local branch = require("sessions.git").current_branch()
+    local branch = git_aware(cfg) and require("sessions.git").current_branch() or nil
     require("sessions.meta").write(si.path, build_meta(branch))
   end
 

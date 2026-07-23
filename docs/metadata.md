@@ -12,6 +12,9 @@ When `metadata = true` a hidden `.{name}.json` is written alongside each
 }
 ```
 
+`branch` is only populated when `branch_aware` or `project_aware` is enabled
+(sessions.git is lazy-loaded and never shells out to `git` otherwise).
+
 Used by `:Session list` for timestamps and branch display. Access it in Lua:
 ```lua
 local meta = require("sessions").metadata("myapp_feature-login")
