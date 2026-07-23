@@ -78,6 +78,16 @@ function M.check()
     vim.health.info("which-key not found (optional; keymap `desc` fields still work standalone)")
   end
 
+  local snacks_ok = pcall(require, "snacks")
+  local telescope_ok = pcall(require, "telescope")
+  if snacks_ok then
+    vim.health.ok("snacks.nvim found — :SessionLoad uses Snacks.picker")
+  elseif telescope_ok then
+    vim.health.ok("telescope.nvim found — :SessionLoad uses Telescope")
+  else
+    vim.health.info("neither snacks.nvim nor telescope.nvim found — :SessionLoad will error until one is installed")
+  end
+
   -- configuration
   vim.health.start("sessions.nvim — configuration")
 
@@ -119,7 +129,8 @@ function M.check()
   -- commands
   vim.health.start("sessions.nvim — commands")
   if vim.fn.exists(":Session") == 2 then
-    vim.health.ok(":Session registered (save, save-timestamp, load, delete, rename, list, current, toggle-track)")
+    vim.health.ok(":Session registered (save, save-timestamp, load, delete, rename, list, current, "
+      .. "toggle-track, save-tab, load-tab, save-layout, load-layout)")
   else
     vim.health.warn(":Session not found — call setup() first")
   end
@@ -127,6 +138,11 @@ function M.check()
     vim.health.ok(":LastSession registered")
   else
     vim.health.warn(":LastSession not found — call setup() first")
+  end
+  if vim.fn.exists(":SessionLoad") == 2 then
+    vim.health.ok(":SessionLoad registered")
+  else
+    vim.health.warn(":SessionLoad not found — call setup() first")
   end
 end
 

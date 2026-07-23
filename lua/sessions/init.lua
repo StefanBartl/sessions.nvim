@@ -105,4 +105,10 @@ function M.metadata(name)
   return require("sessions.core").metadata(name)
 end
 
+---Open the session picker (Snacks.picker or telescope.nvim, whichever is
+---installed) with live preview and multi-select delete. Same as :SessionLoad.
+function M.pick()
+  require("sessions.picker").pick()
+end
+
 return M

@@ -21,6 +21,8 @@ return {
   project_aware = true,
   project_markers = { ".git", "pyproject.toml", "package.json", "Makefile", "Cargo.toml", "go.mod" },
   sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
+  relative_paths = false,
+  root_remap = {},
   autoload = false,
   autosave = true,
   autosave_name = "last",
