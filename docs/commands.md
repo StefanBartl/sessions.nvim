@@ -15,6 +15,10 @@ standalone `:LastSession` convenience command.
 | `:Session list` | List sessions with timestamp and branch |
 | `:Session current` | Print the active session name |
 | `:Session toggle-track [name]` | Toggle `git skip-worktree` on a session file |
+| `:Session save-tab [name]` | Save only the current tab's window layout (stored separately from full sessions) |
+| `:Session load-tab <name>` | Load a tab session into a new tab, leaving other tabs untouched |
+| `:Session save-layout <name>` | Save the current window-split structure only (no buffers/files) |
+| `:Session load-layout <name>` | Restore a window-split layout onto whatever buffers are currently open |
 | `:LastSession` | Load the "last" session — convenience layer over `:Session load last`, unquoted-CLI-friendly (`nvim +LastSession`) |
 
 ## Keymaps
