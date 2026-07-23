@@ -15,10 +15,6 @@
 - **Tab-scoped sessions** — save/restore only the current tab's windows
 - **Window-layout snapshots** — separate from full sessions, restore only splits
 
-### Statusline Integration
-- Dedicated `require("sessions.statusline").component()` for lualine/heirline
-- Shows: session name + dirty indicator when autosave is pending
-
 ### Cross-device Portability
 - `relative_paths` option: store paths relative to cwd in the .vim file (requires path rewriting)
 - `root_remap` config: `{ ["/home/user"] = "/Users/user" }` for cross-OS sync

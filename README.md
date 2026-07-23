@@ -64,6 +64,7 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - **Branch-aware** — session name automatically includes the current git branch, so switching branches restores a different workspace
 - **Project-aware** — detects your project root (`.git`, `package.json`, …) and prefixes the session name
 - **Metadata** — a companion `.json` records the save timestamp, branch, and buffer list for statuslines or pickers
+- **`sessions.statusline`** — ready-made `component()` for lualine/heirline: session name + dirty indicator when the layout has changed since the last save
 - **Clean save** — blacklisted buffer types, filetypes, and path prefixes are wiped before `:mksession` (no quickfix noise, no temp files)
 - **E445 fix** — modified buffers are hidden (not discarded) before loading, so the session's internal `only`/`tabonly` never triggers E445
 - **`:Session delete` / `:Session rename`** — lifecycle commands missing from most session plugins

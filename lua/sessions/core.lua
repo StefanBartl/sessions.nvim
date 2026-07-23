@@ -12,9 +12,27 @@ local M = {}
 ---@type string|nil
 local _current = nil
 
+---@type boolean
+local _dirty = false
+
 ---@return string|nil
 function M.current()
   return _current
+end
+
+---True when the active session's window/buffer layout has changed since the
+---last save/load (i.e. an autosave, if enabled, would capture something new).
+---@return boolean
+function M.dirty()
+  return _dirty
+end
+
+---Mark the active session dirty. Called by structural autocmds
+---(BufAdd/BufDelete/WinNew/...) registered in bindings.autocmds.
+function M.mark_dirty()
+  if _current then
+    _dirty = true
+  end
 end
 
 -- =========================================================
@@ -149,6 +167,7 @@ function M.save(name)
   end
 
   _current = si.name
+  _dirty = false
 
   if cfg.metadata then
     local branch = git_aware(cfg) and require("sessions.git").current_branch() or nil
@@ -187,6 +206,7 @@ function M.load(name)
   end
 
   _current = si.name
+  _dirty = false
 
   if cfg.hooks.on_load then
     pcall(cfg.hooks.on_load, si.name, si.path)
