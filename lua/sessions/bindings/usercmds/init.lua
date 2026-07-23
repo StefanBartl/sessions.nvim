@@ -24,30 +24,46 @@ local function n()
   return _n
 end
 
+---@param paths string[]
 ---@return string[]
-local function session_names()
-  local list = require("sessions.core").list()
+local function basenames(paths)
   local out = {}
-  for i = 1, #list do
-    out[i] = vim.fn.fnamemodify(list[i], ":t:r")
+  for i = 1, #paths do
+    out[i] = vim.fn.fnamemodify(paths[i], ":t:r")
   end
   return out
 end
 
--- Session names are dynamic (change on every save/delete), unlike the
--- built-in STRING type's `values` (a static snapshot) — a custom type looks
--- them up fresh on every completion request.
-composer.register_type("SESSION", {
-  validate = function(raw) return true, raw, nil end,
-  complete = function(lead)
-    local names, out = session_names(), {}
-    for _, name in ipairs(names) do
+---@param list_fn fun(): string[]
+---@return fun(lead: string): string[]
+local function completer(list_fn)
+  return function(lead)
+    local out = {}
+    for _, name in ipairs(basenames(list_fn())) do
       if lead == "" or name:sub(1, #lead) == lead then
         out[#out + 1] = name
       end
     end
     return out
-  end,
+  end
+end
+
+-- Names are dynamic (change on every save/delete), unlike the built-in
+-- STRING type's `values` (a static snapshot) — a custom type looks them up
+-- fresh on every completion request.
+composer.register_type("SESSION", {
+  validate = function(raw) return true, raw, nil end,
+  complete = completer(function() return require("sessions.core").list() end),
+})
+
+composer.register_type("TAB_SESSION", {
+  validate = function(raw) return true, raw, nil end,
+  complete = completer(function() return require("sessions.core").list_tabs() end),
+})
+
+composer.register_type("LAYOUT", {
+  validate = function(raw) return true, raw, nil end,
+  complete = completer(function() return require("sessions.layout").list() end),
 })
 
 local function do_save(name)
@@ -136,6 +152,46 @@ function M.enable()
         args = { { name = "name", type = "SESSION", optional = true } },
         desc = "Toggle git skip-worktree on a session file",
         run  = function(ctx) M.toggle_track(ctx.args.name) end },
+
+      -- Tab-scoped sessions: only the current tab's windows, stored
+      -- separately from full sessions (root/.tabs/).
+      { path = { "save-tab" },
+        args = { { name = "name", type = "TAB_SESSION", optional = true } },
+        desc = "Save only the current tab's window layout [name]",
+        run  = function(ctx)
+          local ok, res = require("sessions.core").save_tab(ctx.args.name)
+          if ok then n().info("tab session saved: " .. (res or "?"))
+          else       n().error("tab session save failed: " .. (res or "?")) end
+        end },
+
+      { path = { "load-tab" },
+        args = { { name = "name", type = "TAB_SESSION" } },
+        desc = "Load a tab session into a new tab: :Session load-tab <name>",
+        run  = function(ctx)
+          local ok, res = require("sessions.core").load_tab(ctx.args.name)
+          if ok then n().info("tab session loaded: " .. (res or "?"))
+          else       n().error("tab session load failed: " .. (res or "?")) end
+        end },
+
+      -- Window-layout snapshots: split structure only, applied to whatever
+      -- buffers are currently open (not tied to specific files).
+      { path = { "save-layout" },
+        args = { { name = "name", type = "LAYOUT" } },
+        desc = "Save the current window-split layout: :Session save-layout <name>",
+        run  = function(ctx)
+          local ok, res = require("sessions.layout").save(ctx.args.name)
+          if ok then n().info("layout saved: " .. (res or "?"))
+          else       n().error("layout save failed: " .. (res or "?")) end
+        end },
+
+      { path = { "load-layout" },
+        args = { { name = "name", type = "LAYOUT" } },
+        desc = "Restore a window-split layout: :Session load-layout <name>",
+        run  = function(ctx)
+          local ok, res = require("sessions.layout").restore(ctx.args.name)
+          if ok then n().info("layout restored: " .. (res or "?"))
+          else       n().error("layout restore failed: " .. (res or "?")) end
+        end },
     },
   })
 

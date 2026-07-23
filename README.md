@@ -54,6 +54,7 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - [Metadata](docs/metadata.md) — the `.{name}.json` companion file format and how to read it.
 - [Git Integration](docs/git-integration.md) — syncing named sessions across machines with `:Session toggle-track`.
 - [Portability](docs/portability.md) — `relative_paths` and `root_remap` for sessions synced across machines/OSes.
+- [Session Scoping](docs/session-scoping.md) — tab-scoped sessions and window-layout-only snapshots.
 - [Troubleshooting](docs/troubleshooting.md) — using `:checkhealth sessions` to diagnose setup issues.
 - [Roadmap](docs/ROADMAP.md) — planned features and future direction.
 - [Bindings](docs/BINDINGS.md) — every keymap and user command.
@@ -73,4 +74,6 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - **`:checkhealth sessions`** — self-diagnostic for setup verification
 - **`autoload = "ask"`** — floating y/n prompt before restoring on startup; the remembered last-loaded session survives restarts even without it
 - **`relative_paths` / `root_remap`** — portable sessions that re-anchor to wherever they're loaded, or translate absolute path prefixes across machines/OSes
+- **`:Session save-tab` / `load-tab`** — save/restore just the current tab's windows, independent of the rest of your tabs
+- **`:Session save-layout` / `load-layout`** — reapply a favorite split arrangement to whatever's currently open, without touching buffers
 - **`lib.nvim`** — required for the `:Session`/`:LastSession` commands themselves; `lib.nvim.notify`, `lib.nvim.map`, and `lib.nvim.git` stay soft-guarded and fall back gracefully if those specific submodules aren't resolvable

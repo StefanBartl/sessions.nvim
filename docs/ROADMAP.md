@@ -7,10 +7,6 @@
 - Preview shows buffer list + timestamp + branch from metadata
 - Multi-select delete
 
-### Session Scoping
-- **Tab-scoped sessions** — save/restore only the current tab's windows
-- **Window-layout snapshots** — separate from full sessions, restore only splits
-
 ## Deferred / Under Consideration
 
 - **Telescope extension** with session preview sidebar
