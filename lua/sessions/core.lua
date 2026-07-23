@@ -166,9 +166,14 @@ function M.save(name)
   wipe_blacklisted()
 
   local si = resolve(name, true)  -- use_auto_resolve = true for save
+  local save_cwd = fn.getcwd()
   local ok, err = pcall(vim.cmd.mksession, { args = { si.path }, bang = true })
   if not ok then
     return false, err
+  end
+
+  if cfg.relative_paths then
+    require("sessions.portable").make_relative(si.path, save_cwd)
   end
 
   _current = si.name
@@ -205,7 +210,15 @@ function M.load(name)
   pcall(vim.cmd, "silent! only!")
   pcall(vim.cmd, "silent! tabonly!")
 
-  local ok, err = pcall(vim.cmd.source, si.path)
+  local source_path, is_temp = si.path, false
+  if cfg.relative_paths or next(cfg.root_remap) then
+    source_path, is_temp = require("sessions.portable").prepare_for_load(si.path, fn.getcwd(), cfg.root_remap)
+  end
+
+  local ok, err = pcall(vim.cmd.source, source_path)
+  if is_temp then
+    os.remove(source_path)
+  end
   if not ok then
     return false, err
   end

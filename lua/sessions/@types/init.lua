@@ -25,6 +25,8 @@
 ---@field project_aware boolean          Prefix session name with detected project root basename
 ---@field project_markers string[]       Filenames used to detect a project root (upward search)
 ---@field sessionoptions string          Passed to vim.opt.sessionoptions before each save/load
+---@field relative_paths boolean         Rewrite the saved cwd to a portable placeholder, re-anchored to cwd on load
+---@field root_remap table<string,string> Old-root -> new-root path prefixes translated when loading (cross-OS sync)
 ---@field autoload boolean|"ask"         Load the contextual session on VimEnter (no file args); "ask" prompts first
 ---@field autosave boolean               Autosave session on VimLeavePre
 ---@field autosave_name string           Fixed session name for autosave (e.g. "last")

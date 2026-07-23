@@ -25,6 +25,14 @@ require("sessions").setup({
   -- Passed to vim.opt.sessionoptions before every save/load.
   sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
 
+  -- Rewrite the saved cwd to a portable placeholder, re-anchored to cwd on
+  -- load. See docs/portability.md.
+  relative_paths = false,
+
+  -- Old-root -> new-root path prefixes translated when loading, for
+  -- cross-OS/cross-machine sync. See docs/portability.md.
+  root_remap = {},
+
   -- Auto-load the contextual session when Neovim starts without file args.
   -- Set to "ask" to show a floating y/n prompt before loading instead of
   -- loading silently.

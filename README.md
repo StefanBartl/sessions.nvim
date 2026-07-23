@@ -53,6 +53,7 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - [Public API](docs/api.md) — the Lua API (`require("sessions")`) and a statusline example.
 - [Metadata](docs/metadata.md) — the `.{name}.json` companion file format and how to read it.
 - [Git Integration](docs/git-integration.md) — syncing named sessions across machines with `:Session toggle-track`.
+- [Portability](docs/portability.md) — `relative_paths` and `root_remap` for sessions synced across machines/OSes.
 - [Troubleshooting](docs/troubleshooting.md) — using `:checkhealth sessions` to diagnose setup issues.
 - [Roadmap](docs/ROADMAP.md) — planned features and future direction.
 - [Bindings](docs/BINDINGS.md) — every keymap and user command.
@@ -71,4 +72,5 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - **`:Session toggle-track`** — toggle `git skip-worktree` on a session file to sync named sessions via your config repo without committing transient state
 - **`:checkhealth sessions`** — self-diagnostic for setup verification
 - **`autoload = "ask"`** — floating y/n prompt before restoring on startup; the remembered last-loaded session survives restarts even without it
+- **`relative_paths` / `root_remap`** — portable sessions that re-anchor to wherever they're loaded, or translate absolute path prefixes across machines/OSes
 - **`lib.nvim`** — required for the `:Session`/`:LastSession` commands themselves; `lib.nvim.notify`, `lib.nvim.map`, and `lib.nvim.git` stay soft-guarded and fall back gracefully if those specific submodules aren't resolvable
