@@ -7,6 +7,7 @@ local fn = vim.fn
 -- lib.nvim is a soft dependency here, matching the fallback convention used
 -- in bindings/keymaps and bindings/usercmds (see health.lua).
 local autocmd_ok, autocmd = pcall(require, "lib.nvim.autocmd")
+local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
 
 local notify_ok, notify_lib = pcall(require, "lib.nvim.notify")
 local n = notify_ok and notify_lib.create("[sessions]") or {
@@ -27,10 +28,11 @@ end
 
 --- Minimal floating y/n prompt for `autoload = "ask"`. Not a vim.ui.select
 --- (that renders as a command-line menu, not a floating window) — the
---- roadmap asks for an actual floating prompt.
+--- roadmap asks for an actual floating prompt. Fallback for when lib.nvim
+--- isn't installed; float_confirm() below prefers kit.confirm when it is.
 ---@param question string
 ---@param callback fun(yes: boolean)
-local function float_confirm(question, callback)
+local function hand_rolled_confirm(question, callback)
   local text = " " .. question .. " "
   local hint = " [y]es / [n]o "
   local width = math.max(#text, #hint)
@@ -62,6 +64,16 @@ local function float_confirm(question, callback)
   for _, key in ipairs({ "n", "N", "<Esc>", "q" }) do
     vim.keymap.set("n", key, function() finish(false) end, kopts)
   end
+end
+
+---@param question string
+---@param callback fun(yes: boolean)
+local function float_confirm(question, callback)
+  if kit_ok then
+    kit.confirm({ question = question, on_answer = callback })
+    return
+  end
+  hand_rolled_confirm(question, callback)
 end
 
 ---@return nil
