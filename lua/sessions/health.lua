@@ -144,6 +144,8 @@ function M.check()
   else
     vim.health.warn(":SessionLoad not found — call setup() first")
   end
+
+  require("lib.nvim.usercmd.composer").checkhealth("Session")
 end
 
 return M
