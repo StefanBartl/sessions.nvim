@@ -1,4 +1,6 @@
 ---@module 'sessions.config'
+--- Holds and merges the active `Sessions.Config`, applied by `M.setup()`
+--- on top of `sessions.config.DEFAULTS`.
 
 require("sessions.@types")
 

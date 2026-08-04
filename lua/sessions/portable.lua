@@ -12,6 +12,7 @@ local M = {}
 
 local PLACEHOLDER = "{{SESSION_ROOT}}"
 
+---@internal
 ---@param path string
 ---@return string
 local function read_all(path)
@@ -22,6 +23,7 @@ local function read_all(path)
   return content
 end
 
+---@internal
 ---@param path string
 ---@param content string
 local function write_all(path, content)
@@ -31,6 +33,7 @@ local function write_all(path, content)
   f:close()
 end
 
+---@internal
 ---Escape a literal string for use as a Lua pattern (the "needle").
 ---@param s string
 ---@return string
@@ -38,6 +41,7 @@ local function pat_escape(s)
   return (s:gsub("[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%1"))
 end
 
+---@internal
 ---Escape a literal string for use as a gsub replacement (the "value").
 ---@param s string
 ---@return string
@@ -45,6 +49,7 @@ local function repl_escape(s)
   return (s:gsub("%%", "%%%%"))
 end
 
+---@internal
 ---Forward-slashed absolute form and the `fnamemodify(..., ':~')` form,
 ---mirroring the two spellings :mksession itself may write for `dir`.
 ---@param dir string
@@ -65,6 +70,7 @@ end
 ---longer pins itself to the machine it was saved on.
 ---@param session_path string
 ---@param cwd string
+---@see sessions.core
 function M.make_relative(session_path, cwd)
   local content = read_all(session_path)
   if content == "" then return end

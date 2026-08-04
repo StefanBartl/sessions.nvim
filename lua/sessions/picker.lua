@@ -13,7 +13,9 @@ local M = {}
 ---@field current boolean
 ---@field meta Sessions.Meta|nil
 
+---@internal
 ---@return Sessions.PickerItem[]
+---@see sessions.core
 local function collect()
   local core = require("sessions.core")
   local current = core.current()
@@ -30,6 +32,7 @@ local function collect()
   return items
 end
 
+---@internal
 ---@param item Sessions.PickerItem
 ---@return string[]
 local function preview_lines(item)
@@ -50,7 +53,9 @@ local function preview_lines(item)
   return lines
 end
 
+---@internal
 ---@param names string[]
+---@see sessions.core
 local function do_delete(names)
   local core = require("sessions.core")
   local ok_n, notify = pcall(require, "lib.nvim.notify")
@@ -63,6 +68,9 @@ local function do_delete(names)
   n.info("deleted: " .. table.concat(names, ", "))
 end
 
+---@internal
+---Snacks.picker backend for M.pick(); no-op (returns false) if snacks.nvim
+---or its picker module isn't installed.
 ---@return boolean handled
 local function pick_snacks()
   local ok, Snacks = pcall(require, "snacks")
@@ -116,6 +124,9 @@ local function pick_snacks()
   return true
 end
 
+---@internal
+---Telescope.nvim backend for M.pick(); no-op (returns false) if
+---telescope.nvim isn't installed.
 ---@return boolean handled
 local function pick_telescope()
   local ok = pcall(require, "telescope")
