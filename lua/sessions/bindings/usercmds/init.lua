@@ -9,6 +9,8 @@ local M = {}
 
 -- Resolve a notifier once per session; graceful fallback if lib.nvim absent.
 local _n
+---@internal
+---@return table
 local function n()
   if _n then return _n end
   local ok, lib = pcall(require, "lib.nvim.notify")
@@ -24,6 +26,7 @@ local function n()
   return _n
 end
 
+---@internal
 ---@param paths string[]
 ---@return string[]
 local function basenames(paths)
@@ -34,6 +37,7 @@ local function basenames(paths)
   return out
 end
 
+---@internal
 ---@param list_fn fun(): string[]
 ---@return fun(lead: string): string[]
 local function completer(list_fn)
@@ -66,12 +70,18 @@ composer.register_type("LAYOUT", {
   complete = completer(function() return require("sessions.layout").list() end),
 })
 
+---@internal
+---@param name string|nil
+---@see sessions.core
 local function do_save(name)
   local ok, res = require("sessions.core").save(name)
   if ok then n().info("saved: " .. (res or "?"))
   else       n().error("save failed: " .. (res or "?")) end
 end
 
+---@internal
+---@param name string|nil
+---@see sessions.core
 local function do_load(name)
   local ok, res, hidden = require("sessions.core").load(name)
   if ok then
@@ -84,7 +94,10 @@ local function do_load(name)
   end
 end
 
+---Register the `:Session <subcommand>` verb, `:LastSession`, and
+---`:SessionLoad` user commands.
 ---@return nil
+---@see sessions.picker
 function M.enable()
   composer.verb("Session", {
     desc = "Session save/load/manage",
@@ -96,7 +109,7 @@ function M.enable()
 
       { path = { "save-timestamp" },
         desc = "Save session with timestamp suffix",
-        run  = function() do_save(os.date("sess-%Y%m%d-%H%M%S")) end },
+        run  = function() do_save(os.date("sess-%Y%m%d-%H%M%S") --[[@as string]]) end },
 
       { path = { "load" },
         args = { { name = "name", type = "SESSION", optional = true } },

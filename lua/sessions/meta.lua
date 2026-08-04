@@ -7,6 +7,7 @@ require("sessions.@types")
 
 local M = {}
 
+---@internal
 ---@param session_path string
 ---@return string
 local function meta_path(session_path)
@@ -18,6 +19,7 @@ end
 ---@param session_path string
 ---@param data Sessions.Meta
 ---@return boolean
+---@see sessions.core
 function M.write(session_path, data)
   local ok, encoded = pcall(vim.json.encode, data)
   if not ok then return false end

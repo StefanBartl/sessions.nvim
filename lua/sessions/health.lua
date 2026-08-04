@@ -1,7 +1,11 @@
 ---@module 'sessions.health'
+--- :checkhealth report: Neovim/API prerequisites, lib.nvim soft-dependency
+--- status, current configuration, and registered commands.
 
 local M = {}
 
+---Run the sessions.nvim :checkhealth report.
+---@see sessions.core
 function M.check()
   vim.health.start("sessions.nvim")
 

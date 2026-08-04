@@ -83,6 +83,7 @@ end
 --- Returns default_name if no valid parts found (safe fallback).
 ---@param cfg Sessions.Config
 ---@return string
+---@see sessions.core
 function M.resolve_name(cfg)
   local parts = {}
 

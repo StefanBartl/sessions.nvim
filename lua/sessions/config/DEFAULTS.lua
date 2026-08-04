@@ -1,9 +1,13 @@
 ---@module 'sessions.DEFAULTS'
+--- Default `Sessions.Config` values, merged with user opts in
+--- `sessions.config`'s `setup()`.
 
+---@internal
 ---Default blacklisted path prefixes for the current OS. Windows' actual
 ---%TEMP% value is re-checked and appended at runtime too (see config/init.lua),
 ---since it varies per machine/user — this just avoids a Unix-only default
 ---on a fresh Windows install before setup() runs.
+---@see sessions.config
 ---@return string[]
 local function default_blacklist_paths()
   if vim.fn.has("win32") == 1 then

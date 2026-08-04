@@ -39,6 +39,7 @@ end
 -- Internal helpers
 -- =========================================================
 
+---@internal
 ---@param p string
 ---@return boolean
 local function is_dir(p)
@@ -46,6 +47,7 @@ local function is_dir(p)
   return (st ~= nil and st.type == "directory")
 end
 
+---@internal
 ---@param dir string
 local function ensure_dir(dir)
   if not is_dir(dir) then
@@ -53,6 +55,7 @@ local function ensure_dir(dir)
   end
 end
 
+---@internal
 ---@param s string
 ---@param list string[]
 ---@return boolean
@@ -66,10 +69,13 @@ local function starts_with_any(s, list)
   return false
 end
 
+---@internal
+---Apply `cfg.sessionoptions` to `vim.opt.sessionoptions` before a save/load.
 local function apply_sessionoptions()
   vim.opt.sessionoptions = require("sessions.config").cfg.sessionoptions
 end
 
+---@internal
 ---@param opt_str string
 ---@return string
 local function strip_tabpages(opt_str)
@@ -80,15 +86,18 @@ local function strip_tabpages(opt_str)
   return table.concat(parts, ",")
 end
 
+---@internal
 ---@param cfg Sessions.Config
 ---@return boolean
 local function git_aware(cfg)
   return cfg.branch_aware or cfg.project_aware
 end
 
+---@internal
 ---@param name string|nil
 ---@param use_auto_resolve boolean|nil
 ---@return Sessions.Info
+---@see sessions.git, sessions.state
 local function resolve(name, use_auto_resolve)
   local cfg = require("sessions.config").cfg
   local n
@@ -112,6 +121,9 @@ local function resolve(name, use_auto_resolve)
   return { name = n, path = cfg.root .. "/" .. n .. ".vim" }
 end
 
+---@internal
+---Force-delete any loaded buffer matching `cfg.blacklist` (buftype, filetype,
+---or path prefix) before a save, so it never ends up in the session file.
 local function wipe_blacklisted()
   local bl = require("sessions.config").cfg.blacklist
   local bufs = api.nvim_list_bufs()
@@ -131,6 +143,7 @@ local function wipe_blacklisted()
   end
 end
 
+---@internal
 ---@return string[]
 local function modified_buffer_names()
   local out = {}
@@ -145,7 +158,9 @@ local function modified_buffer_names()
   return out
 end
 
+---@internal
 ---@return Sessions.Meta
+---@see sessions.meta
 local function build_meta(branch)
   local buffers = {}
   for _, b in ipairs(api.nvim_list_bufs()) do
@@ -169,6 +184,7 @@ end
 ---@param name string|nil  Explicit name; nil = auto-resolve
 ---@return boolean ok
 ---@return string|nil path_or_err
+---@see sessions.layout, sessions.portable, sessions.meta
 function M.save(name)
   local cfg = require("sessions.config").cfg
   apply_sessionoptions()
@@ -241,6 +257,7 @@ end
 ---@return boolean ok
 ---@return string|nil path_or_err
 ---@return string[]|nil hidden_modified_bufs
+---@see sessions.portable, sessions.state
 function M.load(name)
   local cfg = require("sessions.config").cfg
   local si = resolve(name, false)  -- use_auto_resolve = false, use default_name ("last")

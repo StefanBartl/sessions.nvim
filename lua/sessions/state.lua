@@ -6,6 +6,7 @@
 
 local M = {}
 
+---@internal
 ---@param cfg Sessions.Config
 ---@return string
 local function state_path(cfg)
@@ -14,6 +15,7 @@ end
 
 ---@param cfg Sessions.Config
 ---@return { last_loaded: string|nil }
+---@see sessions.core
 function M.read(cfg)
   local f = io.open(state_path(cfg), "r")
   if not f then return {} end

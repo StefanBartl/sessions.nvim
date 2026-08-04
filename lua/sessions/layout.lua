@@ -8,12 +8,14 @@ local fn = vim.fn
 
 local M = {}
 
+---@internal
 ---@param cfg Sessions.Config
 ---@return string
 local function layouts_dir(cfg)
   return cfg.root .. "/layouts"
 end
 
+---@internal
 ---@param cfg Sessions.Config
 ---@param name string
 ---@return string
@@ -21,6 +23,7 @@ local function layout_path(cfg, name)
   return layouts_dir(cfg) .. "/" .. name .. ".json"
 end
 
+---@internal
 --- Walk winlayout()'s tree, replacing each `{"leaf", winid}` with
 --- `{"leaf", {width=.., height=..}}` — winids don't survive a restart, sizes do.
 ---@param node any[]
@@ -40,6 +43,7 @@ end
 ---@param name string
 ---@return boolean ok
 ---@return string path_or_err
+---@see sessions.core
 function M.save(name)
   if type(name) ~= "string" or name == "" then
     return false, "layout name required"
@@ -61,6 +65,7 @@ function M.save(name)
   return true, path
 end
 
+---@internal
 --- Split `winid`'s area into `count` sibling windows arranged as `kind`
 --- ("row" = left-to-right via vsplit, "col" = top-to-bottom via split),
 --- returning the resulting window ids in order.
@@ -78,6 +83,7 @@ local function split_children(kind, winid, count)
   return wins
 end
 
+---@internal
 --- Recursively reconstruct `node` starting from `winid`, collecting each
 --- resulting leaf window + its saved size into `out` for sizing once the
 --- whole tree exists (sizing mid-build gets clobbered by later splits).

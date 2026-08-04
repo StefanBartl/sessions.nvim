@@ -14,6 +14,7 @@ local n = notify_ok and notify_lib.create("[sessions]") or {
   info = function(msg) vim.notify("[sessions] " .. msg, vim.log.levels.INFO) end,
 }
 
+---@internal
 ---@param event string
 ---@param callback fun(args: table)
 ---@param opts table
@@ -30,6 +31,7 @@ end
 --- (that renders as a command-line menu, not a floating window) — the
 --- roadmap asks for an actual floating prompt. Fallback for when lib.nvim
 --- isn't installed; float_confirm() below prefers kit.confirm when it is.
+---@internal
 ---@param question string
 ---@param callback fun(yes: boolean)
 local function hand_rolled_confirm(question, callback)
@@ -66,6 +68,7 @@ local function hand_rolled_confirm(question, callback)
   end
 end
 
+---@internal
 ---@param question string
 ---@param callback fun(yes: boolean)
 local function float_confirm(question, callback)
@@ -76,7 +79,10 @@ local function float_confirm(question, callback)
   hand_rolled_confirm(question, callback)
 end
 
+---Register the `VimEnter` autoload and `VimLeavePre` autosave autocmds
+---(plus the dirty-tracking structural autocmds) per `cfg.autoload`/`cfg.autosave`.
 ---@return nil
+---@see sessions.core
 function M.enable()
   local cfg = require("sessions.config").cfg
 
