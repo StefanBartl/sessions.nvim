@@ -15,8 +15,16 @@
 > restores your workspace by project + branch, so your debug configs and
 > spell/translate settings pick up right where you left off.
 
-Branch- and project-aware Neovim sessions — no external dependencies beyond
-the built-in `:mksession` / `:source`.
+Branch- and project-aware Neovim sessions, built on `lib.nvim` and the
+built-in `:mksession` / `:source`.
+
+---
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Documentation](#documentation)
+- [Features](#features)
 
 ---
 
