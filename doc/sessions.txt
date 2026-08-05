@@ -3,7 +3,6 @@
                                                                 *sessions.nvim*
 
 Author:   Stefan Bartl
-License:  MIT
 Homepage: https://github.com/stefanbartl/sessions.nvim
 
 ==============================================================================
@@ -47,7 +46,10 @@ primitives (|:mksession| / |:source|). Key features:
 2. REQUIREMENTS                                         *sessions-requirements*
 
   - Neovim 0.9+
-  - Optional: lib.nvim (enhanced notifications, map helpers, git helpers)
+  - lib.nvim — REQUIRED: the |:Session|/|:LastSession| commands are built on
+    lib.nvim.usercmd.composer. lib.nvim.notify, lib.nvim.map, and
+    lib.nvim.git stay soft-guarded (used when available, native fallback
+    otherwise).
 
 ==============================================================================
 3. SETUP                                                    *sessions-setup*
@@ -159,11 +161,21 @@ Default values (pass to setup(opts)): >lua
     -- Passed to vim.opt.sessionoptions before every save/load.
     sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
 
+    -- Rewrite the saved cwd to a portable placeholder, re-anchored to cwd
+    -- on load. See |sessions-portability| / docs/portability.md.
+    relative_paths = false,
+
+    -- Old-root -> new-root path prefixes translated when loading, for
+    -- cross-OS/cross-machine sync. See docs/portability.md.
+    root_remap = {},
+
     -- Auto-load the contextual session when Neovim starts without file args.
-    autoload = true,
+    -- Set to "ask" to show a floating y/n prompt before loading instead of
+    -- loading silently.
+    autoload = false,
 
     -- Auto-save to a fixed session name on VimLeavePre (false = disabled).
-    autosave = false,
+    autosave = true,
 
     -- Session name for autosave (used when autosave = true).
     autosave_name = "last",
@@ -189,6 +201,10 @@ Default values (pass to setup(opts)): >lua
     -- Set to a table to enable specific keymaps.
     keymaps = false,
     -- or: { save = "<leader>ssa", load = "<leader>slo", ... }
+
+    -- Register a which-key group label for the keymap prefix, if
+    -- which-key is installed and at least one keymap is configured.
+    which_key = { enable = true },
   }
 <
 
