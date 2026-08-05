@@ -1,5 +1,10 @@
 ---@module 'sessions.bindings.autocmds'
+---@brief Registers the VimEnter autoload and VimLeavePre autosave autocmds.
+---@description
+--- Also wires the structural dirty-tracking autocmds (BufAdd/BufDelete/...)
+--- that back `sessions.core.mark_dirty()` for the statusline component.
 
+---@class SessionsBindingsAutocmds
 local M = {}
 local api = vim.api
 local fn = vim.fn

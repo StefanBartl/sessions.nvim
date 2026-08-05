@@ -5,6 +5,7 @@
 
 require("sessions.@types")
 
+---@class SessionsMeta
 local M = {}
 
 ---@internal

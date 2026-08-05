@@ -1,7 +1,9 @@
 ---@module 'sessions.git'
---- Git helpers for branch/project-aware session naming.
+---@brief Git helpers for branch/project-aware session naming.
+---@description
 --- Prefers lib.nvim when available; falls back to direct vim.fn calls.
 
+---@class SessionsGit
 local M = {}
 
 ---@return string|nil

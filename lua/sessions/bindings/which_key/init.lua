@@ -6,6 +6,7 @@
 --- a group label for the shared "<leader>s" prefix is registered. Supports
 --- both the which-key v3 (`add`) and v2 (`register`) APIs.
 
+---@class SessionsBindingsWhichKey
 local M = {}
 
 ---Register the sessions.nvim group label with which-key, if available.

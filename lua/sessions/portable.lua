@@ -8,6 +8,7 @@
 
 local fn = vim.fn
 
+---@class SessionsPortable
 local M = {}
 
 local PLACEHOLDER = "{{SESSION_ROOT}}"
