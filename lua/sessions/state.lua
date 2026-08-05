@@ -1,9 +1,11 @@
 ---@module 'sessions.state'
---- Tiny persistent state file (distinct from per-session metadata) that
+---@brief Tiny persistent state file (distinct from per-session metadata) that
+---@description
 --- remembers the last explicitly-loaded session name across restarts, so
 --- `:Session load` (no name) and autoload can resume exactly where the user
 --- left off instead of always falling back to `default_name`.
 
+---@class SessionsState
 local M = {}
 
 ---@internal

@@ -4,6 +4,7 @@
 
 require("sessions.@types")
 
+---@class SessionsConfigModule
 local M = {}
 
 ---@type Sessions.Config

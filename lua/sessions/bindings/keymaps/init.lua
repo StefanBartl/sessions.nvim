@@ -1,5 +1,10 @@
 ---@module 'sessions.bindings.keymaps'
+---@brief Attaches the optional, user-configured normal-mode keymaps.
+---@description
+--- Disabled unless `setup({ keymaps = { ... } })` supplies at least one
+--- lhs; every mapping is opt-in (see docs/BINDINGS.md).
 
+---@class SessionsBindingsKeymaps
 local M = {}
 
 ---@param km Sessions.Keymaps

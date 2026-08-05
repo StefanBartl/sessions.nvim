@@ -1,7 +1,9 @@
 ---@module 'sessions.health'
---- :checkhealth report: Neovim/API prerequisites, lib.nvim soft-dependency
+---@brief :checkhealth report: Neovim/API prerequisites, lib.nvim soft-dependency
+---@description
 --- status, current configuration, and registered commands.
 
+---@class SessionsHealth
 local M = {}
 
 ---Run the sessions.nvim :checkhealth report.

@@ -1,10 +1,12 @@
 ---@module 'sessions.picker'
---- :SessionLoad — session picker with live preview (buffer list + timestamp
+---@brief :SessionLoad — session picker with live preview (buffer list + timestamp
+---@description
 --- + branch, from metadata) and multi-select delete. Backed by
 --- Snacks.picker (preferred) or telescope.nvim, whichever is available —
 --- neither is a hard dependency; :SessionLoad just errors out with a clear
 --- message if neither is installed.
 
+---@class SessionsPicker
 local M = {}
 
 ---@class Sessions.PickerItem

@@ -5,6 +5,7 @@
 
 local composer = require("lib.nvim.usercmd.composer")
 
+---@class SessionsBindingsUsercmds
 local M = {}
 
 -- Resolve a notifier once per session; graceful fallback if lib.nvim absent.

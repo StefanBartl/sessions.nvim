@@ -6,6 +6,7 @@
 local api = vim.api
 local fn = vim.fn
 
+---@class SessionsLayout
 local M = {}
 
 ---@internal
