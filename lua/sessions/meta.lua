@@ -22,26 +22,14 @@ end
 ---@return boolean
 ---@see sessions.core
 function M.write(session_path, data)
-  local ok, encoded = pcall(vim.json.encode, data)
-  if not ok then return false end
-  local mp = meta_path(session_path)
-  local f = io.open(mp, "w")
-  if not f then return false end
-  f:write(encoded)
-  f:close()
-  return true
+  local ok = require("lib.nvim.fs.json").write(meta_path(session_path), data)
+  return ok
 end
 
 ---@param session_path string
 ---@return Sessions.Meta|nil
 function M.read(session_path)
-  local mp = meta_path(session_path)
-  local f = io.open(mp, "r")
-  if not f then return nil end
-  local content = f:read("*a")
-  f:close()
-  local ok, data = pcall(vim.json.decode, content)
-  if not ok then return nil end
+  local data = require("lib.nvim.fs.json").read(meta_path(session_path))
   return data
 end
 
@@ -55,14 +43,10 @@ end
 function M.rename(old_path, new_path)
   local old_mp = meta_path(old_path)
   local new_mp = meta_path(new_path)
-  local f = io.open(old_mp, "r")
-  if not f then return end
-  local content = f:read("*a")
-  f:close()
-  local wf = io.open(new_mp, "w")
-  if wf then
-    wf:write(content)
-    wf:close()
+  local content = require("lib.nvim.fs.read")(old_mp)
+  if not content then return end
+  local ok = require("lib.nvim.fs.write.to_file")(new_mp, content)
+  if ok then
     os.remove(old_mp)
   end
 end

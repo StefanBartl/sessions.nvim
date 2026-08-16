@@ -50,19 +50,10 @@ function M.save(name)
     return false, "layout name required"
   end
   local cfg = require("sessions.config").cfg
-  if fn.isdirectory(layouts_dir(cfg)) == 0 then
-    fn.mkdir(layouts_dir(cfg), "p")
-  end
-
   local tree = capture(vim.fn.winlayout())
-  local ok, encoded = pcall(vim.json.encode, tree)
-  if not ok then return false, "failed to encode layout" end
-
   local path = layout_path(cfg, name)
-  local f = io.open(path, "w")
-  if not f then return false, "failed to write: " .. path end
-  f:write(encoded)
-  f:close()
+  local ok, err = require("lib.nvim.fs.json").write(path, tree)
+  if not ok then return false, "failed to write: " .. path .. " (" .. tostring(err) .. ")" end
   return true, path
 end
 
@@ -111,14 +102,9 @@ end
 function M.restore(name)
   local cfg = require("sessions.config").cfg
   local path = layout_path(cfg, name)
-  local f = io.open(path, "r")
-  if not f then return false, "no such layout: " .. path end
-  local content = f:read("*a")
-  f:close()
-
-  local ok, tree = pcall(vim.json.decode, content)
-  if not ok or type(tree) ~= "table" then
-    return false, "corrupt layout file: " .. path
+  local tree, err = require("lib.nvim.fs.json").read(path)
+  if not tree or type(tree) ~= "table" then
+    return false, "corrupt or missing layout file: " .. path .. " (" .. tostring(err) .. ")"
   end
 
   pcall(vim.cmd, "silent! only!")

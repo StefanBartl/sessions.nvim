@@ -235,7 +235,7 @@ function M.toggle_track(name)
   name = name or require("sessions.core").current() or cfg.default_name
   local file = cfg.root .. "/" .. name .. ".vim"
 
-  if vim.fn.filereadable(file) == 0 then
+  if not require("lib.nvim.fs.is_readable_file")(file) then
     n().error("session file not found: " .. file)
     return
   end

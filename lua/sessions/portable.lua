@@ -17,21 +17,14 @@ local PLACEHOLDER = "{{SESSION_ROOT}}"
 ---@param path string
 ---@return string
 local function read_all(path)
-  local f = io.open(path, "r")
-  if not f then return "" end
-  local content = f:read("*a")
-  f:close()
-  return content
+  return require("lib.nvim.fs.read")(path) or ""
 end
 
 ---@internal
 ---@param path string
 ---@param content string
 local function write_all(path, content)
-  local f = io.open(path, "w")
-  if not f then return end
-  f:write(content)
-  f:close()
+  require("lib.nvim.fs.write.to_file")(path, content)
 end
 
 ---@internal

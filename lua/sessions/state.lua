@@ -19,24 +19,15 @@ end
 ---@return { last_loaded: string|nil }
 ---@see sessions.core
 function M.read(cfg)
-  local f = io.open(state_path(cfg), "r")
-  if not f then return {} end
-  local content = f:read("*a")
-  f:close()
-  local ok, data = pcall(vim.json.decode, content)
-  if not ok or type(data) ~= "table" then return {} end
+  local data = require("lib.nvim.fs.json").read(state_path(cfg))
+  if type(data) ~= "table" then return {} end
   return data
 end
 
 ---@param cfg Sessions.Config
 ---@param name string
 function M.set_last_loaded(cfg, name)
-  local ok, encoded = pcall(vim.json.encode, { last_loaded = name })
-  if not ok then return end
-  local f = io.open(state_path(cfg), "w")
-  if not f then return end
-  f:write(encoded)
-  f:close()
+  require("lib.nvim.fs.json").write(state_path(cfg), { last_loaded = name })
 end
 
 return M
