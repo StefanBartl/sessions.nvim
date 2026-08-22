@@ -241,71 +241,65 @@ function M.toggle_track(name)
   end
 
   -- Find the git root that contains the session storage directory.
-  local git_root
-  if vim.system then
-    local r = vim.system({ "git", "rev-parse", "--show-toplevel" }, { cwd = cfg.root, text = true }):wait()
-    if r.code == 0 then git_root = vim.trim(r.stdout or "") end
-  end
-  if not git_root or git_root == "" then
-    local ok_argv, run_argv = pcall(require, "lib.nvim.cross.run_argv")
-    if ok_argv then
-      local ok_run, out = run_argv.run_blocking_captured({ "git", "-C", cfg.root, "rev-parse", "--show-toplevel" })
-      git_root = ok_run and vim.trim(out) or ""
-    else
-      git_root = vim.trim(vim.fn.system(
-        "git -C " .. vim.fn.shellescape(cfg.root) .. " rev-parse --show-toplevel 2>/dev/null"
-      ))
-    end
-  end
+  --
+  -- Previously this spawned `git rev-parse --show-toplevel` (blocking). A
+  -- plain upward filesystem search answers the same question with stat()
+  -- calls only. `.git` is matched as directory *and* file so worktrees and
+  -- submodules resolve correctly.
+  local found = vim.fs.find(".git", { path = cfg.root, upward = true, limit = 1 })
+  local git_root = found and found[1] and vim.fs.dirname(found[1]) or ""
   if git_root == "" then
     n().error("session root is not inside a git repo (required for :Session toggle-track)")
     return
   end
 
-  local function is_skipped(f)
-    if vim.system then
-      local r = vim.system({ "git", "ls-files", "-v", "--", f }, { cwd = git_root, text = true }):wait()
-      return ((r.stdout or ""):match("^S")) ~= nil
-    end
+  -- The two remaining steps genuinely need git. They used to run through
+  -- `vim.system():wait()` / `vim.fn.system()`, which froze the UI for the
+  -- duration of two process spawns. They are now chained via vim.system()
+  -- callbacks; toggle_track() returns immediately and reports through notify.
+  if not vim.system then
+    -- Neovim < 0.10: no async process API available here. Fall back to the
+    -- blocking path rather than silently doing nothing.
     local ok_argv, run_argv = pcall(require, "lib.nvim.cross.run_argv")
-    if ok_argv then
-      local _, out = run_argv.run_blocking_captured({ "git", "-C", git_root, "ls-files", "-v", "--", f })
-      return (out or ""):match("^S") ~= nil
+    if not ok_argv then
+      n().error("vim.system() unavailable and lib.nvim.cross.run_argv missing")
+      return
     end
-    local out = vim.fn.system(
-      "git -C " .. vim.fn.shellescape(git_root) .. " ls-files -v -- " .. vim.fn.shellescape(f)
-    )
-    return (out or ""):match("^S") ~= nil
-  end
-
-  local skipped = is_skipped(file)
-  local toggle_args = skipped
-    and { "git", "update-index", "--no-skip-worktree", "--", file }
-    or  { "git", "update-index", "--skip-worktree",    "--", file }
-
-  local code
-  if vim.system then
-    code = vim.system(toggle_args, { cwd = git_root, text = true }):wait().code
-  else
-    local ok_argv, run_argv = pcall(require, "lib.nvim.cross.run_argv")
-    if ok_argv then
-      local cwd_args = { "git", "-C", git_root }
-      for _, a in ipairs(toggle_args) do cwd_args[#cwd_args + 1] = a end
-      local ok_run = run_argv.run_blocking(cwd_args)
-      code = ok_run and 0 or 1
+    local _, out = run_argv.run_blocking_captured({ "git", "-C", git_root, "ls-files", "-v", "--", file })
+    local skipped = ((out or ""):match("^S")) ~= nil
+    local args = { "git", "-C", git_root, "update-index",
+      skipped and "--no-skip-worktree" or "--skip-worktree", "--", file }
+    local ok_run = run_argv.run_blocking(args)
+    if not ok_run then
+      n().error("git command failed")
+    elseif skipped then
+      n().info(name .. ".vim is now tracked in git")
     else
-      vim.fn.system(table.concat(vim.tbl_map(vim.fn.shellescape, toggle_args), " "))
-      code = vim.v.shell_error
+      n().info(name .. ".vim marked as skip-worktree (excluded from git)")
     end
+    return
   end
 
-  if code ~= 0 then
-    n().error("git command failed")
-  elseif skipped then
-    n().info(name .. ".vim is now tracked in git")
-  else
-    n().info(name .. ".vim marked as skip-worktree (excluded from git)")
-  end
+  vim.system({ "git", "ls-files", "-v", "--", file }, { cwd = git_root, text = true },
+    function(ls)
+      local skipped = ((ls.stdout or ""):match("^S")) ~= nil
+      local toggle_args = skipped
+        and { "git", "update-index", "--no-skip-worktree", "--", file }
+        or  { "git", "update-index", "--skip-worktree",    "--", file }
+
+      vim.system(toggle_args, { cwd = git_root, text = true }, function(res)
+        -- vim.system callbacks run off the main loop: notify must be scheduled.
+        vim.schedule(function()
+          if res.code ~= 0 then
+            n().error("git command failed")
+          elseif skipped then
+            n().info(name .. ".vim is now tracked in git")
+          else
+            n().info(name .. ".vim marked as skip-worktree (excluded from git)")
+          end
+        end)
+      end)
+    end)
 end
 
 return M

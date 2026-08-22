@@ -14,22 +14,36 @@ function M.current_branch()
     -- Guard against lib.nvim returning error-like strings
     return (branch and branch ~= "" and not branch:lower():find("error")) and branch or nil
   end
-  if vim.system then
-    local res = vim.system({ "git", "symbolic-ref", "--short", "HEAD" }, { text = true }):wait()
-    if res.code == 0 and res.stdout then
-      return vim.trim(res.stdout)
+  -- Fallback without spawning a process.
+  --
+  -- `git symbolic-ref --short HEAD` (via vim.system():wait() or
+  -- vim.fn.system()) blocked the UI thread for a full process spawn, and this
+  -- runs on every session name resolution. .git/HEAD carries the same
+  -- information: "ref: refs/heads/<branch>" on a branch, a raw SHA when
+  -- detached (in which case there is no branch name and nil is correct).
+  local found = vim.fs.find(".git", { path = vim.fn.getcwd(), upward = true, limit = 1 })
+  if not (found and found[1]) then return nil end
+
+  local dotgit = found[1]
+  local stat = vim.uv.fs_stat(dotgit)
+  if not stat then return nil end
+
+  if stat.type == "file" then
+    -- Worktree/submodule: .git is a file holding "gitdir: <path>".
+    local ok_lines, gl = pcall(vim.fn.readfile, dotgit, "", 1)
+    local gitdir = ok_lines and gl and gl[1] and gl[1]:match("^gitdir:%s*(.+)$")
+    if not gitdir then return nil end
+    if not gitdir:match("^[/\\]") and not gitdir:match("^%a:") then
+      gitdir = vim.fs.dirname(dotgit) .. "/" .. gitdir
     end
-    return nil
+    dotgit = gitdir
   end
-  -- Fallback: vim.fn.system (check error code, reject error-like output)
-  local out = vim.fn.system("git symbolic-ref --short HEAD")
-  if vim.v.shell_error ~= 0 then return nil end
-  out = vim.trim(out)
-  -- Reject if it looks like an error message
-  if out == "" or out:lower():find("error") or out:lower():find("not a") then
-    return nil
-  end
-  return out
+
+  local ok_head, head = pcall(vim.fn.readfile, dotgit .. "/HEAD", "", 1)
+  if not ok_head or not head or not head[1] then return nil end
+
+  local branch = head[1]:match("^ref:%s*refs/heads/(.+)$")
+  return (branch and branch ~= "") and vim.trim(branch) or nil
 end
 
 ---@param markers string[]
