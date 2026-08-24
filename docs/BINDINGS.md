@@ -8,15 +8,34 @@ shows up in which-key (if installed) and `:map` without further work. A
 
 ## Keymaps
 
-| Mode | Config key | Suggested lhs   | Action |
-|------|------------|------------------|--------|
-| n    | `save`     | `<leader>ssa`    | `:Session save` |
-| n    | `load`     | `<leader>slo`    | `:Session load` |
-| n    | `save_ts`  | `<leader>sst`    | `:Session save-timestamp` (`sess-YYYYMMDD-HHMMSS`) |
-| n    | `list`     | `<leader>sli`    | `:Session list` |
+| Mode | Config key      | Suggested lhs   | Action |
+|------|-----------------|------------------|--------|
+| n    | `save`          | `<leader>ssa`    | `:Session save` |
+| n    | `load`          | `<leader>slo`    | `:Session load` |
+| n    | `save_ts`       | `<leader>sst`    | `:Session save-timestamp` (`sess-YYYYMMDD-HHMMSS`) |
+| n    | `list`          | `<leader>sli`    | `:Session list` |
+| n    | `current`       | `<leader>scu`    | `:Session current` |
+| n    | `picker`        | `<leader>spi`    | `:SessionLoad` — picker with live preview |
+| n    | `toggle_track`  | `<leader>stg`    | `:Session toggle-track` |
+| n    | `save_tab`      | `<leader>sta`    | `:Session save-tab` |
+| n    | `load_tab`      | `<leader>slt`    | `:Session load-tab` |
+| n    | `save_layout`   | `<leader>sly`    | `:Session save-layout` |
+| n    | `load_layout`   | `<leader>sll`    | `:Session load-layout` |
 
 Defined in `lua/sessions/bindings/keymaps/init.lua`. There are no defaults for the lhs
 strings themselves — every mapping is opt-in and only attached if you set it.
+
+### Why `delete` and `rename` have no keymap
+
+Every `:Session` subcommand that takes no **required** argument is mappable;
+`delete` and `rename` are the two that aren't, and that is the whole reason
+they are missing. `:Session delete <name>` needs a name and a bare keypress
+has nothing to pass. It is not about them being destructive — `:Session save`
+overwrites just as readily and is mappable.
+
+Setting `keymaps.delete` says so explicitly rather than reporting an unknown
+key, since it is a real subcommand and not a typo. Use `picker`
+(`:SessionLoad`) or the commands directly.
 
 ## User commands
 

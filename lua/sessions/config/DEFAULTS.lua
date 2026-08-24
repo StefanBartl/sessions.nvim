@@ -10,36 +10,43 @@
 ---@see sessions.config
 ---@return string[]
 local function default_blacklist_paths()
-  if vim.fn.has("win32") == 1 then
-    local temp = vim.fn.expand("$TEMP"):gsub("\\", "/")
-    return { temp .. "/", temp .. "\\" }
-  end
-  return { "/tmp/", "/private/tmp/" }
+	if vim.fn.has("win32") == 1 then
+		local temp = vim.fn.expand("$TEMP"):gsub("\\", "/")
+		return { temp .. "/", temp .. "\\" }
+	end
+	return { "/tmp/", "/private/tmp/" }
 end
 
 ---@type Sessions.Config
 return {
-  root = vim.fn.stdpath("data") .. "/sessions",
-  default_name = "last",
-  branch_aware = true,
-  project_aware = true,
-  project_markers = { ".git", "pyproject.toml", "package.json", "Makefile", "Cargo.toml", "go.mod" },
-  sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
-  relative_paths = false,
-  root_remap = {},
-  autoload = false,
-  autosave = true,
-  autosave_name = "last",
-  metadata = true,
-  hooks = {
-    on_save = nil,
-    on_load = nil,
-  },
-  blacklist = {
-    buftypes = { "quickfix", "nofile", "prompt" },
-    filetypes = { "gitcommit", "gitrebase" },
-    paths = default_blacklist_paths(),
-  },
-  keymaps = false, -- set to a table to enable keymaps
-  which_key = { enable = true },
+	root = vim.fn.stdpath("data") .. "/sessions",
+	default_name = "last",
+	branch_aware = true,
+	project_aware = true,
+	project_markers = { ".git", "pyproject.toml", "package.json", "Makefile", "Cargo.toml", "go.mod" },
+	sessionoptions = "buffers,curdir,tabpages,winsize,help,folds",
+	relative_paths = false,
+	root_remap = {},
+	autoload = false,
+	autosave = true,
+	autosave_name = "last",
+	metadata = true,
+	hooks = {
+		on_save = nil,
+		on_load = nil,
+	},
+	blacklist = {
+		buftypes = { "quickfix", "nofile", "prompt" },
+		filetypes = { "gitcommit", "gitrebase" },
+		paths = default_blacklist_paths(),
+	},
+	-- Optional normal-mode keymaps; `false` (the default) registers none.
+	-- Set to a table of name -> lhs. Available names, one per `:Session`
+	-- subcommand that takes no required argument, plus the picker:
+	--   save, load, save_ts, list, current, picker, toggle_track,
+	--   save_tab, load_tab, save_layout, load_layout
+	-- `delete` and `rename` are deliberately absent: both require a name, and
+	-- a bare keypress has nothing to pass. Use `picker` or the commands.
+	keymaps = false,
+	which_key = { enable = true },
 }

@@ -62,7 +62,10 @@ require("sessions").setup({
   },
 
   -- Normal-mode keymaps. Disabled by default. Set to a table to enable:
-  keymaps = false, -- or { save = "<leader>ssa", load = "<leader>slo", ... }
+  -- Names: save, load, save_ts, list, current, picker, toggle_track,
+  -- save_tab, load_tab, save_layout, load_layout. (`delete`/`rename` take
+  -- required arguments, so they cannot be mapped — use `picker`.)
+  keymaps = false, -- or { save = "<leader>ssa", picker = "<leader>spi", ... }
 
   -- Register a which-key group label for the keymap prefix, if which-key
   -- is installed and at least one keymap is configured.

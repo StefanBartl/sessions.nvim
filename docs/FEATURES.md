@@ -25,8 +25,18 @@ resolution and metadata.
 - **Usercmds:** `:Session save [name]`, `:Session save-timestamp`,
   `:Session load [name]`, `:Session delete <name>`,
   `:Session rename <old> <new>`, `:Session list`, `:Session current`
-- **Keymaps:** `save` (`<leader>ssa`), `load` (`<leader>slo`), `save_ts`
-  (`<leader>sst`), `list` (`<leader>sli`) — all disabled by default
+- **Keymaps:** one per `:Session` subcommand that takes no required
+  argument, plus the picker — `save`, `load`, `save_ts`, `list`, `current`,
+  `picker` (`:SessionLoad`), `toggle_track`, `save_tab`, `load_tab`,
+  `save_layout`, `load_layout`. All disabled by default.
+
+  Extended 2026-08-24, closing the flag/option audit's entry about `current`
+  and the picker having no keymap. The list had been a hardcoded four while
+  the command grew to twelve subcommands. `delete` and `rename` stay out, and
+  the reason is sharper than the audit's guess of "destructive/rare": both
+  require a name argument, and a keymap is a bare keypress with nothing to
+  pass. Configuring one reports that specifically instead of "unknown key",
+  since it is a real subcommand rather than a typo.
 
 ## Clean save
 

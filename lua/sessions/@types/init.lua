@@ -12,11 +12,24 @@
 ---@field on_save? fun(name: string, path: string): nil
 ---@field on_load? fun(name: string, path: string): nil
 
+---Optional normal-mode keymaps, all opt-in (`keymaps = false` by default).
+---
+---Covers every `:Session` subcommand that takes no *required* argument, plus
+---the `:SessionLoad` picker. `delete` and `rename` are absent on purpose:
+---both require a name, and a bare keypress has nothing to pass. Reach them
+---through the picker or the commands themselves.
 ---@class Sessions.Keymaps
----@field save? string|false
----@field load? string|false
----@field save_ts? string|false
----@field list? string|false
+---@field save? string|false          `:Session save`
+---@field load? string|false          `:Session load`
+---@field save_ts? string|false       `:Session save-timestamp`
+---@field list? string|false          `:Session list`
+---@field current? string|false       `:Session current`
+---@field picker? string|false        `:SessionLoad` (picker with preview)
+---@field toggle_track? string|false  `:Session toggle-track`
+---@field save_tab? string|false      `:Session save-tab`
+---@field load_tab? string|false      `:Session load-tab`
+---@field save_layout? string|false   `:Session save-layout`
+---@field load_layout? string|false   `:Session load-layout`
 
 ---@class Sessions.Config
 ---@field root string                    Root directory for session files
