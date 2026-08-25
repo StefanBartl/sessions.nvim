@@ -11,8 +11,12 @@
 ---@return string[]
 local function default_blacklist_paths()
   if vim.fn.has("win32") == 1 then
-    local temp = vim.fn.expand("$TEMP"):gsub("\\", "/")
-    return { temp .. "/", temp .. "\\" }
+    -- Slash-normalized, so the pair is "<temp>/" and "<temp>\" and not the
+    -- mixed "C:/Users/.../Temp\" the earlier form produced -- a prefix that
+    -- matches nothing, since a buffer name never mixes the two that way.
+    local nix = vim.fn.expand("$TEMP"):gsub("\\", "/"):gsub("/+$", "")
+    local win = nix:gsub("/", "\\")
+    return { nix .. "/", win .. "\\" }
   end
   return { "/tmp/", "/private/tmp/" }
 end
