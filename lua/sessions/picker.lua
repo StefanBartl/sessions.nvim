@@ -41,16 +41,23 @@ local function preview_lines(item)
   local lines = { "Session: " .. item.name, "" }
   local meta = item.meta
   if meta then
-    if meta.saved_at then lines[#lines + 1] = "Saved:  " .. meta.saved_at end
-    if meta.branch then lines[#lines + 1] = "Branch: " .. meta.branch end
-    if meta.cwd then lines[#lines + 1] = "Cwd:    " .. meta.cwd end
+    if meta.saved_at then
+      lines[#lines + 1] = "Saved:  " .. meta.saved_at
+    end
+    if meta.branch then
+      lines[#lines + 1] = "Branch: " .. meta.branch
+    end
+    if meta.cwd then
+      lines[#lines + 1] = "Cwd:    " .. meta.cwd
+    end
     lines[#lines + 1] = ""
     lines[#lines + 1] = "Buffers:"
     for _, b in ipairs(meta.buffers or {}) do
       lines[#lines + 1] = "  " .. b
     end
   else
-    lines[#lines + 1] = "(no metadata recorded — enable `metadata = true` for buffer list/timestamp/branch)"
+    lines[#lines + 1] =
+      "(no metadata recorded — enable `metadata = true` for buffer list/timestamp/branch)"
   end
   return lines
 end
@@ -61,9 +68,12 @@ end
 local function do_delete(names)
   local core = require("sessions.core")
   local ok_n, notify = pcall(require, "lib.nvim.notify")
-  local n = ok_n and notify.create("[sessions]") or {
-    info = function(msg) vim.notify("[sessions] " .. msg, vim.log.levels.INFO) end,
-  }
+  local n = ok_n and notify.create("[sessions]")
+    or {
+      info = function(msg)
+        vim.notify("[sessions] " .. msg, vim.log.levels.INFO)
+      end,
+    }
   for _, name in ipairs(names) do
     core.delete(name)
   end
@@ -76,7 +86,9 @@ end
 ---@return boolean handled
 local function pick_snacks()
   local ok, Snacks = pcall(require, "snacks")
-  if not ok or not Snacks.picker then return false end
+  if not ok or not Snacks.picker then
+    return false
+  end
 
   local items = {}
   for i, it in ipairs(collect()) do
@@ -105,14 +117,20 @@ local function pick_snacks()
     actions = {
       sessions_delete = function(picker)
         local sel = picker:selected({ fallback = true })
-        if #sel == 0 then return end
+        if #sel == 0 then
+          return
+        end
         local names = {}
-        for _, it in ipairs(sel) do names[#names + 1] = it.name end
+        for _, it in ipairs(sel) do
+          names[#names + 1] = it.name
+        end
         do_delete(names)
 
         local kept = {}
         for _, it in ipairs(picker.opts.items) do
-          if not vim.tbl_contains(names, it.name) then kept[#kept + 1] = it end
+          if not vim.tbl_contains(names, it.name) then
+            kept[#kept + 1] = it
+          end
         end
         picker.opts.items = kept
         picker:refresh()
@@ -132,7 +150,9 @@ end
 ---@return boolean handled
 local function pick_telescope()
   local ok = pcall(require, "telescope")
-  if not ok then return false end
+  if not ok then
+    return false
+  end
 
   local pickers = require("telescope.pickers")
   local finders = require("telescope.finders")
@@ -142,57 +162,65 @@ local function pick_telescope()
   local previewers = require("telescope.previewers")
 
   local function open()
-    pickers.new({}, {
-      prompt_title = "Sessions",
-      finder = finders.new_table({
-        results = collect(),
-        entry_maker = function(it)
-          return {
-            value = it,
-            display = (it.current and "* " or "  ") .. it.name,
-            ordinal = it.name,
-          }
-        end,
-      }),
-      sorter = conf.generic_sorter({}),
-      previewer = previewers.new_buffer_previewer({
-        define_preview = function(self, entry)
-          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, preview_lines(entry.value))
-        end,
-      }),
-      attach_mappings = function(prompt_bufnr, map)
-        actions.select_default:replace(function()
-          local entry = action_state.get_selected_entry()
-          actions.close(prompt_bufnr)
-          if entry then
-            require("sessions.core").load(entry.value.name)
+    pickers
+      .new({}, {
+        prompt_title = "Sessions",
+        finder = finders.new_table({
+          results = collect(),
+          entry_maker = function(it)
+            return {
+              value = it,
+              display = (it.current and "* " or "  ") .. it.name,
+              ordinal = it.name,
+            }
+          end,
+        }),
+        sorter = conf.generic_sorter({}),
+        previewer = previewers.new_buffer_previewer({
+          define_preview = function(self, entry)
+            vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, preview_lines(entry.value))
+          end,
+        }),
+        attach_mappings = function(prompt_bufnr, map)
+          actions.select_default:replace(function()
+            local entry = action_state.get_selected_entry()
+            actions.close(prompt_bufnr)
+            if entry then
+              require("sessions.core").load(entry.value.name)
+            end
+          end)
+
+          -- Multi-select toggling (<Tab>/<S-Tab>) uses Telescope's own
+          -- defaults; only the delete action is custom here.
+          local function delete_selected()
+            local picker = action_state.get_current_picker(prompt_bufnr)
+            local sel = picker:get_multi_selection()
+            if #sel == 0 then
+              local cur = action_state.get_selected_entry()
+              if cur then
+                sel = { cur }
+              end
+            end
+            if #sel == 0 then
+              return
+            end
+
+            local names = {}
+            for _, entry in ipairs(sel) do
+              names[#names + 1] = entry.value.name
+            end
+            actions.close(prompt_bufnr)
+            do_delete(names)
+            open()
           end
-        end)
 
-        -- Multi-select toggling (<Tab>/<S-Tab>) uses Telescope's own
-        -- defaults; only the delete action is custom here.
-        local function delete_selected()
-          local picker = action_state.get_current_picker(prompt_bufnr)
-          local sel = picker:get_multi_selection()
-          if #sel == 0 then
-            local cur = action_state.get_selected_entry()
-            if cur then sel = { cur } end
-          end
-          if #sel == 0 then return end
+          map("i", "<C-d>", delete_selected)
+          map("n", "<C-d>", delete_selected)
 
-          local names = {}
-          for _, entry in ipairs(sel) do names[#names + 1] = entry.value.name end
-          actions.close(prompt_bufnr)
-          do_delete(names)
-          open()
-        end
-
-        map("i", "<C-d>", delete_selected)
-        map("n", "<C-d>", delete_selected)
-
-        return true
-      end,
-    }):find()
+          return true
+        end,
+      })
+      :find()
   end
 
   open()
@@ -206,8 +234,12 @@ function M.pick()
     vim.notify("[sessions] no sessions saved yet", vim.log.levels.INFO)
     return
   end
-  if pick_snacks() then return end
-  if pick_telescope() then return end
+  if pick_snacks() then
+    return
+  end
+  if pick_telescope() then
+    return
+  end
   vim.notify(
     "[sessions] :SessionLoad requires snacks.nvim (with picker) or telescope.nvim",
     vim.log.levels.ERROR

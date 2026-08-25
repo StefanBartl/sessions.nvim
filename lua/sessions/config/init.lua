@@ -25,7 +25,10 @@ function M.setup(opts)
     for _, candidate in ipairs({ temp, temp .. "\\", norm, norm .. "/" }) do
       local found = false
       for _, p in ipairs(M.cfg.blacklist.paths) do
-        if p == candidate then found = true; break end
+        if p == candidate then
+          found = true
+          break
+        end
       end
       if not found then
         M.cfg.blacklist.paths[#M.cfg.blacklist.paths + 1] = candidate

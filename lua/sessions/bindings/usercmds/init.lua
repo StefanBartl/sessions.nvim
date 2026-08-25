@@ -13,15 +13,23 @@ local _n
 ---@internal
 ---@return table
 local function n()
-  if _n then return _n end
+  if _n then
+    return _n
+  end
   local ok, lib = pcall(require, "lib.nvim.notify")
   if ok then
     _n = lib.create("[sessions]")
   else
     _n = {
-      info  = function(msg) vim.notify("[sessions] " .. msg, vim.log.levels.INFO) end,
-      warn  = function(msg) vim.notify("[sessions] " .. msg, vim.log.levels.WARN) end,
-      error = function(msg) vim.notify("[sessions] " .. msg, vim.log.levels.ERROR) end,
+      info = function(msg)
+        vim.notify("[sessions] " .. msg, vim.log.levels.INFO)
+      end,
+      warn = function(msg)
+        vim.notify("[sessions] " .. msg, vim.log.levels.WARN)
+      end,
+      error = function(msg)
+        vim.notify("[sessions] " .. msg, vim.log.levels.ERROR)
+      end,
     }
   end
   return _n
@@ -57,18 +65,30 @@ end
 -- STRING type's `values` (a static snapshot) — a custom type looks them up
 -- fresh on every completion request.
 composer.register_type("SESSION", {
-  validate = function(raw) return true, raw, nil end,
-  complete = completer(function() return require("sessions.core").list() end),
+  validate = function(raw)
+    return true, raw, nil
+  end,
+  complete = completer(function()
+    return require("sessions.core").list()
+  end),
 })
 
 composer.register_type("TAB_SESSION", {
-  validate = function(raw) return true, raw, nil end,
-  complete = completer(function() return require("sessions.core").list_tabs() end),
+  validate = function(raw)
+    return true, raw, nil
+  end,
+  complete = completer(function()
+    return require("sessions.core").list_tabs()
+  end),
 })
 
 composer.register_type("LAYOUT", {
-  validate = function(raw) return true, raw, nil end,
-  complete = completer(function() return require("sessions.layout").list() end),
+  validate = function(raw)
+    return true, raw, nil
+  end,
+  complete = completer(function()
+    return require("sessions.layout").list()
+  end),
 })
 
 ---@internal
@@ -76,8 +96,11 @@ composer.register_type("LAYOUT", {
 ---@see sessions.core
 local function do_save(name)
   local ok, res = require("sessions.core").save(name)
-  if ok then n().info("saved: " .. (res or "?"))
-  else       n().error("save failed: " .. (res or "?")) end
+  if ok then
+    n().info("saved: " .. (res or "?"))
+  else
+    n().error("save failed: " .. (res or "?"))
+  end
 end
 
 ---@internal
@@ -103,109 +126,162 @@ function M.enable()
   composer.verb("Session", {
     desc = "Session save/load/manage",
     routes = {
-      { path = { "save" },
+      {
+        path = { "save" },
         args = { { name = "name", type = "SESSION", optional = true } },
         desc = "Save session [name] (tab-complete to overwrite an existing one)",
-        run  = function(ctx) do_save(ctx.args.name) end },
+        run = function(ctx)
+          do_save(ctx.args.name)
+        end,
+      },
 
-      { path = { "save-timestamp" },
+      {
+        path = { "save-timestamp" },
         desc = "Save session with timestamp suffix",
-        run  = function() do_save(os.date("sess-%Y%m%d-%H%M%S") --[[@as string]]) end },
+        run = function()
+          do_save(os.date("sess-%Y%m%d-%H%M%S") --[[@as string]])
+        end,
+      },
 
-      { path = { "load" },
+      {
+        path = { "load" },
         args = { { name = "name", type = "SESSION", optional = true } },
         desc = "Load session [name] (omit for the configured default_name)",
-        run  = function(ctx) do_load(ctx.args.name) end },
+        run = function(ctx)
+          do_load(ctx.args.name)
+        end,
+      },
 
-      { path = { "delete" },
+      {
+        path = { "delete" },
         args = { { name = "name", type = "SESSION" } },
         desc = "Delete a session by name",
-        run  = function(ctx)
+        run = function(ctx)
           local ok, res = require("sessions.core").delete(ctx.args.name)
-          if ok then n().info("deleted: " .. ctx.args.name)
-          else       n().error("delete failed: " .. (res or "?")) end
-        end },
+          if ok then
+            n().info("deleted: " .. ctx.args.name)
+          else
+            n().error("delete failed: " .. (res or "?"))
+          end
+        end,
+      },
 
-      { path = { "rename" },
+      {
+        path = { "rename" },
         args = { { name = "old", type = "SESSION" }, { name = "new", type = "STRING" } },
         desc = "Rename a session: :Session rename <old> <new>",
-        run  = function(ctx)
+        run = function(ctx)
           local ok, res = require("sessions.core").rename(ctx.args.old, ctx.args.new)
-          if ok then n().info(("renamed '%s' → '%s'"):format(ctx.args.old, ctx.args.new))
-          else       n().error("rename failed: " .. (res or "?")) end
-        end },
+          if ok then
+            n().info(("renamed '%s' → '%s'"):format(ctx.args.old, ctx.args.new))
+          else
+            n().error("rename failed: " .. (res or "?"))
+          end
+        end,
+      },
 
-      { path = { "list" },
+      {
+        path = { "list" },
         desc = "List all saved sessions",
-        run  = function()
+        run = function()
           local list = require("sessions.core").list()
-          if #list == 0 then n().info("No sessions saved."); return end
+          if #list == 0 then
+            n().info("No sessions saved.")
+            return
+          end
           local current = require("sessions.core").current()
           local lines = {}
           for _, p in ipairs(list) do
             local name = vim.fn.fnamemodify(p, ":t:r")
             local meta = require("sessions.core").metadata(name)
-            local star   = (name == current) and " *" or "  "
-            local ts     = (meta and meta.saved_at) and ("  " .. meta.saved_at) or ""
-            local branch = (meta and meta.branch)   and ("  [" .. meta.branch .. "]") or ""
+            local star = (name == current) and " *" or "  "
+            local ts = (meta and meta.saved_at) and ("  " .. meta.saved_at) or ""
+            local branch = (meta and meta.branch) and ("  [" .. meta.branch .. "]") or ""
             lines[#lines + 1] = star .. name .. ts .. branch
           end
           n().info(table.concat(lines, "\n"))
-        end },
+        end,
+      },
 
-      { path = { "current" },
+      {
+        path = { "current" },
         desc = "Print the active session name",
-        run  = function()
+        run = function()
           local cur = require("sessions.core").current()
           n().info(cur and ("Current session: " .. cur) or "No session active.")
-        end },
+        end,
+      },
 
       -- Toggle git skip-worktree on a session file so it can live in a config
       -- repo but be excluded from commits on machines where the paths don't exist.
-      { path = { "toggle-track" },
+      {
+        path = { "toggle-track" },
         args = { { name = "name", type = "SESSION", optional = true } },
         desc = "Toggle git skip-worktree on a session file",
-        run  = function(ctx) M.toggle_track(ctx.args.name) end },
+        run = function(ctx)
+          M.toggle_track(ctx.args.name)
+        end,
+      },
 
       -- Tab-scoped sessions: only the current tab's windows, stored
       -- separately from full sessions (root/.tabs/).
-      { path = { "save-tab" },
+      {
+        path = { "save-tab" },
         args = { { name = "name", type = "TAB_SESSION", optional = true } },
         desc = "Save only the current tab's window layout [name]",
-        run  = function(ctx)
+        run = function(ctx)
           local ok, res = require("sessions.core").save_tab(ctx.args.name)
-          if ok then n().info("tab session saved: " .. (res or "?"))
-          else       n().error("tab session save failed: " .. (res or "?")) end
-        end },
+          if ok then
+            n().info("tab session saved: " .. (res or "?"))
+          else
+            n().error("tab session save failed: " .. (res or "?"))
+          end
+        end,
+      },
 
-      { path = { "load-tab" },
+      {
+        path = { "load-tab" },
         args = { { name = "name", type = "TAB_SESSION" } },
         desc = "Load a tab session into a new tab: :Session load-tab <name>",
-        run  = function(ctx)
+        run = function(ctx)
           local ok, res = require("sessions.core").load_tab(ctx.args.name)
-          if ok then n().info("tab session loaded: " .. (res or "?"))
-          else       n().error("tab session load failed: " .. (res or "?")) end
-        end },
+          if ok then
+            n().info("tab session loaded: " .. (res or "?"))
+          else
+            n().error("tab session load failed: " .. (res or "?"))
+          end
+        end,
+      },
 
       -- Window-layout snapshots: split structure only, applied to whatever
       -- buffers are currently open (not tied to specific files).
-      { path = { "save-layout" },
+      {
+        path = { "save-layout" },
         args = { { name = "name", type = "LAYOUT" } },
         desc = "Save the current window-split layout: :Session save-layout <name>",
-        run  = function(ctx)
+        run = function(ctx)
           local ok, res = require("sessions.layout").save(ctx.args.name)
-          if ok then n().info("layout saved: " .. (res or "?"))
-          else       n().error("layout save failed: " .. (res or "?")) end
-        end },
+          if ok then
+            n().info("layout saved: " .. (res or "?"))
+          else
+            n().error("layout save failed: " .. (res or "?"))
+          end
+        end,
+      },
 
-      { path = { "load-layout" },
+      {
+        path = { "load-layout" },
         args = { { name = "name", type = "LAYOUT" } },
         desc = "Restore a window-split layout: :Session load-layout <name>",
-        run  = function(ctx)
+        run = function(ctx)
           local ok, res = require("sessions.layout").restore(ctx.args.name)
-          if ok then n().info("layout restored: " .. (res or "?"))
-          else       n().error("layout restore failed: " .. (res or "?")) end
-        end },
+          if ok then
+            n().info("layout restored: " .. (res or "?"))
+          else
+            n().error("layout restore failed: " .. (res or "?"))
+          end
+        end,
+      },
     },
   })
 
@@ -231,7 +307,7 @@ end
 --- without going through a real :command invocation.
 ---@param name string|nil
 function M.toggle_track(name)
-  local cfg  = require("sessions.config").cfg
+  local cfg = require("sessions.config").cfg
   name = name or require("sessions.core").current() or cfg.default_name
   local file = cfg.root .. "/" .. name .. ".vim"
 
@@ -265,10 +341,18 @@ function M.toggle_track(name)
       n().error("vim.system() unavailable and lib.nvim.cross.run_argv missing")
       return
     end
-    local _, out = run_argv.run_blocking_captured({ "git", "-C", git_root, "ls-files", "-v", "--", file })
+    local _, out =
+      run_argv.run_blocking_captured({ "git", "-C", git_root, "ls-files", "-v", "--", file })
     local skipped = ((out or ""):match("^S")) ~= nil
-    local args = { "git", "-C", git_root, "update-index",
-      skipped and "--no-skip-worktree" or "--skip-worktree", "--", file }
+    local args = {
+      "git",
+      "-C",
+      git_root,
+      "update-index",
+      skipped and "--no-skip-worktree" or "--skip-worktree",
+      "--",
+      file,
+    }
     local ok_run = run_argv.run_blocking(args)
     if not ok_run then
       n().error("git command failed")
@@ -280,26 +364,24 @@ function M.toggle_track(name)
     return
   end
 
-  vim.system({ "git", "ls-files", "-v", "--", file }, { cwd = git_root, text = true },
-    function(ls)
-      local skipped = ((ls.stdout or ""):match("^S")) ~= nil
-      local toggle_args = skipped
-        and { "git", "update-index", "--no-skip-worktree", "--", file }
-        or  { "git", "update-index", "--skip-worktree",    "--", file }
+  vim.system({ "git", "ls-files", "-v", "--", file }, { cwd = git_root, text = true }, function(ls)
+    local skipped = ((ls.stdout or ""):match("^S")) ~= nil
+    local toggle_args = skipped and { "git", "update-index", "--no-skip-worktree", "--", file }
+      or { "git", "update-index", "--skip-worktree", "--", file }
 
-      vim.system(toggle_args, { cwd = git_root, text = true }, function(res)
-        -- vim.system callbacks run off the main loop: notify must be scheduled.
-        vim.schedule(function()
-          if res.code ~= 0 then
-            n().error("git command failed")
-          elseif skipped then
-            n().info(name .. ".vim is now tracked in git")
-          else
-            n().info(name .. ".vim marked as skip-worktree (excluded from git)")
-          end
-        end)
+    vim.system(toggle_args, { cwd = git_root, text = true }, function(res)
+      -- vim.system callbacks run off the main loop: notify must be scheduled.
+      vim.schedule(function()
+        if res.code ~= 0 then
+          n().error("git command failed")
+        elseif skipped then
+          n().info(name .. ".vim is now tracked in git")
+        else
+          n().info(name .. ".vim marked as skip-worktree (excluded from git)")
+        end
       end)
     end)
+  end)
 end
 
 return M

@@ -22,17 +22,23 @@ function M.current_branch()
   -- information: "ref: refs/heads/<branch>" on a branch, a raw SHA when
   -- detached (in which case there is no branch name and nil is correct).
   local found = vim.fs.find(".git", { path = vim.fn.getcwd(), upward = true, limit = 1 })
-  if not (found and found[1]) then return nil end
+  if not (found and found[1]) then
+    return nil
+  end
 
   local dotgit = found[1]
   local stat = vim.uv.fs_stat(dotgit)
-  if not stat then return nil end
+  if not stat then
+    return nil
+  end
 
   if stat.type == "file" then
     -- Worktree/submodule: .git is a file holding "gitdir: <path>".
     local ok_lines, gl = pcall(vim.fn.readfile, dotgit, "", 1)
     local gitdir = ok_lines and gl and gl[1] and gl[1]:match("^gitdir:%s*(.+)$")
-    if not gitdir then return nil end
+    if not gitdir then
+      return nil
+    end
     if not gitdir:match("^[/\\]") and not gitdir:match("^%a:") then
       gitdir = vim.fs.dirname(dotgit) .. "/" .. gitdir
     end
@@ -40,7 +46,9 @@ function M.current_branch()
   end
 
   local ok_head, head = pcall(vim.fn.readfile, dotgit .. "/HEAD", "", 1)
-  if not ok_head or not head or not head[1] then return nil end
+  if not ok_head or not head or not head[1] then
+    return nil
+  end
 
   local branch = head[1]:match("^ref:%s*refs/heads/(.+)$")
   return (branch and branch ~= "") and vim.trim(branch) or nil
@@ -74,13 +82,17 @@ end
 ---@param s string
 ---@return string
 function M.sanitize(s)
-  if not s or s == "" then return "" end
+  if not s or s == "" then
+    return ""
+  end
 
   -- Remove ANSI escape sequences FIRST (colors, formatting)
   s = s:gsub("\27%[[0-9;]*m", "")
   s = vim.trim(s)
 
-  if s == "" then return "" end
+  if s == "" then
+    return ""
+  end
 
   -- WHITELIST: Keep only alphanumeric, dash, underscore
   -- Replace all other chars (incl. slashes, spaces, special chars)

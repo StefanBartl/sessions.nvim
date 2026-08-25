@@ -44,7 +44,9 @@ function M.rename(old_path, new_path)
   local old_mp = meta_path(old_path)
   local new_mp = meta_path(new_path)
   local content = require("lib.nvim.fs.read")(old_mp)
-  if not content then return end
+  if not content then
+    return
+  end
   local ok = require("lib.nvim.fs.write.to_file")(new_mp, content)
   if ok then
     os.remove(old_mp)

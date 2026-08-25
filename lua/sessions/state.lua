@@ -20,7 +20,9 @@ end
 ---@see sessions.core
 function M.read(cfg)
   local data = require("lib.nvim.fs.json").read(state_path(cfg))
-  if type(data) ~= "table" then return {} end
+  if type(data) ~= "table" then
+    return {}
+  end
   return data
 end
 

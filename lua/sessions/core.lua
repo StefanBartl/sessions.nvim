@@ -81,7 +81,9 @@ end
 local function strip_tabpages(opt_str)
   local parts = {}
   for part in opt_str:gmatch("[^,]+") do
-    if part ~= "tabpages" then parts[#parts + 1] = part end
+    if part ~= "tabpages" then
+      parts[#parts + 1] = part
+    end
   end
   return table.concat(parts, ",")
 end
@@ -130,10 +132,10 @@ local function wipe_blacklisted()
   for i = 1, #bufs do
     local b = bufs[i]
     if api.nvim_buf_is_loaded(b) then
-      local bt   = bo[b].buftype
-      local ft   = bo[b].filetype
+      local bt = bo[b].buftype
+      local ft = bo[b].filetype
       local name = api.nvim_buf_get_name(b)
-      local bad  = (bt ~= "" and vim.tbl_contains(bl.buftypes, bt))
+      local bad = (bt ~= "" and vim.tbl_contains(bl.buftypes, bt))
         or (ft ~= "" and vim.tbl_contains(bl.filetypes, ft))
         or (name ~= "" and starts_with_any(name, bl.paths))
       if bad then
@@ -166,14 +168,16 @@ local function build_meta(branch)
   for _, b in ipairs(api.nvim_list_bufs()) do
     if api.nvim_buf_is_loaded(b) then
       local nm = api.nvim_buf_get_name(b)
-      if nm ~= "" then buffers[#buffers + 1] = nm end
+      if nm ~= "" then
+        buffers[#buffers + 1] = nm
+      end
     end
   end
   return {
     saved_at = os.date("!%Y-%m-%dT%H:%M:%SZ"),
-    cwd      = fn.getcwd(),
-    branch   = branch,
-    buffers  = buffers,
+    cwd = fn.getcwd(),
+    branch = branch,
+    buffers = buffers,
   }
 end
 
@@ -191,7 +195,7 @@ function M.save(name)
   ensure_dir(cfg.root)
   wipe_blacklisted()
 
-  local si = resolve(name, true)  -- use_auto_resolve = true for save
+  local si = resolve(name, true) -- use_auto_resolve = true for save
   local save_cwd = fn.getcwd()
   local ok, err = pcall(vim.cmd.mksession, { args = { si.path }, bang = true })
   if not ok then
@@ -260,7 +264,7 @@ end
 ---@see sessions.portable, sessions.state
 function M.load(name)
   local cfg = require("sessions.config").cfg
-  local si = resolve(name, false)  -- use_auto_resolve = false, use default_name ("last")
+  local si = resolve(name, false) -- use_auto_resolve = false, use default_name ("last")
 
   if fn.filereadable(si.path) == 0 then
     return false, "no such session: " .. si.path
@@ -275,7 +279,8 @@ function M.load(name)
 
   local source_path, is_temp = si.path, false
   if cfg.relative_paths or next(cfg.root_remap) then
-    source_path, is_temp = require("sessions.portable").prepare_for_load(si.path, fn.getcwd(), cfg.root_remap)
+    source_path, is_temp =
+      require("sessions.portable").prepare_for_load(si.path, fn.getcwd(), cfg.root_remap)
   end
 
   local ok, err = pcall(vim.cmd.source, source_path)
@@ -321,7 +326,8 @@ function M.load_tab(name)
 
   local source_path, is_temp = path, false
   if cfg.relative_paths or next(cfg.root_remap) then
-    source_path, is_temp = require("sessions.portable").prepare_for_load(path, fn.getcwd(), cfg.root_remap)
+    source_path, is_temp =
+      require("sessions.portable").prepare_for_load(path, fn.getcwd(), cfg.root_remap)
   end
 
   local ok, err = pcall(vim.cmd.source, source_path)
@@ -352,7 +358,9 @@ end
 ---@return string[]  Absolute paths to .vim session files
 function M.list()
   local cfg = require("sessions.config").cfg
-  if not is_dir(cfg.root) then return {} end
+  if not is_dir(cfg.root) then
+    return {}
+  end
   local files = fn.globpath(cfg.root, "*.vim", false, true)
   table.sort(files)
   return files
@@ -362,7 +370,9 @@ end
 function M.list_tabs()
   local cfg = require("sessions.config").cfg
   local dir = cfg.root .. "/.tabs"
-  if not is_dir(dir) then return {} end
+  if not is_dir(dir) then
+    return {}
+  end
   local files = fn.globpath(dir, "*.vim", false, true)
   table.sort(files)
   return files
@@ -382,7 +392,9 @@ function M.delete(name)
     return false, "failed to delete: " .. path
   end
   require("sessions.meta").delete(path)
-  if _current == name then _current = nil end
+  if _current == name then
+    _current = nil
+  end
   return true, path
 end
 
@@ -407,7 +419,9 @@ function M.rename(old_name, new_name)
     return false, "rename failed"
   end
   require("sessions.meta").rename(old_path, new_path)
-  if _current == old_name then _current = new_name end
+  if _current == old_name then
+    _current = new_name
+  end
   return true, new_path
 end
 

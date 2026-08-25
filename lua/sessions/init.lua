@@ -31,7 +31,9 @@ local _setup_done = false
 ---Configure and activate sessions.nvim (idempotent).
 ---@param opts? Sessions.Config
 function M.setup(opts)
-  if _setup_done then return end
+  if _setup_done then
+    return
+  end
   _setup_done = true
 
   require("sessions.config").setup(opts)

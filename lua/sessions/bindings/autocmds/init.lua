@@ -15,9 +15,12 @@ local autocmd_ok, autocmd = pcall(require, "lib.nvim.autocmd")
 local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
 
 local notify_ok, notify_lib = pcall(require, "lib.nvim.notify")
-local n = notify_ok and notify_lib.create("[sessions]") or {
-  info = function(msg) vim.notify("[sessions] " .. msg, vim.log.levels.INFO) end,
-}
+local n = notify_ok and notify_lib.create("[sessions]")
+  or {
+    info = function(msg)
+      vim.notify("[sessions] " .. msg, vim.log.levels.INFO)
+    end,
+  }
 
 ---@internal
 ---@param event string
@@ -57,19 +60,29 @@ local function hand_rolled_confirm(question, callback)
 
   local done = false
   local function finish(yes)
-    if done then return end
+    if done then
+      return
+    end
     done = true
-    if api.nvim_win_is_valid(win) then api.nvim_win_close(win, true) end
-    if api.nvim_buf_is_valid(buf) then api.nvim_buf_delete(buf, { force = true }) end
+    if api.nvim_win_is_valid(win) then
+      api.nvim_win_close(win, true)
+    end
+    if api.nvim_buf_is_valid(buf) then
+      api.nvim_buf_delete(buf, { force = true })
+    end
     callback(yes)
   end
 
   local kopts = { buffer = buf, nowait = true, silent = true }
   for _, key in ipairs({ "y", "Y", "<CR>" }) do
-    vim.keymap.set("n", key, function() finish(true) end, kopts)
+    vim.keymap.set("n", key, function()
+      finish(true)
+    end, kopts)
   end
   for _, key in ipairs({ "n", "N", "<Esc>", "q" }) do
-    vim.keymap.set("n", key, function() finish(false) end, kopts)
+    vim.keymap.set("n", key, function()
+      finish(false)
+    end, kopts)
   end
 end
 
@@ -97,7 +110,9 @@ function M.enable()
   if cfg.autoload then
     create_autocmd("VimEnter", function()
       -- Only autoload when Neovim starts without explicit file arguments.
-      if fn.argc(-1) ~= 0 then return end
+      if fn.argc(-1) ~= 0 then
+        return
+      end
 
       local core = require("sessions.core")
 
@@ -110,9 +125,13 @@ function M.enable()
 
       if cfg.autoload == "ask" then
         local si, exists = core.peek()
-        if not exists then return end
+        if not exists then
+          return
+        end
         float_confirm(("Restore session '%s'?"):format(si.name), function(yes)
-          if yes then do_autoload() end
+          if yes then
+            do_autoload()
+          end
         end)
       else
         do_autoload()
@@ -140,7 +159,14 @@ function M.enable()
     -- Structural layout changes are what the next autosave would actually
     -- capture, so mark the session dirty for statusline consumers
     -- (see sessions.statusline) rather than tracking buffer `modified`.
-    for _, event in ipairs({ "BufAdd", "BufDelete", "WinNew", "WinClosed", "TabNewEntered", "TabClosed" }) do
+    for _, event in ipairs({
+      "BufAdd",
+      "BufDelete",
+      "WinNew",
+      "WinClosed",
+      "TabNewEntered",
+      "TabClosed",
+    }) do
       create_autocmd(event, function()
         require("sessions.core").mark_dirty()
       end, {

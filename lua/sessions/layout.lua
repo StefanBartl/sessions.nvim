@@ -32,11 +32,16 @@ end
 local function capture(node)
   if node[1] == "leaf" then
     local winid = node[2]
-    return { "leaf", { width = api.nvim_win_get_width(winid), height = api.nvim_win_get_height(winid) } }
+    return {
+      "leaf",
+      { width = api.nvim_win_get_width(winid), height = api.nvim_win_get_height(winid) },
+    }
   end
   local kind, children = node[1], node[2]
   local out = {}
-  for i, child in ipairs(children) do out[i] = capture(child) end
+  for i, child in ipairs(children) do
+    out[i] = capture(child)
+  end
   return { kind, out }
 end
 
@@ -53,7 +58,9 @@ function M.save(name)
   local tree = capture(vim.fn.winlayout())
   local path = layout_path(cfg, name)
   local ok, err = require("lib.nvim.fs.json").write(path, tree)
-  if not ok then return false, "failed to write: " .. path .. " (" .. tostring(err) .. ")" end
+  if not ok then
+    return false, "failed to write: " .. path .. " (" .. tostring(err) .. ")"
+  end
   return true, path
 end
 
@@ -113,10 +120,14 @@ function M.restore(name)
   build(tree, api.nvim_get_current_win(), out)
 
   for _, entry in ipairs(out) do
-    if entry.size.width then pcall(api.nvim_win_set_width, entry.win, entry.size.width) end
+    if entry.size.width then
+      pcall(api.nvim_win_set_width, entry.win, entry.size.width)
+    end
   end
   for _, entry in ipairs(out) do
-    if entry.size.height then pcall(api.nvim_win_set_height, entry.win, entry.size.height) end
+    if entry.size.height then
+      pcall(api.nvim_win_set_height, entry.win, entry.size.height)
+    end
   end
 
   return true, path
@@ -125,7 +136,9 @@ end
 ---@return string[]  Absolute paths to saved layout .json files
 function M.list()
   local cfg = require("sessions.config").cfg
-  if fn.isdirectory(layouts_dir(cfg)) == 0 then return {} end
+  if fn.isdirectory(layouts_dir(cfg)) == 0 then
+    return {}
+  end
   local files = fn.globpath(layouts_dir(cfg), "*.json", false, true)
   table.sort(files)
   return files
@@ -141,7 +154,9 @@ function M.delete(name)
     return false, "layout not found: " .. name
   end
   local ok = os.remove(path)
-  if not ok then return false, "failed to delete: " .. path end
+  if not ok then
+    return false, "failed to delete: " .. path
+  end
   return true, path
 end
 

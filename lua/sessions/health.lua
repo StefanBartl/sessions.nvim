@@ -54,7 +54,9 @@ function M.check()
   if lib_composer_ok then
     vim.health.ok("lib.nvim found — :Session/:LastSession available")
   else
-    vim.health.error('lib.nvim not found — :Session/:LastSession will fail to load; install "StefanBartl/lib.nvim"')
+    vim.health.error(
+      'lib.nvim not found — :Session/:LastSession will fail to load; install "StefanBartl/lib.nvim"'
+    )
   end
 
   local lib_notify_ok = pcall(require, "lib.nvim.notify")
@@ -91,7 +93,9 @@ function M.check()
   elseif telescope_ok then
     vim.health.ok("telescope.nvim found — :SessionLoad uses Telescope")
   else
-    vim.health.info("neither snacks.nvim nor telescope.nvim found — :SessionLoad will error until one is installed")
+    vim.health.info(
+      "neither snacks.nvim nor telescope.nvim found — :SessionLoad will error until one is installed"
+    )
   end
 
   -- configuration
@@ -135,8 +139,10 @@ function M.check()
   -- commands
   vim.health.start("sessions.nvim — commands")
   if vim.fn.exists(":Session") == 2 then
-    vim.health.ok(":Session registered (save, save-timestamp, load, delete, rename, list, current, "
-      .. "toggle-track, save-tab, load-tab, save-layout, load-layout)")
+    vim.health.ok(
+      ":Session registered (save, save-timestamp, load, delete, rename, list, current, "
+        .. "toggle-track, save-tab, load-tab, save-layout, load-layout)"
+    )
   else
     vim.health.warn(":Session not found — call setup() first")
   end

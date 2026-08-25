@@ -29,9 +29,13 @@ local _merged_cache = setmetatable({}, { __mode = "k" })
 ---@param opts? Sessions.StatuslineOpts
 ---@return Sessions.StatuslineOpts
 local function resolve_opts(opts)
-  if not opts then return DEFAULTS end
+  if not opts then
+    return DEFAULTS
+  end
   local cached = _merged_cache[opts]
-  if cached then return cached end
+  if cached then
+    return cached
+  end
   local merged = vim.tbl_extend("force", DEFAULTS, opts)
   _merged_cache[opts] = merged
   return merged

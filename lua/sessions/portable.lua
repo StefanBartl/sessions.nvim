@@ -67,7 +67,9 @@ end
 ---@see sessions.core
 function M.make_relative(session_path, cwd)
   local content = read_all(session_path)
-  if content == "" then return end
+  if content == "" then
+    return
+  end
 
   for _, needle in ipairs(spellings(cwd)) do
     content = content:gsub(pat_escape(needle), (repl_escape(PLACEHOLDER)))
@@ -88,7 +90,9 @@ end
 ---@return boolean is_temp_copy
 function M.prepare_for_load(session_path, cwd, root_remap)
   local content = read_all(session_path)
-  if content == "" then return session_path, false end
+  if content == "" then
+    return session_path, false
+  end
 
   local changed = false
 
@@ -98,13 +102,19 @@ function M.prepare_for_load(session_path, cwd, root_remap)
   end
 
   for old_root, new_root in pairs(root_remap or {}) do
-    if type(old_root) == "string" and type(new_root) == "string" and content:find(pat_escape(old_root)) then
+    if
+      type(old_root) == "string"
+      and type(new_root) == "string"
+      and content:find(pat_escape(old_root))
+    then
       content = content:gsub(pat_escape(old_root), (repl_escape(new_root)))
       changed = true
     end
   end
 
-  if not changed then return session_path, false end
+  if not changed then
+    return session_path, false
+  end
 
   local tmp = fn.tempname() .. ".vim"
   write_all(tmp, content)
