@@ -10,3 +10,4 @@ doc/tags
 # ~40 MB of downloaded artifacts nobody asked for — in several cases larger
 # than the plugin's own code.
 docs/map/
+TESTS/.fixture-*/
