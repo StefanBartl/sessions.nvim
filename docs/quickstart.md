@@ -20,7 +20,7 @@ nvim '+Session load myapp_feature-login'
 ```
 
 > `:Session` is one command with subcommands (`load`, `save`, …), built via
-> `lib.nvim.usercmd.composer`. A bare Neovim CLI `+cmd` flag is one shell
+> `lib.nvim.bindings.usercmd.composer`. A bare Neovim CLI `+cmd` flag is one shell
 > word, so any invocation with a space — `Session load`, `Session load
 > <name>` — needs to be quoted as a single argument. `:LastSession` is a
 > plain, separate, single-word command specifically so the single most common

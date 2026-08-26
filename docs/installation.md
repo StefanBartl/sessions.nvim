@@ -3,7 +3,7 @@
 ## Requirements
 
 - Neovim **0.9+**
-- [lib.nvim](https://github.com/stefanbartl/lib.nvim) — **required**: the `:Session`/`:LastSession` commands are built on `lib.nvim.usercmd.composer`. `lib.nvim.notify`, `lib.nvim.map`, and `lib.nvim.git` stay soft-guarded (used when available, native fallback otherwise).
+- [lib.nvim](https://github.com/stefanbartl/lib.nvim) — **required**: the `:Session`/`:LastSession` commands are built on `lib.nvim.bindings.usercmd.composer`. `lib.nvim.notify`, `lib.nvim.bindings.keymap`, and `lib.nvim.git` stay soft-guarded (used when available, native fallback otherwise).
 
 ## lazy.nvim
 
@@ -70,4 +70,4 @@ use {
 | **`event = "VimEnter"`** | Minimal (after UI) | ✓ (loads at VimEnter) | ✗ | **Recommended** — autoload/autosave timing |
 | **`lazy = false`** | High (immediate) | ✓ | ✓ | Want `nvim +LastSession` / `nvim '+Session load'` to work, or instant command availability |
 
-**Note:** Command-line args like `nvim +LastSession` execute **before** lazy-loading hooks, so you need `lazy = false` for those to work. For all other use cases, `cmd` or `event = "VimEnter"` is recommended. `:Session` is a single command with subcommands (`load`, `save`, …) built via `lib.nvim.usercmd.composer` — a multi-word CLI invocation like `nvim +Session load` needs to be quoted as one shell argument (`nvim '+Session load'`), since Neovim's `+cmd` flag is a single word by default. `:LastSession` is a separate, single-word command specifically so the most common case (restore the last session) doesn't need quoting.
+**Note:** Command-line args like `nvim +LastSession` execute **before** lazy-loading hooks, so you need `lazy = false` for those to work. For all other use cases, `cmd` or `event = "VimEnter"` is recommended. `:Session` is a single command with subcommands (`load`, `save`, …) built via `lib.nvim.bindings.usercmd.composer` — a multi-word CLI invocation like `nvim +Session load` needs to be quoted as one shell argument (`nvim '+Session load'`), since Neovim's `+cmd` flag is a single word by default. `:LastSession` is a separate, single-word command specifically so the most common case (restore the last session) doesn't need quoting.

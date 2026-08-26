@@ -1,7 +1,7 @@
 # Commands
 
 One command, `:Session <subcommand>` (built via
-[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+[`lib.nvim.bindings.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
 `<Tab>` completion — session-name args complete dynamically), plus a
 standalone `:LastSession` convenience command.
 

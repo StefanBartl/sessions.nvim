@@ -47,7 +47,7 @@ primitives (|:mksession| / |:source|). Key features:
 
   - Neovim 0.9+
   - lib.nvim — REQUIRED: the |:Session|/|:LastSession| commands are built on
-    lib.nvim.usercmd.composer. lib.nvim.notify, lib.nvim.map, and
+    lib.nvim.bindings.usercmd.composer. lib.nvim.notify, lib.nvim.bindings.keymap, and
     lib.nvim.git stay soft-guarded (used when available, native fallback
     otherwise).
 
@@ -90,7 +90,7 @@ Note: Command-line arguments like `nvim +LastSession` execute **before**
 lazy-loading triggers, so they require `lazy = false` in the plugin spec.
 For all other workflows, `event = "VimEnter"` or `cmd = { ... }` is
 preferred. lib.nvim is now a REQUIRED dependency (the |:Session| /
-|:LastSession| commands are built on lib.nvim.usercmd.composer).
+|:LastSession| commands are built on lib.nvim.bindings.usercmd.composer).
 
 ==============================================================================
 4. QUICK START                                         *sessions-quick-start*
@@ -113,7 +113,7 @@ Restore the session: >bash
 <
 
 :Session is one command with subcommands, built via
-lib.nvim.usercmd.composer. A bare Neovim CLI `+cmd` flag is a single shell
+lib.nvim.bindings.usercmd.composer. A bare Neovim CLI `+cmd` flag is a single shell
 word, so any invocation containing a space needs to be quoted as one shell
 argument. |:LastSession| is a plain, separate, single-word command
 specifically so the single most common case (restore the last session)
@@ -211,7 +211,7 @@ Default values (pass to setup(opts)): >lua
 ==============================================================================
 6. COMMANDS                                               *sessions-commands*
 
-One command, :Session <subcommand> (built via lib.nvim.usercmd.composer,
+One command, :Session <subcommand> (built via lib.nvim.bindings.usercmd.composer,
 with <Tab> completion — session-name args complete dynamically from the
 current saved-session list), plus a standalone |:LastSession| convenience
 command.

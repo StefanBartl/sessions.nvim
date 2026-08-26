@@ -11,7 +11,7 @@ local fn = vim.fn
 
 -- lib.nvim is a soft dependency here, matching the fallback convention used
 -- in bindings/keymaps and bindings/usercmds (see health.lua).
-local autocmd_ok, autocmd = pcall(require, "lib.nvim.autocmd")
+local autocmd_ok, autocmd = pcall(require, "lib.nvim.bindings.autocmd")
 local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
 
 local notify_ok, notify_lib = pcall(require, "lib.nvim.notify")

@@ -55,7 +55,7 @@ function M.attach(km)
     return
   end
 
-  local set = require("lib.nvim.map")
+  local set = require("lib.nvim.bindings.keymap")
   local notify = require("lib.nvim.notify").create("[sessions.keymaps]")
 
   -- Sorted, so an "accepted" list reads the same on every run rather than in

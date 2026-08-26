@@ -3,7 +3,7 @@
 --- (:Verb sub … + <Tab> completion + Markdown docgen), plus a standalone
 --- :LastSession convenience command (see below).
 
-local composer = require("lib.nvim.usercmd.composer")
+local composer = require("lib.nvim.bindings.usercmd.composer")
 
 ---@class SessionsBindingsUsercmds
 local M = {}
@@ -291,14 +291,14 @@ function M.enable()
   -- default autosave_name/default_name — see docs/configuration.md) rather
   -- than relying on the bare-load fallback, so it stays correct even if a
   -- user reconfigures default_name to something else.
-  require("lib.nvim.usercmd").create("LastSession", function()
+  require("lib.nvim.bindings.usercmd").create("LastSession", function()
     do_load("last")
   end, { desc = "Load the 'last' session (nvim +LastSession)" })
 
   -- :SessionLoad — session picker with live preview (Snacks.picker or
   -- telescope.nvim, whichever is installed). A plain zero-arg command, not
   -- a :Session subcommand, matching :LastSession's convention.
-  require("lib.nvim.usercmd").create("SessionLoad", function()
+  require("lib.nvim.bindings.usercmd").create("SessionLoad", function()
     require("sessions.picker").pick()
   end, { desc = "Open the session picker with preview (Snacks/Telescope)" })
 end

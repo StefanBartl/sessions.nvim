@@ -40,7 +40,7 @@ key, since it is a real subcommand and not a typo. Use `picker`
 ## User commands
 
 One command, `:Session <subcommand>` (built via
-[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+[`lib.nvim.bindings.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
 `<Tab>` completion), plus a standalone `:LastSession` convenience command.
 
 | Command                | Purpose |

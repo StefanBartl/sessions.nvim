@@ -47,10 +47,10 @@ function M.check()
   end
 
   -- lib.nvim: required for the :Session/:LastSession commands (built on
-  -- lib.nvim.usercmd.composer); notify/map/git submodules stay soft-guarded.
+  -- lib.nvim.bindings.usercmd.composer); notify/map/git submodules stay soft-guarded.
   vim.health.start("sessions.nvim — lib.nvim")
 
-  local lib_composer_ok = pcall(require, "lib.nvim.usercmd.composer")
+  local lib_composer_ok = pcall(require, "lib.nvim.bindings.usercmd.composer")
   if lib_composer_ok then
     vim.health.ok("lib.nvim found — :Session/:LastSession available")
   else
@@ -66,11 +66,11 @@ function M.check()
     vim.health.info("lib.nvim.notify not found — using vim.notify fallback")
   end
 
-  local lib_map_ok = pcall(require, "lib.nvim.map")
+  local lib_map_ok = pcall(require, "lib.nvim.bindings.keymap")
   if lib_map_ok then
-    vim.health.ok("lib.nvim.map available (enhanced keymaps)")
+    vim.health.ok("lib.nvim.bindings.keymap available (enhanced keymaps)")
   else
-    vim.health.info("lib.nvim.map not found — using vim.keymap.set fallback")
+    vim.health.info("lib.nvim.bindings.keymap not found — using vim.keymap.set fallback")
   end
 
   local lib_git_ok = pcall(require, "lib.nvim.git")
@@ -157,7 +157,7 @@ function M.check()
     vim.health.warn(":SessionLoad not found — call setup() first")
   end
 
-  require("lib.nvim.usercmd.composer").checkhealth("Session")
+  require("lib.nvim.bindings.usercmd.composer").checkhealth("Session")
 end
 
 return M
