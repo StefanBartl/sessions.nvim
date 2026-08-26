@@ -25,6 +25,17 @@ shows up in which-key (if installed) and `:map` without further work. A
 Defined in `lua/sessions/bindings/keymaps/init.lua`. There are no defaults for the lhs
 strings themselves — every mapping is opt-in and only attached if you set it.
 
+Declared as named actions through
+[`lib.nvim.bindings.keymap`](https://github.com/StefanBartl/lib.nvim), so an
+lhs may also be a **list**: `load = { "<leader>slo", "<leader>l" }` binds
+both. The actions exist whether or not they are bound, which is what lets
+`:checkhealth` answer "what can be mapped" rather than only "what is
+mapped", and a misspelled name is reported with the nearest match.
+
+The which-key group label is put on the longest prefix every configured key
+shares — computed, not fixed, since the plugin does not choose where these
+keys live. which-key v2's `register` API is no longer used; v3's `add` is.
+
 ### Why `delete` and `rename` have no keymap
 
 Every `:Session` subcommand that takes no **required** argument is mappable;

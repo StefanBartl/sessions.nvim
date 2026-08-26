@@ -43,11 +43,12 @@ function M.setup(opts)
 
   local cfg = require("sessions.config").cfg
   if cfg.keymaps ~= false then
-    require("sessions.bindings.keymaps").attach(cfg.keymaps or {})
-
-    if cfg.which_key and cfg.which_key.enable then
-      pcall(require("sessions.bindings.which_key").setup, cfg.keymaps or {})
-    end
+    -- The group label comes with declaring the keys now; `which_key.enable`
+    -- only decides whether it is offered at all.
+    require("sessions.bindings.keymaps").attach(
+      cfg.keymaps or {},
+      not (cfg.which_key and cfg.which_key.enable == false)
+    )
   end
 
   vim.g.loaded_sessions_nvim = 1

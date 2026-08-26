@@ -18,18 +18,23 @@
 ---the `:SessionLoad` picker. `delete` and `rename` are absent on purpose:
 ---both require a name, and a bare keypress has nothing to pass. Reach them
 ---through the picker or the commands themselves.
+--- Every mapping is opt-in: an unset field binds nothing. A field may be one
+--- lhs or a list of them; `false` is the same as leaving it out.
+---
+--- `:Session delete` and `:Session rename` deliberately have no entry -- both
+--- need a name to act on, and a bare keypress has none. Use `picker`.
 ---@class Sessions.Keymaps
----@field save? string|false          `:Session save`
----@field load? string|false          `:Session load`
----@field save_ts? string|false       `:Session save-timestamp`
----@field list? string|false          `:Session list`
----@field current? string|false       `:Session current`
----@field picker? string|false        `:SessionLoad` (picker with preview)
----@field toggle_track? string|false  `:Session toggle-track`
----@field save_tab? string|false      `:Session save-tab`
----@field load_tab? string|false      `:Session load-tab`
----@field save_layout? string|false   `:Session save-layout`
----@field load_layout? string|false   `:Session load-layout`
+---@field save? string|string[]|false          `:Session save`
+---@field load? string|string[]|false          `:Session load`
+---@field save_ts? string|string[]|false       `:Session save-timestamp`
+---@field list? string|string[]|false          `:Session list`
+---@field current? string|string[]|false       `:Session current`
+---@field picker? string|string[]|false        `:SessionLoad` (picker with preview)
+---@field toggle_track? string|string[]|false  `:Session toggle-track`
+---@field save_tab? string|string[]|false      `:Session save-tab`
+---@field load_tab? string|string[]|false      `:Session load-tab`
+---@field save_layout? string|string[]|false   `:Session save-layout`
+---@field load_layout? string|string[]|false   `:Session load-layout`
 
 ---@class Sessions.Config
 ---@field root string                    Root directory for session files
