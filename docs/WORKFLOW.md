@@ -89,6 +89,25 @@ machine-local autosave session gets committed and immediately breaks on
 every other machine's absolute paths. Named, deliberately-saved sessions
 are what this feature is for; the autosave session almost never is.
 
+## Every mappable subcommand has a keymap option now — including the ones you had to type
+
+The keymap table was a hardcoded four while `:Session` had grown to twelve
+subcommands, so `toggle-track`, `save-tab`, `load-tab`, `save-layout` and
+`load-layout` had no option at all. All eleven mappable ones plus
+`:SessionLoad` are configurable now, and the original four keep their names
+(`save_ts` still spells `save-timestamp`) so an existing config does not break
+quietly.
+
+**`delete` and `rename` stay out, and the reason is not that they are
+destructive.** `:Session save` overwrites just as readily and is mappable. They
+take a **required argument**, and a keymap is a bare keypress with nothing to
+pass. Configuring one now says exactly that, instead of "Unknown
+keymaps.delete" — which would send you hunting for a spelling mistake that is
+not there.
+
+which-key needs no change: it walks whatever is configured and computes the
+group prefix from that.
+
 ## Tab and layout snapshots don't participate in the main session lifecycle
 
 `save-tab`/`load-tab` and `save-layout`/`load-layout` are stored in their
