@@ -31,6 +31,7 @@ local function create_autocmd(event, callback, opts)
     autocmd.create(event, callback, opts)
   else
     opts.callback = callback
+    -- lib-docs: fallback
     api.nvim_create_autocmd(event, opts)
   end
 end
