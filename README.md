@@ -65,7 +65,6 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - [Session Scoping](docs/session-scoping.md) — tab-scoped sessions and window-layout-only snapshots.
 - [Picker Integration](docs/picker.md) — `:SessionLoad` via Snacks.picker or Telescope, with preview and multi-select delete.
 - [Troubleshooting](docs/troubleshooting.md) — using `:checkhealth sessions` to diagnose setup issues.
-- [Roadmap](docs/ROADMAP.md) — planned features and future direction.
 - [Bindings](docs/BINDINGS.md) — every keymap and user command.
 
 ---
