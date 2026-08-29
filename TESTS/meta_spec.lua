@@ -1,3 +1,6 @@
+---@diagnostic disable: missing-fields
+-- The config and meta tables below carry only the fields the function under
+-- test reads; a resolved Sessions.Config per case would be noise.
 -- TESTS/meta_spec.lua — sessions.meta: the sidecar file that carries whatever
 -- a session file itself cannot (timestamps, branch, whatever the caller
 -- stores), and the lifecycle operations that have to keep it in step with the

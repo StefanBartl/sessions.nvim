@@ -29,7 +29,7 @@ local M = {}
 local _setup_done = false
 
 ---Configure and activate sessions.nvim (idempotent).
----@param opts? Sessions.Config
+---@param opts? Sessions.Opts
 function M.setup(opts)
   if _setup_done then
     return

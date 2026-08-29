@@ -1,3 +1,6 @@
+---@diagnostic disable: missing-fields
+-- The config and meta tables below carry only the fields the function under
+-- test reads; a resolved Sessions.Config per case would be noise.
 -- TESTS/resolve_name_spec.lua — sessions.git.resolve_name: which parts go into
 -- an automatic session name, and what happens when none of them are available.
 
