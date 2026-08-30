@@ -90,3 +90,7 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - **`:Session save-layout` / `load-layout`** — reapply a favorite split arrangement to whatever's currently open, without touching buffers
 - **`:SessionLoad`** — session picker with live preview and multi-select delete, via Snacks.picker or Telescope (neither is a hard dependency)
 - **`lib.nvim`** — required for the `:Session`/`:LastSession` commands themselves; `lib.nvim.notify`, `lib.nvim.bindings.keymap`, and `lib.nvim.git` stay soft-guarded and fall back gracefully if those specific submodules aren't resolvable
+
+## License
+
+MIT — see [LICENSE](LICENSE).
