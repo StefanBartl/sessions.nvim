@@ -79,7 +79,7 @@ end
 
 --- Sanitize a string for use as a filesystem-safe session name segment.
 --- Uses WHITELIST approach: keep only safe chars (word chars, dash, underscore).
----@param s string
+---@param s string|nil  nil and empty both answer "" -- the first line of the body says so
 ---@return string
 function M.sanitize(s)
   if not s or s == "" then

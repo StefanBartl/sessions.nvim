@@ -274,8 +274,12 @@ function M.load(name)
 
   -- Collapse windows before sourcing to avoid E445 from the session's `only`/`tabonly`.
   local hidden = modified_buffer_names()
-  pcall(vim.cmd, "silent! only!")
-  pcall(vim.cmd, "silent! tabonly!")
+  pcall(function()
+    vim.cmd("silent! only!")
+  end)
+  pcall(function()
+    vim.cmd("silent! tabonly!")
+  end)
 
   local source_path, is_temp = si.path, false
   if cfg.relative_paths or next(cfg.root_remap) then
@@ -335,7 +339,9 @@ function M.load_tab(name)
     os.remove(source_path)
   end
   if not ok then
-    pcall(vim.cmd, "tabclose")
+    pcall(function()
+      vim.cmd("tabclose")
+    end)
     return false, err
   end
 

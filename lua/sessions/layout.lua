@@ -114,7 +114,9 @@ function M.restore(name)
     return false, "corrupt or missing layout file: " .. path .. " (" .. tostring(err) .. ")"
   end
 
-  pcall(vim.cmd, "silent! only!")
+  pcall(function()
+    vim.cmd("silent! only!")
+  end)
 
   local out = {}
   build(tree, api.nvim_get_current_win(), out)

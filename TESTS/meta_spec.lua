@@ -18,6 +18,10 @@ return function(H)
   vim.fn.writefile({ "set nocompatible" }, session)
 
   -- Round-trip ----------------------------------------------------------------
+  -- Not a real meta: what this block checks is that the JSON round-trip
+  -- keeps a number a number, and `Sessions.Meta.saved_at` is an ISO-8601
+  -- string, so the value is off-type on purpose.
+  ---@diagnostic disable-next-line: assign-type-mismatch
   meta.write(session, { branch = "main", saved_at = 1234 })
   local read = meta.read(session)
   H.ok(read, "what was written comes back")
