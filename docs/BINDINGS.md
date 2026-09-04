@@ -81,5 +81,5 @@ tab-complete from their own separate name lists.
 
 `lua/sessions/bindings/autocmds/init.lua` wires the autosave-on-exit and (if enabled)
 autoload-on-enter behavior described in
-[Configuration](configuration.md#autoload--autosave) — see that file for the
+[Configuration](configuration.md#configuration) — see that file for the
 exact `autoload`/`autosave` semantics.
