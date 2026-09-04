@@ -61,6 +61,9 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 
 ## Documentation
 
+Start at [docs/README.md](docs/README.md), which says what is where and which
+question each page answers.
+
 - [Installation](docs/installation.md) — requirements and plugin manager setup (lazy.nvim, pckr/packer).
 - [Quick Start](docs/quickstart.md) — saving, restoring, and branch-aware workflow examples.
 - [Configuration](docs/configuration.md) — all available setup options, defaults, and session naming rules.
@@ -73,6 +76,8 @@ See [Installation](docs/installation.md) and [Quick Start](docs/quickstart.md) f
 - [Picker Integration](docs/picker.md) — `:SessionLoad` via Snacks.picker or Telescope, with preview and multi-select delete.
 - [Troubleshooting](docs/troubleshooting.md) — using `:checkhealth sessions` to diagnose setup issues.
 - [Bindings](docs/BINDINGS.md) — every keymap and user command.
+- [Features](docs/FEATURES.md) — everything the plugin does, in one file.
+- [Workflow](docs/WORKFLOW.md) — how sessions, branches and scoping combine over a working day.
 
 ---
 
