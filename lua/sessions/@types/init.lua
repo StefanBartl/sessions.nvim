@@ -49,6 +49,7 @@
 ---@field autosave boolean               Autosave session on VimLeavePre
 ---@field autosave_name string           Fixed session name for autosave (e.g. "last")
 ---@field metadata boolean               Write a companion .json file with save context
+---@field restore_buffer_order boolean   Persist/restore per-tabpage `vim.t.bufs` order (NvChad tabufline etc.); no-op without such a tabline
 ---@field hooks Sessions.Hooks
 ---@field blacklist Sessions.Blacklist
 ---@field keymaps Sessions.Keymaps|false Keymaps table or false to disable all keymaps
@@ -85,6 +86,7 @@
 ---@field autosave?        boolean               Autosave session on VimLeavePre
 ---@field autosave_name?   string           Fixed session name for autosave (e.g. "last")
 ---@field metadata?        boolean               Write a companion .json file with save context
+---@field restore_buffer_order? boolean          Persist/restore per-tabpage `vim.t.bufs` order (NvChad tabufline etc.); no-op without such a tabline
 ---@field hooks?           Sessions.Hooks.Opts
 ---@field blacklist?       Sessions.Blacklist.Opts
 ---@field keymaps?         Sessions.Keymaps.Opts|false Keymaps table or false to disable all keymaps

@@ -116,6 +116,7 @@ function M.check()
   vim.health.info("autoload: " .. tostring(cfg.autoload))
   vim.health.info("autosave: " .. tostring(cfg.autosave))
   vim.health.info("metadata: " .. tostring(cfg.metadata))
+  vim.health.info("restore_buffer_order: " .. tostring(cfg.restore_buffer_order))
 
   -- Check root accessibility
   local uv = vim.uv or vim.loop

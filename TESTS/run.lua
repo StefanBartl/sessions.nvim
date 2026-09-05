@@ -45,6 +45,7 @@ local specs = {
   "resolve_name_spec.lua",
   "config_spec.lua",
   "meta_spec.lua",
+  "buforder_spec.lua",
   "portable_spec.lua",
   "statusline_spec.lua",
 }
