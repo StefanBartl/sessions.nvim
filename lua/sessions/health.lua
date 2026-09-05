@@ -145,17 +145,17 @@ function M.check()
         .. "toggle-track, save-tab, load-tab, save-layout, load-layout)"
     )
   else
-    vim.health.warn(":Session not found — call setup() first")
+    vim.health.info(":Session not found (call setup() first)")
   end
   if vim.fn.exists(":LastSession") == 2 then
     vim.health.ok(":LastSession registered")
   else
-    vim.health.warn(":LastSession not found — call setup() first")
+    vim.health.info(":LastSession not found (call setup() first)")
   end
   if vim.fn.exists(":SessionLoad") == 2 then
     vim.health.ok(":SessionLoad registered")
   else
-    vim.health.warn(":SessionLoad not found — call setup() first")
+    vim.health.info(":SessionLoad not found (call setup() first)")
   end
 
   require("lib.nvim.bindings.usercmd.composer").checkhealth("Session")
