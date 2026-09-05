@@ -15,7 +15,7 @@ function M.check()
   if vim.fn.has("nvim-0.9") == 1 then
     vim.health.ok("Neovim >= 0.9")
   else
-    vim.health.error("Neovim 0.9+ required (vim.health API)")
+    vim.health.error("Neovim 0.9+ required (vim.health API)", { "Upgrade Neovim to 0.9+" })
   end
 
   -- vim.json (used for metadata)
@@ -43,7 +43,7 @@ function M.check()
   if vim.g.loaded_sessions_nvim then
     vim.health.ok("plugin loaded (setup() called)")
   else
-    vim.health.warn("plugin not loaded — call require('sessions').setup()")
+    vim.health.info("plugin not loaded (call require('sessions').setup())")
   end
 
   -- lib.nvim: required for the :Session/:LastSession commands (built on
@@ -55,7 +55,8 @@ function M.check()
     vim.health.ok("lib.nvim found — :Session/:LastSession available")
   else
     vim.health.error(
-      'lib.nvim not found — :Session/:LastSession will fail to load; install "StefanBartl/lib.nvim"'
+      "lib.nvim not found — :Session/:LastSession will fail to load",
+      { 'Install "StefanBartl/lib.nvim"' }
     )
   end
 
@@ -134,7 +135,7 @@ function M.check()
   if opts and opts ~= "" then
     vim.health.ok("sessionoptions: " .. opts)
   else
-    vim.health.warn("sessionoptions is empty")
+    vim.health.warn("sessionoptions is empty", { "Set vim.o.sessionoptions or cfg.sessionoptions" })
   end
 
   -- commands
