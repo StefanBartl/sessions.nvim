@@ -147,7 +147,7 @@ function M.restore(session_path)
   end
 
   if applied then
-    pcall(vim.cmd, "redrawtabline")
+    pcall(function() vim.cmd("redrawtabline") end)
   end
   return applied
 end

@@ -33,6 +33,7 @@ return function(H)
   H.ok(buforder.save(session), "save reports it wrote a sidecar")
   local data = require("lib.nvim.fs.json").read(sidecar)
   H.ok(data and data.tabs and data.tabs[1], "sidecar has a tab-1 entry")
+  ---@cast data -nil
   H.eq(
     table.concat(data.tabs[1], "|"),
     table.concat({ name_c, name_a, name_b }, "|"),
