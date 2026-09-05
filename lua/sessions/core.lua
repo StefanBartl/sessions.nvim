@@ -214,6 +214,10 @@ function M.save(name)
     require("sessions.meta").write(si.path, build_meta(branch))
   end
 
+  if cfg.restore_buffer_order then
+    require("sessions.buforder").save(si.path)
+  end
+
   if cfg.hooks.on_save then
     pcall(cfg.hooks.on_save, si.name, si.path)
   end
@@ -298,6 +302,10 @@ function M.load(name)
   _current = si.name
   _dirty = false
   require("sessions.state").set_last_loaded(cfg, si.name)
+
+  if cfg.restore_buffer_order then
+    require("sessions.buforder").restore(si.path)
+  end
 
   if cfg.hooks.on_load then
     pcall(cfg.hooks.on_load, si.name, si.path)
@@ -398,6 +406,7 @@ function M.delete(name)
     return false, "failed to delete: " .. path
   end
   require("sessions.meta").delete(path)
+  require("sessions.buforder").delete(path)
   if _current == name then
     _current = nil
   end
@@ -425,6 +434,7 @@ function M.rename(old_name, new_name)
     return false, "rename failed"
   end
   require("sessions.meta").rename(old_path, new_path)
+  require("sessions.buforder").rename(old_path, new_path)
   if _current == old_name then
     _current = new_name
   end

@@ -47,6 +47,13 @@ require("sessions").setup({
   -- Write a .{name}.json companion file next to each session.
   metadata = true,
 
+  -- Persist the per-tabpage buffer order that NvChad's tabufline (and any
+  -- tabline rendering from an ordered `vim.t.bufs`) shows. `:mksession`
+  -- cannot carry a tab-local variable, so a "move tab left/right"
+  -- reordering is otherwise lost on load. Stored in a `.{name}.bufs.json`
+  -- sidecar; a no-op that writes nothing when no such tabline is in use.
+  restore_buffer_order = true,
+
   -- Callbacks invoked after save/load (errors are swallowed via pcall).
   hooks = {
     on_save = nil, -- fun(name: string, path: string)

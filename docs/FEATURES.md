@@ -67,6 +67,24 @@ public API.
 - **Config:** `opts.metadata` (default `true`)
 - **API:** `require("sessions").metadata(name)`
 
+## Tabline buffer order (`vim.t.bufs`)
+
+NvChad's tabufline — and any tabline that renders from an ordered
+`vim.t.bufs` list of buffer numbers — keeps the bar's left-to-right order
+in that tab-local variable. `:mksession` serializes buffers, windows and
+tabpages, but never a tab-local variable, so a manual "move tab
+left/right" reordering is lost the moment a session is loaded.
+
+sessions.nvim captures each tabpage's `vim.t.bufs` (as buffer names) into a
+hidden `.{name}.bufs.json` sidecar on save and reapplies it right after
+`:source`. A buffer open in a tab but missing from the saved order is kept
+(appended); a saved name with no live buffer is dropped. It is a complete
+no-op — and writes no sidecar — when nothing maintains a `vim.t.bufs`
+list, so a non-tabufline setup pays nothing.
+
+- **Module:** `lua/sessions/buforder.lua`
+- **Config:** `opts.restore_buffer_order` (default `true`)
+
 ## Autoload / autosave
 
 Loads the contextual session automatically on a plain `nvim` start (no

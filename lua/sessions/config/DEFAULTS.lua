@@ -35,6 +35,12 @@ return {
   autosave = true,
   autosave_name = "last",
   metadata = true,
+  -- Persist the per-tabpage buffer order (`vim.t.bufs`) that NvChad's
+  -- tabufline and similar bars render from — `:mksession` cannot carry a
+  -- tab-local variable, so a "move tab left/right" reordering is otherwise
+  -- lost on load. No-op (and no sidecar written) when no tabline maintains
+  -- such a list.
+  restore_buffer_order = true,
   hooks = {
     on_save = nil,
     on_load = nil,
