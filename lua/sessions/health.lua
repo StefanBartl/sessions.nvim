@@ -29,7 +29,7 @@ function M.check()
   if vim.uv or vim.loop then
     vim.health.ok("libuv available (" .. (vim.uv and "vim.uv" or "vim.loop") .. ")")
   else
-    vim.health.warn("libuv not found")
+    vim.health.error("libuv not found -- session read/write will fail")
   end
 
   -- vim.system (Neovim 0.10+, used for git operations)
