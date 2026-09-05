@@ -15,6 +15,12 @@
 ---
 --- It is a no-op — and writes no sidecar — when no tabpage carries a
 --- `vim.t.bufs` list, so a setup without such a tabline pays nothing.
+---
+--- `sessions.core.save` runs `wipe_blacklisted()` first, so a buffer under a
+--- blacklisted path (`$TEMP`, gitcommit, …) is already gone — and dropped
+--- from `vim.t.bufs` by the tabline's own `BufDelete` handler — by the time
+--- this captures the order. That is intended: such a buffer is not in the
+--- session either.
 
 require("sessions.@types")
 
