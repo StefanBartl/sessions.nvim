@@ -195,7 +195,7 @@ function M.save(name)
   ensure_dir(cfg.root)
   wipe_blacklisted()
 
-  local si = resolve(name, true) -- use_auto_resolve = true for save
+  local si = resolve(name, true) -- save: auto-resolve a project/branch name when unnamed
   local save_cwd = fn.getcwd()
   local ok, err = pcall(vim.cmd.mksession, { args = { si.path }, bang = true })
   if not ok then
@@ -268,7 +268,7 @@ end
 ---@see sessions.portable, sessions.state
 function M.load(name)
   local cfg = require("sessions.config").cfg
-  local si = resolve(name, false) -- use_auto_resolve = false, use default_name ("last")
+  local si = resolve(name, false) -- load: fall back to the remembered last-loaded, then default_name
 
   if fn.filereadable(si.path) == 0 then
     return false, "no such session: " .. si.path

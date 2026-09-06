@@ -3,9 +3,9 @@
 ---@description
 --- `component()` is a hotpath: statusline plugins invoke it on every redraw
 --- (potentially many times per second while typing/moving the cursor), so
---- the merged-options table is memoized per distinct `opts` table (weak keys
---- — see LUA_NVIM.md "Metatables, schwache Tabellen, Memoisierung") instead
---- of being rebuilt on every call.
+--- the merged-options table is memoized per distinct `opts` table instead of
+--- being rebuilt on every call (see `_merged_cache` below for the weak-key
+--- scheme).
 
 require("sessions.@types")
 

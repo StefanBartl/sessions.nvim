@@ -36,10 +36,10 @@ local function create_autocmd(event, callback, opts)
   end
 end
 
---- Minimal floating y/n prompt for `autoload = "ask"`. Not a vim.ui.select
---- (that renders as a command-line menu, not a floating window) — the
---- roadmap asks for an actual floating prompt. Fallback for when lib.nvim
---- isn't installed; float_confirm() below prefers kit.confirm when it is.
+--- Minimal floating y/n prompt for `autoload = "ask"`. Deliberately not a
+--- vim.ui.select (that renders as a command-line menu, not a floating
+--- window). Fallback for when lib.nvim isn't installed; float_confirm()
+--- below prefers kit.confirm when it is.
 ---@internal
 ---@param question string
 ---@param callback fun(yes: boolean)
@@ -160,6 +160,9 @@ function M.enable()
     -- Structural layout changes are what the next autosave would actually
     -- capture, so mark the session dirty for statusline consumers
     -- (see sessions.statusline) rather than tracking buffer `modified`.
+    --- CDX: dirty-tracking is registered only when `autosave` is on, so the
+    --- statusline `dirty_icon` never appears with `autosave = false`. The
+    --- module header describes this wiring unconditionally.
     for _, event in ipairs({
       "BufAdd",
       "BufDelete",
