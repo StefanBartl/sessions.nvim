@@ -77,16 +77,17 @@ function M.project_root(markers)
   return nil
 end
 
---- Sanitize a string for use as a filesystem-safe session name segment.
---- Uses WHITELIST approach: keep only safe chars (word chars, dash, underscore).
----@param s string|nil  nil and empty both answer "" -- the first line of the body says so
+--- Sanitize a string into a filesystem-safe session name segment: whitelist
+--- word chars, dash and underscore; everything else becomes a dash.
+---@param s string|nil  nil or empty -> ""
 ---@return string
 function M.sanitize(s)
   if not s or s == "" then
     return ""
   end
 
-  -- Remove ANSI escape sequences FIRST (colors, formatting)
+  -- Strip ANSI escapes before trimming, or a trailing reset sequence keeps
+  -- the string non-empty.
   s = s:gsub("\27%[[0-9;]*m", "")
   s = vim.trim(s)
 
@@ -94,14 +95,8 @@ function M.sanitize(s)
     return ""
   end
 
-  -- WHITELIST: Keep only alphanumeric, dash, underscore
-  -- Replace all other chars (incl. slashes, spaces, special chars)
-  s = s:gsub("[^%w%-_]", "-")
-
-  -- Clean up runs of dashes
+  s = s:gsub("[^%w%-_]", "-") -- slashes, spaces, punctuation -> dash
   s = s:gsub("-+", "-")
-
-  -- Remove leading/trailing dashes
   s = s:gsub("^-+", ""):gsub("-+$", "")
 
   return s

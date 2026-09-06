@@ -6,13 +6,9 @@
 --- key or a list of them.
 ---
 --- Every `:Session` subcommand that takes no *required* argument is
---- available here, plus the `:SessionLoad` picker. That qualifier is the
---- whole rule: a keymap is a bare keypress with nothing to pass, so
---- `:Session delete <name>` and `:Session rename <old> <new>` cannot be
---- mapped meaningfully and deliberately have no entry. It is not that they
---- are destructive -- `:Session save` overwrites just as happily and is
---- mapped -- it is that there is no argument to supply. Use `:SessionLoad`'s
---- picker, or the commands directly, for those two.
+--- mappable, plus the `:SessionLoad` picker. `delete`/`rename` are not: a
+--- keymap has no argument to pass (not a destructiveness call — `save`
+--- overwrites too and is mapped). Use the picker or the commands directly.
 
 ---@class SessionsBindingsKeymaps
 local M = {}
@@ -38,11 +34,9 @@ local COMMANDS = {
   load_layout = { cmd = "Session load-layout", desc = "Session: load window layout" },
 }
 
----Subcommands that exist but cannot be a keymap, and why.
----
---- Worth distinguishing from a typo: someone setting `keymaps.delete` has
---- guessed a real subcommand, and "Unknown keymaps.delete" would send them
---- looking for a spelling mistake that isn't there.
+---Subcommands that exist but cannot be a keymap, and why. Kept distinct from
+---an unknown-name error: `keymaps.delete` is a real subcommand, so "no such
+---keymap" would send the user hunting a typo that isn't there.
 ---@internal
 ---@type table<string, string>
 local UNMAPPABLE = {
@@ -96,9 +90,8 @@ function M.attach(km, which_key)
 
   local notify = require("lib.nvim.notify").create("[sessions.keymaps]")
 
-  -- Worth catching before the registry does: someone setting `keymaps.delete`
-  -- has guessed a real subcommand, and the registry's "no such keymap action"
-  -- would send them looking for a spelling mistake that isn't there.
+  -- Filter UNMAPPABLE names out before the registry sees them, so the user
+  -- gets the "needs a name" reason rather than a bare "no such keymap action".
   ---@type Sessions.Keymaps
   local user = {}
   for name, lhs in pairs(km) do

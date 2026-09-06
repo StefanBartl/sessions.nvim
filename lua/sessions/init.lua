@@ -4,22 +4,8 @@
 --- Minimal usage:
 ---   require("sessions").setup()
 ---
---- Full config with all options:
----   require("sessions").setup({
----     root         = vim.fn.stdpath("data") .. "/sessions",
----     default_name = "last",
----     branch_aware = true,
----     project_aware = true,
----     autoload     = false,
----     autosave     = true,
----     metadata     = true,
----     hooks = { on_save = nil, on_load = nil },
----     blacklist = { buftypes = {}, filetypes = {}, paths = {} },
----     keymaps = {
----       save = "<leader>ssa", load = "<leader>slo",
----       save_ts = "<leader>sst", list = "<leader>sli",
----     },
----   })
+--- Every option and its default lives in docs/configuration.md; the full
+--- accepted shape is `Sessions.Opts` in sessions/@types.
 
 require("sessions.@types")
 

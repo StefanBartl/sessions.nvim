@@ -13,16 +13,13 @@
 ---@field on_load? fun(name: string, path: string): nil
 
 ---Optional normal-mode keymaps, all opt-in (`keymaps = false` by default).
+---An unset field binds nothing; a field may be one lhs or a list of them,
+---and `false` is the same as leaving it out.
 ---
 ---Covers every `:Session` subcommand that takes no *required* argument, plus
----the `:SessionLoad` picker. `delete` and `rename` are absent on purpose:
----both require a name, and a bare keypress has nothing to pass. Reach them
+---the `:SessionLoad` picker. `delete` and `rename` have no entry on purpose:
+---both need a name, and a bare keypress has nothing to pass — reach them
 ---through the picker or the commands themselves.
---- Every mapping is opt-in: an unset field binds nothing. A field may be one
---- lhs or a list of them; `false` is the same as leaving it out.
----
---- `:Session delete` and `:Session rename` deliberately have no entry -- both
---- need a name to act on, and a bare keypress has none. Use `picker`.
 ---@class Sessions.Keymaps
 ---@field save? string|string[]|false          `:Session save`
 ---@field load? string|string[]|false          `:Session load`
