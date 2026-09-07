@@ -20,6 +20,7 @@ is the short version of all of it.
 | [BINDINGS.md](BINDINGS.md) | Every keymap, user command and autocommand — keys are off by default, so this is also where you learn what to switch on |
 | [picker.md](picker.md) | `:SessionLoad` and its live preview |
 | [session-scoping.md](session-scoping.md) | Two lighter alternatives to a full session, for when a whole one is more than you want |
+| [statusline.md](statusline.md) | The ready-made component: its options, the lualine/heirline/native wiring, what its dirty marker actually means, and why it is cheap enough to call on every redraw |
 | [WORKFLOW.md](WORKFLOW.md) | The different question: not what each subcommand does, but how sessions, branches and scoping combine over a working day |
 
 ## Why it is the way it is
@@ -31,3 +32,9 @@ is the short version of all of it.
 | [portability.md](portability.md) | Why `:mksession` is already half portable, and what has to be done about the other half |
 | [metadata.md](metadata.md) | What the hidden `.{name}.json` holds when `metadata = true`, and what it buys |
 | [api.md](api.md) | Every Lua function a config or another plugin can call |
+
+## Working on it
+
+| Page | Answers |
+| --- | --- |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Ground rules, project layout, and the steps for adding a subcommand |

@@ -16,29 +16,11 @@ S.pick()                             -- open the session picker (see docs/picker
 
 ## Statusline
 
-`require("sessions.statusline").component(opts?)` returns a ready-made
-string: the active session name, with a dirty marker appended when the
-session's window/buffer layout has changed since the last save/load (i.e.
-what the next autosave would capture). Returns `""` when no session is
-active.
+`require("sessions.statusline").component(opts?)` returns a ready-made string:
+the active session name, with a dirty marker appended when the window and
+buffer layout has changed since the last save or load. It returns `""` when no
+session is active, and is safe to call on every redraw.
 
-```lua
----@class Sessions.StatuslineOpts
----@field icon? string        Prefix before the session name (default "")
----@field dirty_icon? string  Suffix when layout changed since last save (default " *")
----@field empty? string       Returned when no session is active (default "")
-```
-
-```lua
--- lualine
-require("lualine").setup({
-  sections = {
-    lualine_c = {
-      function() return require("sessions.statusline").component() end,
-    },
-  },
-})
-
--- heirline
-{ provider = function() return require("sessions.statusline").component({ icon = " " }) end }
-```
+Its options, the lualine/heirline/native wiring, what "dirty" means and why the
+component is cheap enough for a hotpath are in
+[statusline.md](statusline.md).
