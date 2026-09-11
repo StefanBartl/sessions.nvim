@@ -7,33 +7,37 @@ branches or projects.
 
 ## The steady-state loop needs nothing from you
 
-With the defaults (`autosave = true`, `branch_aware = true`,
-`project_aware = true`), the entire day-to-day workflow is: open Neovim,
-work, quit. `VimLeavePre` autosaves to `opts.autosave_name` ("last") and
+With the defaults (`autosave = true`, `autosave_name = true`,
+`branch_aware = true`, `project_aware = true`), the entire day-to-day
+workflow is: open Neovim, work, quit. `VimLeavePre` autosaves to the same
+branch/project-aware name a bare `:Session save` would use (`autosave_name
+= true` resolves it that way — see docs/configuration.md), and
 `nvim +LastSession` restores it next time — no `:Session save` needed
 unless you want a *named* session to come back to deliberately (a
 milestone, a specific investigation) rather than just "wherever I left
 off".
 
-## `nvim +LastSession` vs. `nvim '+Session load'` — pick by what you're restoring
+## `nvim +LastSession` and `nvim '+Session load'` are the same resolution now
 
 Both need `lazy = false` (or another eager-load trigger active at startup)
 in the plugin spec, or the CLI `+cmd` flag fires before the plugin is even
-loaded and does nothing. Beyond that:
+loaded and does nothing. Beyond that, pick whichever reads better in a
+shell alias — `+LastSession` needs no quoting, `'+Session load'` does — the
+two now resolve identically: the current project/branch's own session
+first (if it has been saved at least once), else the remembered
+last-loaded/saved session, else `default_name`. `:Session load <name>`
+stays the way to load something else on purpose.
 
-- `nvim +LastSession` — single word, no quoting, always loads the fixed
-  `"last"`/autosave session. Reach for this as the default "continue where
-  I left off" habit.
-- `nvim '+Session load'` — two words, needs quoting, auto-resolves by
-  project + branch to something like `myapp_feature-login`. Reach for this
-  when you deliberately want the *branch-aware* session, which is a
-  different session from `"last"` unless `autosave_name` happens to match
-  the auto-resolved name.
-
-Confusing the two isn't a hard error, but it is the single most common
-surprise: `+LastSession` after a `git checkout` restores whatever was open
-when you last quit *on any branch*, not the workspace tied to the branch
-you just switched to.
+This used to be a real trap: `+LastSession` hardcoded the literal `"last"`
+autosave slot, so `+LastSession` after a `git checkout` could restore
+whatever was open when you last quit *on any branch*, not the workspace
+tied to the branch you just switched to. Both the resolution `:LastSession`
+uses and the default `autosave_name` changed together to close that gap —
+see docs/configuration.md's "Session Naming" for the exact priority order.
+If you explicitly set `autosave_name` to a fixed string (the old default),
+that trap is back by design: autosave always targets that one name again,
+so `+LastSession`/bare `:Session load` will prefer it over any
+branch-aware session that happens to exist too.
 
 ## Branch switches restore a different workspace — that's the point, not a bug
 
@@ -49,9 +53,14 @@ actually gets you branch-switching behavior is manual:
 :Session load           " auto-resolves to other-branch's own session
 ```
 
-Skipping the first `:Session save` before switching means whatever was
-open lands in `"last"`'s autosave scope instead, not the branch you were
-just on.
+Skipping the first `:Session save` before switching is worse than it looks
+with the default `autosave_name = true`: `VimLeavePre` still autosaves on
+exit, and by then `git` reports the *new* branch — so the old branch's
+still-open buffers get saved **into the new branch's own session file**,
+overwriting whatever was genuinely saved there. (With a fixed
+`autosave_name` string it was merely imprecise — everything landed in one
+shared slot instead. Auto-resolving made a skipped save actively
+destructive to the target branch's session, not just uninformative.)
 
 ## Metadata `branch` only populates when you opted into git
 
@@ -83,11 +92,14 @@ sessions saved after the config change get the placeholder treatment.
 Run `:Session toggle-track <name>` once per session you want synced via a
 dotfiles/config repo (`root` pointed at a path inside that repo) — it
 flips git's `skip-worktree` bit and stays flipped across every future save
-of that session file. The trap: forgetting to toggle `last.vim` *off* of
-tracking (or never toggling it on in the first place) means the
+of that session file. The trap: forgetting to toggle whatever autosave
+writes to (`"last.vim"` with a fixed `autosave_name`; the current
+branch/project's own file with the default `autosave_name = true`) *off*
+of tracking — or never toggling it on in the first place — means a
 machine-local autosave session gets committed and immediately breaks on
-every other machine's absolute paths. Named, deliberately-saved sessions
-are what this feature is for; the autosave session almost never is.
+every other machine's absolute paths (unless `relative_paths` is also on).
+Named, deliberately-saved sessions are what this feature is for; an
+autosave session almost never is.
 
 ## Every mappable subcommand has a keymap option now — including the ones you had to type
 

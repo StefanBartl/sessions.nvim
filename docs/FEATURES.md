@@ -88,22 +88,32 @@ list, so a non-tabufline setup pays nothing.
 ## Autoload / autosave
 
 Loads the contextual session automatically on a plain `nvim` start (no
-file args), and saves to a fixed name on `VimLeavePre`.
+file args), and saves on `VimLeavePre`. Autosave's target follows
+`opts.autosave_name`: `true` (the default) auto-resolves branch/project-
+aware just like a bare `:Session save`, so leaving one project doesn't
+clobber another's autosave in a shared fixed slot; a string pins it to that
+one name regardless of project.
 
 - **Module:** `lua/sessions/bindings/autocmds/init.lua`
 - **Config:** `opts.autoload` (default `false`; `"ask"` shows a floating
   y/n confirmation before loading instead of loading silently),
-  `opts.autosave` (default `true`), `opts.autosave_name` (default `"last"`)
+  `opts.autosave` (default `true`), `opts.autosave_name` (default `true`;
+  a string pins it to a fixed name, `false` disables autosave)
 
 ## Remembered last-loaded session
 
-The name most recently passed to a successful `:Session load <name>` is
-persisted in `root/.state.json`, surviving restarts. `:Session load` (no
-name) and autoload prefer this over the auto-resolved project+branch name,
-falling back to `opts.default_name` if nothing has ever been loaded or the
-remembered session no longer exists on disk.
+The name most recently passed to a successful `:Session load <name>` or
+resolved by a successful `:Session save`/autosave is persisted in
+`root/.state.json`, surviving restarts. A bare `:Session load` (no name)
+and autoload check this only *after* the current project's own
+auto-resolved session (see docs/configuration.md's "Session Naming"): the
+remembered pointer is one value shared by every project, so it wins only
+when project/branch-aware naming is off or the current project has no
+saved session of its own yet. Falls back to `opts.default_name` if neither
+resolves to a file that exists.
 
-- **Module:** `lua/sessions/init.lua`
+- **Module:** `lua/sessions/init.lua`, `lua/sessions/core.lua` (resolution),
+  `lua/sessions/state.lua` (persistence)
 - **Config:** `opts.default_name` (default `"last"`)
 
 ## Lifecycle commands: delete / rename / toggle-track

@@ -19,6 +19,12 @@ replaced with a portable placeholder. On load, the placeholder is
 re-anchored to *whatever the current `cwd` is* — so load a portable
 session from within the project directory you want it to apply to.
 
+The replacement only matches at a real path boundary: `cwd` is treated as a
+hit only where it's followed by `/`, a quote, whitespace, or end of line —
+never mid-name. A sibling directory that merely starts with the same text
+as `cwd` (`~/repos/ui.nvim` is a text prefix of `~/repos/ui.nvim-backup`)
+keeps its own path untouched.
+
 The stored `.vim` file itself is rewritten at save time (so it's what gets
 synced/committed); loading never mutates it.
 
@@ -36,6 +42,8 @@ require("sessions").setup({
 A table of old-root → new-root path prefixes, applied on load only. Useful
 when `relative_paths` isn't enabled (or doesn't cover a path outside
 `cwd`) and you know the exact prefix substitution needed between machines.
+Same boundary rule as `relative_paths` above: a path merely starting with
+`old-root`'s text but not actually inside it is left alone.
 
 Rewriting happens on an in-memory temp copy sourced instead of the
 original file — the stored session stays untouched, so it keeps working
