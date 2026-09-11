@@ -286,14 +286,21 @@ function M.enable()
   })
 
   -- :LastSession — a plain zero-arg command (not a :Session subcommand) so it
-  -- works as `nvim +LastSession` on the CLI. Pure convenience layer over
-  -- `:Session load last`; loads the session literally named "last" (the
-  -- default autosave_name/default_name — see docs/configuration.md) rather
-  -- than relying on the bare-load fallback, so it stays correct even if a
-  -- user reconfigures default_name to something else.
+  -- works as `nvim +LastSession` on the CLI. Same resolution as a bare
+  -- `:Session load` (do_load(nil)): the current project/branch's own
+  -- session first, else the remembered last-loaded/saved one, else
+  -- default_name (see docs/configuration.md's "Session Naming").
+  --
+  -- Used to hardcode `do_load("last")` instead, on the theory that the
+  -- literal "last" was always what autosave wrote to. That stopped being
+  -- true once `autosave_name = true` (the default) started auto-resolving
+  -- autosave by branch/project like a real save -- a hardcoded "last" would
+  -- then load a stale or nonexistent file instead of what was actually just
+  -- autosaved. `do_load(nil)` tracks whatever autosave/save actually
+  -- targets, whatever `autosave_name`/`default_name` are set to.
   require("lib.nvim.bindings.usercmd").create("LastSession", function()
-    do_load("last")
-  end, { desc = "Load the 'last' session (nvim +LastSession)" })
+    do_load(nil)
+  end, { desc = "Load wherever you left off (nvim +LastSession)" })
 
   -- :SessionLoad — session picker with live preview (Snacks.picker or
   -- telescope.nvim, whichever is installed). A plain zero-arg command, not

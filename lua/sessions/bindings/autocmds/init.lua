@@ -147,11 +147,18 @@ function M.enable()
 
   if cfg.autosave then
     create_autocmd("VimLeavePre", function()
-      -- Save to fixed autosave_name (default "last") if set, otherwise don't save
-      local name = cfg.autosave_name
-      if name then
-        require("sessions.core").save(name)
+      local an = cfg.autosave_name
+      if an == true then
+        -- Same resolution a bare `:Session save` uses (branch/project-aware
+        -- when configured): autosave then targets *this* project's session
+        -- instead of one name shared by every project (see core.lua's
+        -- resolve() and docs/configuration.md).
+        require("sessions.core").save(nil)
+      elseif type(an) == "string" and an ~= "" then
+        -- Opt-in: pin autosave to one fixed name regardless of project/branch.
+        require("sessions.core").save(an)
       end
+      -- an == false/nil: autosave configured off despite cfg.autosave.
     end, {
       group = aug,
       desc = "sessions.nvim: autosave to fixed session name on exit",

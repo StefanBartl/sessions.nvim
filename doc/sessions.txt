@@ -101,11 +101,11 @@ Save a session (either via :Session save or autosave on exit): >vim
 <
 
 Restore the session: >bash
-  # Auto-resolved name (project + branch aware) -- needs quoting, it's two words
-  nvim '+Session load'
-
-  # The fixed "last" session -- no quoting needed, its own command
+  # Wherever you left off (project + branch aware) -- no quoting, own command
   nvim +LastSession
+
+  # The same resolution, spelled as a :Session subcommand -- needs quoting
+  nvim '+Session load'
 
   # Explicit session name -- needs quoting
   nvim '+Session load myntest'
@@ -116,8 +116,9 @@ Restore the session: >bash
 lib.nvim.bindings.usercmd.composer. A bare Neovim CLI `+cmd` flag is a single shell
 word, so any invocation containing a space needs to be quoted as one shell
 argument. |:LastSession| is a plain, separate, single-word command
-specifically so the single most common case (restore the last session)
-never needs quoting.
+specifically so the single most common case (restore wherever you left
+off) never needs quoting -- it resolves exactly like a bare
+|:Session-load|, not a hardcoded name (see |sessions-naming|).
 
 Common workflow — branch-aware sessions: >bash
   # Work on main branch (auto-named: myapp_main)
@@ -174,11 +175,16 @@ Default values (pass to setup(opts)): >lua
     -- loading silently.
     autoload = false,
 
-    -- Auto-save to a fixed session name on VimLeavePre (false = disabled).
+    -- Auto-save on VimLeavePre (false = disabled).
     autosave = true,
 
-    -- Session name for autosave (used when autosave = true).
-    autosave_name = "last",
+    -- Autosave target, used when autosave = true:
+    --   true   -- resolve like a bare :Session save (branch/project-aware
+    --             when configured), so different projects don't clobber
+    --             each other's autosave.
+    --   "name" -- pin autosave to this one fixed name regardless of project.
+    --   false  -- no autosave despite autosave = true.
+    autosave_name = true,
 
     -- Write a .{name}.json companion file next to each .vim session.
     metadata = true,
@@ -226,8 +232,10 @@ command.
 
 :Session load [name]                                        *:Session-load*
     Load a session. [name] supports tab completion from saved sessions. If
-    [name] is omitted the name is auto-resolved identically to
-    |:Session-save|.
+    [name] is omitted, the current project/branch's own session is
+    preferred when it exists (the same auto-resolution |:Session-save|
+    uses), else the remembered last-loaded/saved session, else
+    `default_name` -- see |sessions-naming|.
 
 :Session delete <name>                                    *:Session-delete*
     Permanently delete a session file (and its metadata companion).
@@ -254,13 +262,13 @@ command.
 
                                                               *:LastSession*
 :LastSession
-    Load the session literally named "last" (equivalent to
-    |:Session-load| with `last` as the explicit name). A plain, separate,
-    single-word command specifically so `nvim +LastSession` works without
-    CLI-arg quoting — the general `nvim '+Session load ...'` form needs
-    quoting since it is multiple shell words. Pairs with `autosave_name =
-    "last"` (see |sessions-config|) for a "just restore where I left off"
-    workflow.
+    Load wherever you left off -- the same resolution as a bare
+    |:Session-load| (no [name]): the current project/branch's own session
+    first, else the remembered last-loaded/saved one, else `default_name`
+    (see |sessions-naming|). A plain, separate, single-word command
+    specifically so `nvim +LastSession` works without CLI-arg quoting — the
+    general `nvim '+Session load ...'` form needs quoting since it is
+    multiple shell words.
 
 ==============================================================================
 7. KEYMAPS                                                 *sessions-keymaps*
@@ -349,6 +357,21 @@ is derived from the current context:
 Characters unsafe for filenames (slashes, spaces, etc.) are replaced with
 `-` or `_`. Example: `feature/login` → `feature-login`, `my project` →
 `my-project`.
+
+The table above governs |:Session-save| with no [name], and |:Session-load|
+when a [name] *is* given. A bare |:Session-load| (no [name]) and autoload
+resolve in priority order instead:
+
+  1. The auto-resolved name for the CURRENT project/branch (the table
+     above) -- but only when that session's file already exists.
+  2. The remembered last-loaded/saved session: `.state.json` in `root`,
+     one pointer shared by every project -- wins only when (1) has nothing
+     to offer (naming is off, or this project has never been saved).
+  3. `default_name`, if neither resolves to an existing file.
+
+(1) is checked first deliberately: preferring the remembered pointer
+unconditionally meant opening a *different* project with `autoload = true`
+could silently load whatever session was last touched elsewhere.
 
 ==============================================================================
 10. METADATA                                               *sessions-metadata*

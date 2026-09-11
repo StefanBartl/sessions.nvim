@@ -111,13 +111,31 @@ local function resolve(name, use_auto_resolve)
     -- unless branch_aware or project_aware actually asks for it.
     n = git_aware(cfg) and require("sessions.git").resolve_name(cfg) or cfg.default_name
   else
-    -- Load: prefer the remembered last-loaded session (if it still exists
-    -- on disk), falling back to default_name otherwise.
-    local remembered = require("sessions.state").read(cfg).last_loaded
-    if remembered and fn.filereadable(cfg.root .. "/" .. remembered .. ".vim") == 1 then
-      n = remembered
+    -- Load with no explicit name (bare `:Session load`, autoload). Two
+    -- candidates, in priority order:
+    --   1. The auto-resolved name for the project/branch we are in RIGHT
+    --      NOW -- the same resolution a bare `:Session save` would use --
+    --      but only when that session actually exists; a project that has
+    --      never been saved has no file to prefer.
+    --   2. The remembered last-loaded/saved session: `.state.json` in
+    --      `cfg.root`, one pointer shared by every project. Right for a
+    --      single-workspace setup (branch/project_aware off) or a custom
+    --      name that auto-resolve can't reconstruct.
+    -- (1) must come first: `.state.json` is global, not per-project, so
+    -- preferring it unconditionally meant opening a *different* project
+    -- with autoload on could silently load the previous project's session
+    -- -- the file still exists, filereadable() says yes, and nothing here
+    -- knew it belonged to somewhere else. See docs/configuration.md.
+    local auto = git_aware(cfg) and require("sessions.git").resolve_name(cfg) or nil
+    if auto and auto ~= cfg.default_name and fn.filereadable(cfg.root .. "/" .. auto .. ".vim") == 1 then
+      n = auto
     else
-      n = cfg.default_name
+      local remembered = require("sessions.state").read(cfg).last_loaded
+      if remembered and fn.filereadable(cfg.root .. "/" .. remembered .. ".vim") == 1 then
+        n = remembered
+      else
+        n = cfg.default_name
+      end
     end
   end
   return { name = n, path = cfg.root .. "/" .. n .. ".vim" }
@@ -208,6 +226,12 @@ function M.save(name)
 
   _current = si.name
   _dirty = false
+  -- A save is as much "the session to resume next" as an explicit load --
+  -- withholding this left the very first save in a project (before it was
+  -- ever explicitly loaded once) unable to be found again by a bare
+  -- `:Session load`/autoload, which fell through to whatever `.state.json`
+  -- last remembered from a *different* project instead. See M.load() below.
+  require("sessions.state").set_last_loaded(cfg, si.name)
 
   if cfg.metadata then
     local branch = git_aware(cfg) and require("sessions.git").current_branch() or nil

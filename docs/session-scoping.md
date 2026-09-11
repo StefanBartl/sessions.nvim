@@ -43,3 +43,9 @@ of any specific session.
 
 Stored as JSON under `root/layouts/`, separate from both full sessions and
 tab sessions.
+
+Sizing is best-effort: resizing one window redistributes space among its
+row/col siblings, which can perturb a sibling's size already applied
+earlier in the same restore. Two passes are run to correct for that, which
+covers the common 2-4 window layouts well; a deeply/asymmetrically nested
+split may still come back with proportions slightly off.

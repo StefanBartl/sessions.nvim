@@ -33,7 +33,13 @@ return {
   root_remap = {},
   autoload = false,
   autosave = true,
-  autosave_name = "last",
+  -- `true`: autosave resolves a name the same way a bare `:Session save`
+  -- does (branch/project-aware when configured) -- a string pins autosave
+  -- to that one fixed name regardless of project, `false` disables it
+  -- despite `autosave = true`. Was a fixed string ("last") by default,
+  -- which meant leaving any project silently overwrote every other
+  -- project's autosave in that one shared slot -- see docs/configuration.md.
+  autosave_name = true,
   metadata = true,
   -- Persist the per-tabpage buffer order (`vim.t.bufs`) that NvChad's
   -- tabufline and similar bars render from — `:mksession` cannot carry a

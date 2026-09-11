@@ -8,11 +8,11 @@ nvim my-file.lua          # work on files...
 
 **Restore the session**
 ```bash
-# Auto-resolved (project + branch aware) — needs quoting, it's two words:
-nvim '+Session load'
-
-# The fixed "last" session — no quoting needed, this is its own command:
+# Wherever you left off (project + branch aware) — no quoting, own command:
 nvim +LastSession
+
+# The same resolution, spelled as a :Session subcommand — needs quoting:
+nvim '+Session load'
 
 # Explicit session name — needs quoting:
 nvim '+Session load myntest'
@@ -24,21 +24,24 @@ nvim '+Session load myapp_feature-login'
 > word, so any invocation with a space — `Session load`, `Session load
 > <name>` — needs to be quoted as a single argument. `:LastSession` is a
 > plain, separate, single-word command specifically so the single most common
-> case (restore the last session) doesn't need quoting.
+> case (restore wherever you left off) doesn't need quoting — it resolves
+> exactly like a bare `:Session load` (see docs/configuration.md's "Session
+> Naming"), not a hardcoded name.
 
 ## Workflow example (with autosave enabled)
 
-First, make sure autosave is enabled (it should be default) in your setup:
+Autosave and branch/project-aware naming are both on by default, so there's
+nothing to configure — this is only here to show it explicitly:
 ```lua
 require("sessions").setup({
   autosave = true,
-  autosave_name = "last",
+  autosave_name = true, -- resolve by branch/project, like a bare :Session save
 })
 ```
 
 Then use it:
 ```bash
-nvim src/main.lua        # work, then exit (auto-saved to "last")
+nvim src/main.lua        # work, then exit (autosaved under this project/branch's name)
 nvim +LastSession        # restore the workspace
 ```
 

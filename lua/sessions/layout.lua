@@ -121,14 +121,23 @@ function M.restore(name)
   local out = {}
   build(tree, api.nvim_get_current_win(), out)
 
-  for _, entry in ipairs(out) do
-    if entry.size.width then
-      pcall(api.nvim_win_set_width, entry.win, entry.size.width)
+  -- Two passes, not one: setting window N's width/height redistributes
+  -- space among its row/col siblings, which can quietly undo a size already
+  -- applied to an earlier sibling in the same pass. A second pass corrects
+  -- what the first pass's later entries perturbed in its earlier ones -- not
+  -- a proof of convergence for arbitrarily deep nesting, but a real
+  -- improvement over one pass for the common 2-4 window layouts this is
+  -- actually used for.
+  for _ = 1, 2 do
+    for _, entry in ipairs(out) do
+      if entry.size.width then
+        pcall(api.nvim_win_set_width, entry.win, entry.size.width)
+      end
     end
-  end
-  for _, entry in ipairs(out) do
-    if entry.size.height then
-      pcall(api.nvim_win_set_height, entry.win, entry.size.height)
+    for _, entry in ipairs(out) do
+      if entry.size.height then
+        pcall(api.nvim_win_set_height, entry.win, entry.size.height)
+      end
     end
   end
 

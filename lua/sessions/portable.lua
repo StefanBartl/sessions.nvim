@@ -44,6 +44,52 @@ local function repl_escape(s)
 end
 
 ---@internal
+---Replace every occurrence of `needle` in `content` with `replacement`, but
+---only where `needle` ends at a real path boundary -- the next byte is not
+---a filename-continuation character (word char, `.`, `-`, `~`), or there is
+---no next byte at all.
+---
+---A plain `gsub` on the literal cwd matches it as a bare string prefix, so a
+---sibling directory that merely starts with the same text (`E:/repos/ui.nvim`
+---is a prefix of `E:/repos/ui.nvim-backup`, common in a repos folder full of
+---similarly-named plugin checkouts) had ITS paths corrupted too -- rewritten
+---to `{{SESSION_ROOT}}-backup/...`. Harmless on a same-machine save+load
+---(the two substitutions cancel out), but wrong the moment `root_remap` or a
+---different machine re-anchors the placeholder to a directory the sibling
+---was never actually under.
+---@param content string
+---@param needle string
+---@param replacement string
+---@return string
+local function boundary_replace(content, needle, replacement)
+  if needle == "" then
+    return content
+  end
+  local out = {}
+  local pos = 1
+  while true do
+    local s, e = content:find(needle, pos, true) -- plain find, no pattern chars
+    if not s then
+      out[#out + 1] = content:sub(pos)
+      break
+    end
+    local after = content:sub(e + 1, e + 1)
+    if after == "" or not after:match("[%w_%-%.~]") then
+      out[#out + 1] = content:sub(pos, s - 1)
+      out[#out + 1] = replacement
+      pos = e + 1
+    else
+      -- Not a boundary (e.g. "ui.nvim" inside "ui.nvim-backup"): keep the
+      -- literal text and resume right after this hit, so an overlapping
+      -- later match starting mid-needle is still found.
+      out[#out + 1] = content:sub(pos, s)
+      pos = s + 1
+    end
+  end
+  return table.concat(out)
+end
+
+---@internal
 ---Forward-slashed absolute form and the `fnamemodify(..., ':~')` form,
 ---mirroring the two spellings :mksession itself may write for `dir`.
 ---@param dir string
@@ -72,7 +118,7 @@ function M.make_relative(session_path, cwd)
   end
 
   for _, needle in ipairs(spellings(cwd)) do
-    content = content:gsub(pat_escape(needle), (repl_escape(PLACEHOLDER)))
+    content = boundary_replace(content, needle, PLACEHOLDER)
   end
 
   write_all(session_path, content)
@@ -102,13 +148,12 @@ function M.prepare_for_load(session_path, cwd, root_remap)
   end
 
   for old_root, new_root in pairs(root_remap or {}) do
-    if
-      type(old_root) == "string"
-      and type(new_root) == "string"
-      and content:find(pat_escape(old_root))
-    then
-      content = content:gsub(pat_escape(old_root), (repl_escape(new_root)))
-      changed = true
+    if type(old_root) == "string" and type(new_root) == "string" and content:find(old_root, 1, true) then
+      local rewritten = boundary_replace(content, old_root, new_root)
+      if rewritten ~= content then
+        content = rewritten
+        changed = true
+      end
     end
   end
 

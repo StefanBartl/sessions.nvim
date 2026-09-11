@@ -38,11 +38,17 @@ require("sessions").setup({
   -- loading silently.
   autoload = false,
 
-  -- Auto-save to a fixed session name on VimLeavePre (false = disabled).
+  -- Auto-save on VimLeavePre (false = disabled).
   autosave = true,
 
-  -- Session name for autosave (used when autosave = true).
-  autosave_name = "last",
+  -- Autosave target, used when autosave = true:
+  --   true    -- resolve the same way a bare `:Session save` does
+  --             (branch/project-aware when configured above), so leaving
+  --             one project doesn't overwrite another's autosave.
+  --   "name"  -- pin autosave to this one fixed session regardless of
+  --             project/branch (the old default's behavior).
+  --   false   -- no autosave despite autosave = true.
+  autosave_name = true,
 
   -- Write a .{name}.json companion file next to each session.
   metadata = true,
@@ -94,10 +100,26 @@ When no explicit name is given, the name is resolved from context:
 Unsafe filename characters (`/`, `\`, spaces) are replaced with `-` or `_`.
 `feature/login` → `feature-login`.
 
-The naming table above governs `:Session save [name]` (no name given). It
-does **not** apply to loading: `:Session load` (no name) and autoload
-instead prefer the **remembered last-loaded session** — the name most
-recently passed to a successful `:Session load <name>` — persisted in a
-small `.state.json` file in `root`, so it survives restarts. Falls back to
-`default_name` if nothing has been loaded yet or the remembered session no
-longer exists on disk.
+The naming table above governs `:Session save [name]` (no name given), and
+`:Session load [name]` when a name *is* given. A bare `:Session load` (no
+name) and autoload instead resolve in this order:
+
+1. **The auto-resolved name for the project/branch you're in right now** —
+   the same result the naming table above gives a save — but only when that
+   session's file actually exists; a project that was never saved has none
+   to prefer.
+2. **The remembered last-loaded/saved session**: the name most recently
+   passed to a successful `:Session load <name>`, or auto-resolved by a
+   `:Session save`/autosave — persisted in a small `.state.json` file in
+   `root`, so it survives restarts. This one pointer is shared by every
+   project, so it only wins when (1) has nothing to offer: `project_aware`
+   and `branch_aware` are both off, or the current project has no saved
+   session of its own yet.
+3. **`default_name`**, if neither of the above resolves to a file that
+   exists.
+
+(1) is checked first deliberately: preferring the remembered pointer
+unconditionally meant opening a *different* project with `autoload = true`
+could silently load whatever session you last touched elsewhere — the file
+still exists on disk, `.state.json` doesn't know it belongs to another
+project. See `autosave_name` above for the matching autosave-side fix.
