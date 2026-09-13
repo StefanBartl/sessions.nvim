@@ -5,6 +5,14 @@
 - Neovim **0.9+**
 - [lib.nvim](https://github.com/stefanbartl/lib.nvim) — **required**: the `:Session`/`:LastSession` commands are built on `lib.nvim.bindings.usercmd.composer`. `lib.nvim.notify`, `lib.nvim.bindings.keymap`, and `lib.nvim.git` stay soft-guarded (used when available, native fallback otherwise).
 
+Optional, each detected at runtime and degrading to nothing when absent:
+
+| | |
+| --- | --- |
+| `git` | Branch-aware session names. Without it the project part still works |
+| [snacks.nvim](https://github.com/folke/snacks.nvim) or telescope.nvim | `:SessionLoad`, the picker with live preview and multi-select delete |
+| A tabufline | The `vim.t.bufs` ordering sidecar, a no-op without one |
+
 ## lazy.nvim
 
 *Default (lazy-loaded on command use):*

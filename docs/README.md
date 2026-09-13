@@ -9,6 +9,7 @@ is the short version of all of it.
 | --- | --- |
 | [installation.md](installation.md) | What has to be there first, and a spec per plugin manager |
 | [quickstart.md](quickstart.md) | The shortest path: save a session, load it back |
+| [what-you-get.md](what-you-get.md) | The full command surface at a glance |
 | [configuration.md](configuration.md) | Every option and its default |
 | [troubleshooting.md](troubleshooting.md) | What `:checkhealth` asks |
 

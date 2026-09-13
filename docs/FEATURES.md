@@ -1,5 +1,26 @@
 # Features
 
+Neovim can already save a session. What it cannot do is decide *which* one:
+`:mksession` writes wherever you point it, and every workflow built on it ends
+up as a naming convention held together by hand. This plugin makes the name a
+function of where you are.
+
+| Area | Does |
+| --- | --- |
+| **Naming** | The project root — `.git`, `package.json`, and the rest — plus the current git branch. Switch branches and a different workspace comes back |
+| **Lifecycle** | `save`, `load`, `delete` and `rename`, the last two missing from most session plugins, plus autosave on exit and an `autoload = "ask"` prompt on start |
+| **Clean saves** | Blacklisted buffer types, filetypes and path prefixes are wiped before `:mksession` — no quickfix noise, no temp files in tomorrow's session |
+| **Portability** | `relative_paths` re-anchors a session wherever it is loaded, and `root_remap` translates absolute prefixes across machines and operating systems |
+| **Scoping** | `save-tab` / `load-tab` for one tab's windows, and `save-layout` / `load-layout` to reapply a split arrangement to whatever is already open |
+| **Metadata** | A companion `.json` recording the save timestamp, branch and buffer list, for a picker or a statusline to read without sourcing anything |
+| **Sync** | `:Session toggle-track` flips `git skip-worktree` on a session file, so named sessions travel through your config repo without committing transient state |
+
+Two details that exist because the obvious implementation gets them wrong:
+modified buffers are **hidden rather than discarded** before a load, so the
+session's own `only` / `tabonly` never triggers E445; and NvChad tabufline's
+`vim.t.bufs` ordering — which `:mksession` cannot carry — is persisted in a
+sidecar and reapplied, a no-op if you do not use such a tabline.
+
 Branch- and project-aware session management built on Neovim's own
 `:mksession`/`:source`, via a single `:Session <subcommand>` command.
 
