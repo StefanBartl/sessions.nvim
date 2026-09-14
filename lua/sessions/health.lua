@@ -81,6 +81,13 @@ function M.check()
     vim.health.info("lib.nvim.git not found — using git CLI fallback")
   end
 
+  local ui_kit_ok = pcall(require, "ui.kit")
+  if ui_kit_ok then
+    vim.health.ok('ui.nvim found — autoload = "ask" uses ui.kit.confirm')
+  else
+    vim.health.info('ui.nvim not found — autoload = "ask" uses a hand-rolled float fallback')
+  end
+
   if pcall(require, "which-key") then
     vim.health.ok("which-key available (keymap group label registered)")
   else

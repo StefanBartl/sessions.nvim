@@ -12,6 +12,7 @@ Optional, each detected at runtime and degrading to nothing when absent:
 | `git` | Branch-aware session names. Without it the project part still works |
 | [snacks.nvim](https://github.com/folke/snacks.nvim) or telescope.nvim | `:SessionLoad`, the picker with live preview and multi-select delete |
 | A tabufline | The `vim.t.bufs` ordering sidecar, a no-op without one |
+| [ui.nvim](https://github.com/StefanBartl/ui.nvim) | `autoload = "ask"`'s confirmation prompt (`ui.kit.confirm`); a hand-rolled floating y/n prompt is used without it |
 
 ## lazy.nvim
 

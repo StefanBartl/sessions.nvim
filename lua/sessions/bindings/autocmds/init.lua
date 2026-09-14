@@ -9,10 +9,11 @@ local M = {}
 local api = vim.api
 local fn = vim.fn
 
--- lib.nvim is a soft dependency here, matching the fallback convention used
--- in bindings/keymaps and bindings/usercmds (see health.lua).
+-- lib.nvim and ui.nvim are both soft dependencies here, matching the
+-- fallback convention used in bindings/keymaps and bindings/usercmds (see
+-- health.lua).
 local autocmd_ok, autocmd = pcall(require, "lib.nvim.bindings.autocmd")
-local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
+local kit_ok, kit = pcall(require, "ui.kit")
 
 local notify_ok, notify_lib = pcall(require, "lib.nvim.notify")
 local n = notify_ok and notify_lib.create("[sessions]")
@@ -38,7 +39,7 @@ end
 
 --- Minimal floating y/n prompt for `autoload = "ask"`. Deliberately not a
 --- vim.ui.select (that renders as a command-line menu, not a floating
---- window). Fallback for when lib.nvim isn't installed; float_confirm()
+--- window). Fallback for when ui.nvim isn't installed; float_confirm()
 --- below prefers kit.confirm when it is.
 ---@internal
 ---@param question string
