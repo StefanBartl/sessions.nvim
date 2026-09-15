@@ -148,7 +148,11 @@ function M.prepare_for_load(session_path, cwd, root_remap)
   end
 
   for old_root, new_root in pairs(root_remap or {}) do
-    if type(old_root) == "string" and type(new_root) == "string" and content:find(old_root, 1, true) then
+    if
+      type(old_root) == "string"
+      and type(new_root) == "string"
+      and content:find(old_root, 1, true)
+    then
       local rewritten = boundary_replace(content, old_root, new_root)
       if rewritten ~= content then
         content = rewritten
