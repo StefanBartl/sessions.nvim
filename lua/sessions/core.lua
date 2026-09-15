@@ -127,7 +127,11 @@ local function resolve(name, use_auto_resolve)
     -- -- the file still exists, filereadable() says yes, and nothing here
     -- knew it belonged to somewhere else. See docs/configuration.md.
     local auto = git_aware(cfg) and require("sessions.git").resolve_name(cfg) or nil
-    if auto and auto ~= cfg.default_name and fn.filereadable(cfg.root .. "/" .. auto .. ".vim") == 1 then
+    if
+      auto
+      and auto ~= cfg.default_name
+      and fn.filereadable(cfg.root .. "/" .. auto .. ".vim") == 1
+    then
       n = auto
     else
       local remembered = require("sessions.state").read(cfg).last_loaded
