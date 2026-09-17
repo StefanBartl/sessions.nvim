@@ -101,6 +101,42 @@ local function build(node, winid, out)
   end
 end
 
+---@internal
+---Whether `node` is a shape `build()` can walk without erroring: a `"leaf"`
+---(any second element, it is only ever read as a size table), or a `"row"`/
+---`"col"` whose second element is a non-empty array of valid nodes.
+---
+---`type(tree) ~= "table"` alone let `{}`/`[]` (valid JSON, decoded by
+---`vim.json.decode`) through, since an empty table passes that check too. Both
+---then hit `node[1] == "leaf"` as false, fell into the split branch with
+---`children = nil`, and `#children` raised `attempt to get length of a nil
+---value` -- so a truncated or otherwise-valid-but-wrong JSON file crashed
+---`build()` instead of returning the "corrupt or missing layout file" this
+---function promises one line above.
+---@param node any
+---@return boolean
+local function is_valid_node(node)
+  if type(node) ~= "table" then
+    return false
+  end
+  if node[1] == "leaf" then
+    return true
+  end
+  if node[1] ~= "row" and node[1] ~= "col" then
+    return false
+  end
+  local children = node[2]
+  if type(children) ~= "table" or #children == 0 then
+    return false
+  end
+  for _, child in ipairs(children) do
+    if not is_valid_node(child) then
+      return false
+    end
+  end
+  return true
+end
+
 ---Restore a saved layout into the current tab, splitting whatever buffer(s)
 ---are currently open rather than touching what files are loaded.
 ---@param name string
@@ -110,7 +146,7 @@ function M.restore(name)
   local cfg = require("sessions.config").cfg
   local path = layout_path(cfg, name)
   local tree, err = require("lib.nvim.fs.json").read(path)
-  if not tree or type(tree) ~= "table" then
+  if not is_valid_node(tree) then
     return false, "corrupt or missing layout file: " .. path .. " (" .. tostring(err) .. ")"
   end
 

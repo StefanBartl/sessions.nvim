@@ -447,22 +447,25 @@ return function(H)
 
     H.eq(#core.list(), 0, "a root that is not a directory lists nothing")
 
-    -- BUG: `M.save` promises `(boolean ok, string|nil path_or_err)` and every
-    -- caller reports the second value as "save failed: …". The `:mksession`
-    -- call is pcall'd accordingly -- but `ensure_dir()` above it is not, so a
-    -- root that cannot be created (a file in the way, a read-only volume, a
-    -- path component that is itself a file) escapes as a raw `E739: Cannot
-    -- create directory` instead. It escapes from the VimLeavePre autosave
-    -- too, where it surfaces as an error traceback while Neovim is quitting.
-    -- Pinned rather than fixed: turning the throw into a `false, err` is a
-    -- visible behaviour change, and the same guard is missing in save_tab.
-    local raised, err = pcall(core.save, "nope")
-    H.falsy(raised, "BUG: an uncreatable root raises instead of returning false")
-    H.contains(tostring(err), "E739", "with a raw Vim error rather than a reported failure")
+    -- Regression: `M.save` promises `(boolean ok, string|nil path_or_err)` and
+    -- every caller reports the second value as "save failed: …". The
+    -- `:mksession` call was pcall'd accordingly, but `ensure_dir()` above it
+    -- was not, so a root that cannot be created (a file in the way, a
+    -- read-only volume, a path component that is itself a file) used to
+    -- escape as a raw `E739: Cannot create directory` -- including from the
+    -- VimLeavePre autosave, where it surfaced as an error traceback while
+    -- Neovim was quitting. `ensure_dir` now returns `(ok, err)` and both
+    -- `save`/`save_tab` report it through the same contract as every other
+    -- failure, instead of raising.
+    local pcall_ok, save_ok, save_err = pcall(core.save, "nope")
+    H.ok(pcall_ok, "an uncreatable root no longer raises")
+    H.falsy(save_ok, "…save() itself reports failure")
+    H.ok(save_err and save_err ~= "", "…with a message, not a bare false")
 
-    local tab_raised, tab_err = pcall(core.save_tab, "nope")
-    H.falsy(tab_raised, "BUG: save_tab raises the same way")
-    H.contains(tostring(tab_err), "E739", "for the same reason")
+    local tab_pcall_ok, tab_ok, tab_err = pcall(core.save_tab, "nope")
+    H.ok(tab_pcall_ok, "save_tab no longer raises, for the same reason")
+    H.falsy(tab_ok, "…and reports failure the same way")
+    H.ok(tab_err and tab_err ~= "", "…with a message too")
   end
 
   -- Leave no session active: statusline_spec's premise (and any later spec's)

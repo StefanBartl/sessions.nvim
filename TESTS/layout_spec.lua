@@ -92,18 +92,30 @@ return function(H)
   H.falsy(bad_ok, "a corrupt layout file is refused")
   H.contains(bad_err, "corrupt or missing layout file", "with the same clear reason")
 
-  -- BUG: the guard is `type(tree) ~= "table"`, which only rejects JSON that
-  -- does not decode at all. Valid JSON that is not a layout tree -- `{}`, `[]`,
-  -- an object, anything truncated to a table -- passes it, and `build()` then
-  -- reads `node[2]` as a child list and takes its length: an uncaught
-  -- "attempt to get length of a nil value" out of `:Session load-layout`
-  -- instead of the "corrupt or missing layout file" the line above promises.
-  -- Pinned rather than fixed: the fix is a real shape check on the decoded
-  -- tree, which is a behaviour change worth making deliberately.
+  -- Regression: the guard used to be `type(tree) ~= "table"`, which only
+  -- rejects JSON that does not decode at all. Valid JSON that is not a layout
+  -- tree -- `{}`, `[]`, an object, anything truncated to a table -- passed it,
+  -- and `build()` then read `node[2]` as a child list and took its length: an
+  -- uncaught "attempt to get length of a nil value" out of
+  -- `:Session load-layout` instead of the "corrupt or missing layout file"
+  -- the line above promises. `restore` now recursively validates the decoded
+  -- shape (`is_valid_node`) before ever calling `build()`.
   vim.fn.writefile({ "{}" }, path)
-  local raised, raised_err = pcall(layout.restore, "three")
-  H.falsy(raised, "BUG: valid JSON that is not a layout tree raises")
-  H.contains(tostring(raised_err), "local 'children' (a nil value)", "out of the recursion")
+  local empty_ok, empty_err = layout.restore("three")
+  H.falsy(empty_ok, "an empty-table layout file is refused, not walked")
+  H.contains(empty_err, "corrupt or missing layout file", "with the same clear reason")
+
+  vim.fn.writefile({ "[]" }, path)
+  local ok2, arr_err = layout.restore("three")
+  H.falsy(ok2, "an empty-array layout file is refused too")
+  H.contains(arr_err, "corrupt or missing layout file", "with the same reason")
+
+  -- A node whose kind is neither "leaf" nor a split, or whose children are
+  -- not a list, is refused the same way, however deep it hides.
+  vim.fn.writefile({ '["row",[["leaf",{}],["nonsense",{}]]]' }, path)
+  local ok3, nested_err = layout.restore("three")
+  H.falsy(ok3, "a malformed node nested inside an otherwise valid tree is refused")
+  H.contains(nested_err, "corrupt or missing layout file", "with the same reason, however deep")
 
   -- list ----------------------------------------------------------------------
   vim.cmd("silent! only!")
