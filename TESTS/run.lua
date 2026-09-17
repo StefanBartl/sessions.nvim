@@ -7,7 +7,10 @@
 -- require it at module load. The runner puts a sibling checkout on the
 -- runtimepath, or whatever $LIB_NVIM_PATH points at.
 
-local dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./"
+-- Absolute, and resolved before any spec runs: a spec may move the working
+-- directory (git_spec resolves a branch from wherever Neovim stands), and a
+-- relative `TESTS/` would then point at nothing for every spec after it.
+local dir = vim.fs.normalize(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h")) .. "/"
 
 do
   local candidates = {}
@@ -39,15 +42,31 @@ end
 
 local H = dofile(dir .. "harness.lua")
 
--- Ordered so a failure points at the smallest layer first.
+-- Ordered so a failure points at the smallest layer first: pure functions,
+-- then the storage layer, then core, then everything that wires core into
+-- Neovim (commands, autocmds, keymaps, setup).
+--
+-- `statusline_spec` runs before `core_spec` on purpose -- it asserts what the
+-- component renders with *no* session loaded, which is only true while no
+-- earlier spec has left one active.
 local specs = {
   "sanitize_spec.lua",
   "resolve_name_spec.lua",
+  "git_spec.lua",
   "config_spec.lua",
+  "state_spec.lua",
   "meta_spec.lua",
   "buforder_spec.lua",
   "portable_spec.lua",
+  "layout_spec.lua",
   "statusline_spec.lua",
+  "core_spec.lua",
+  "picker_spec.lua",
+  "health_spec.lua",
+  "keymaps_spec.lua",
+  "usercmds_spec.lua",
+  "autocmds_spec.lua",
+  "init_spec.lua",
 }
 
 local failed = 0

@@ -24,4 +24,50 @@ return function(H)
   statusline.component(opts)
   statusline.component(opts)
   H.eq(vim.inspect(opts), vim.inspect(before), "the caller's options table is not modified")
+
+  -- The same table twice must come back identically: the merged options are
+  -- memoized per caller table, and a cache that answered differently on the
+  -- second redraw would make the statusline flicker.
+  H.eq(statusline.component(opts), statusline.component(opts), "repeated calls agree")
+
+  -- With a session ------------------------------------------------------------
+  -- A real one, saved into a fixture root: `component()` reads core's state,
+  -- and what it renders is only meaningful against the real thing.
+  local config = require("sessions.config")
+  local dir, cleanup = H.fixture("statusline")
+  config.setup({
+    root = dir,
+    branch_aware = false,
+    project_aware = false,
+    metadata = false,
+    restore_buffer_order = false,
+  })
+
+  H.ok(core.save("work"), "a session is saved")
+  H.eq(statusline.component(), "work", "the component renders the session name")
+  H.eq(statusline.component({ icon = "S " }), "S work", "behind the configured icon")
+
+  -- The dirty marker tracks structural changes (a window or a buffer added or
+  -- removed) -- what the next autosave would capture -- rather than whether
+  -- some buffer has unsaved text.
+  H.falsy(core.dirty(), "a freshly saved session is clean")
+  core.mark_dirty()
+  H.eq(statusline.component(), "work *", "a dirty session gets the default marker")
+  H.eq(
+    statusline.component({ dirty_icon = " [+]" }),
+    "work [+]",
+    "or whatever marker the caller configured"
+  )
+  H.eq(statusline.component({ dirty_icon = "" }), "work", "and none at all if it wants none")
+
+  core.save("work")
+  H.eq(statusline.component(), "work", "saving clears the marker again")
+
+  -- Leave no session behind: every later spec assumes a headless run has none.
+  core.delete("work")
+  H.falsy(core.current(), "no session is active again")
+  H.eq(statusline.component(), "", "and the component is back to nothing")
+
+  config.setup({})
+  cleanup()
 end

@@ -86,8 +86,13 @@ of mistake this plugin exists to prevent.
 
 ## Tests
 
-`TESTS/` is a headless spec suite over name resolution, the sanitizer, the
-metadata and buffer-order sidecars, portability and the statusline component.
+`TESTS/` is a headless spec suite over every module in `lua/sessions/`: name
+resolution and the sanitizer, git/project detection, the config merge, the
+state pointer, the metadata and buffer-order sidecars, portability, layouts,
+core's save/load/delete/rename surface, the picker, `:checkhealth`, and the
+whole bindings layer (commands, autocmds, keymaps, `setup()`). It spawns no
+process and makes no network call; [`TESTS/README.md`](../TESTS/README.md) has
+the seams that guarantee that, and what is deliberately left out.
 
 ```
 nvim --headless -u NONE -c "set rtp+=." -l TESTS/run.lua
