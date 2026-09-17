@@ -48,11 +48,23 @@ local function is_dir(p)
 end
 
 ---@internal
+---mkdir() raises (`E739: Cannot create directory`) when the parent cannot be
+---created -- a component that already exists as a file, a read-only volume --
+---and that used to reach `M.save`/`M.save_tab`'s callers unguarded, contract
+---(`boolean, string|nil`) notwithstanding. Reachable from the `VimLeavePre`
+---autosave, so a broken session root used to crash Neovim on quit.
 ---@param dir string
+---@return boolean ok
+---@return string|nil err
 local function ensure_dir(dir)
-  if not is_dir(dir) then
-    fn.mkdir(dir, "p")
+  if is_dir(dir) then
+    return true, nil
   end
+  local ok, err = pcall(fn.mkdir, dir, "p")
+  if not ok then
+    return false, tostring(err)
+  end
+  return true, nil
 end
 
 ---@internal
@@ -214,7 +226,10 @@ end
 function M.save(name)
   local cfg = require("sessions.config").cfg
   apply_sessionoptions()
-  ensure_dir(cfg.root)
+  local dir_ok, dir_err = ensure_dir(cfg.root)
+  if not dir_ok then
+    return false, dir_err
+  end
   wipe_blacklisted()
 
   local si = resolve(name, true) -- save: auto-resolve a project/branch name when unnamed
@@ -262,7 +277,10 @@ end
 ---@return string|nil path_or_err
 function M.save_tab(name)
   local cfg = require("sessions.config").cfg
-  ensure_dir(cfg.root .. "/.tabs")
+  local dir_ok, dir_err = ensure_dir(cfg.root .. "/.tabs")
+  if not dir_ok then
+    return false, dir_err
+  end
   wipe_blacklisted()
 
   local si = resolve(name, true)

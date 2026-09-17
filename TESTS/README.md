@@ -110,25 +110,28 @@ Deliberately not covered:
 - `health.lua`'s trailing `composer.checkhealth("Session")` call: it reports on
   lib.nvim's own verb registry, which lib.nvim tests there.
 
-## Two pinned bugs
+## Two bugs found here, now fixed
 
-Both are marked with a `BUG:` comment at the assertion that pins them. They are
-pinned rather than fixed because each fix is a visible behaviour change:
+Both were first pinned in their broken shape with a `BUG:` comment; both are
+**fixed**, and the assertions stayed on as regression guards.
 
-1. **`core.save`/`core.save_tab` raise instead of reporting.** `M.save`
+1. **`core.save`/`core.save_tab` used to raise instead of reporting.** `M.save`
    promises `(boolean ok, string|nil path_or_err)` and every caller renders the
-   second value as "save failed: …". The `:mksession` call is `pcall`ed
-   accordingly, but the `ensure_dir()` above it is not — so a root that cannot
+   second value as "save failed: …". The `:mksession` call was `pcall`ed
+   accordingly, but the `ensure_dir()` above it was not — so a root that cannot
    be created (a file in the way, a read-only volume, a path component that is
-   itself a file) escapes as a raw `E739: Cannot create directory`, including
-   out of the `VimLeavePre` autosave, where it surfaces while Neovim is
-   quitting. Pinned in `core_spec.lua`.
-2. **`layout.restore` raises on valid JSON that is not a layout tree.** The
-   guard is `type(tree) ~= "table"`, which only rejects JSON that does not
-   decode at all; `{}`, `[]` or anything else table-shaped passes it, and
-   `build()` then takes the length of a nil child list. The caller gets
-   "attempt to get length of a nil value" instead of the "corrupt or missing
-   layout file" the same function promises one line above. Pinned in
+   itself a file) escaped as a raw `E739: Cannot create directory`, including
+   out of the `VimLeavePre` autosave, where it surfaced while Neovim was
+   quitting. `ensure_dir` now returns `(ok, err)` and both callers report it
+   through the same contract as every other failure. Pinned in `core_spec.lua`.
+2. **`layout.restore` used to raise on valid JSON that is not a layout
+   tree.** The guard was `type(tree) ~= "table"`, which only rejects JSON that
+   does not decode at all; `{}`, `[]` or anything else table-shaped passed it,
+   and `build()` then took the length of a nil child list — "attempt to get
+   length of a nil value" instead of the "corrupt or missing layout file" the
+   same function promises one line above. `restore` now walks the decoded tree
+   with a recursive `is_valid_node` check before ever calling `build()`, so a
+   malformed node fails the same way however deep it hides. Pinned in
    `layout_spec.lua`.
 
 One further quirk is pinned as behaviour rather than as a defect
