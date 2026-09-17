@@ -40,6 +40,11 @@ different workspace and you never have to name anything. Built on Neovim's own
 > way into a project: jump to the repository, and let this plugin restore what
 > you were doing in it.
 >
+> **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — renders this
+> plugin's own `sessions.statusline` component in its statusline, so the
+> active session is visible without asking for it. This plugin owns the
+> text; ui.nvim only places it.
+>
 > All of the above are soft: without them everything else works unchanged.
 > [lib.nvim](https://github.com/StefanBartl/lib.nvim) is the one real
 > dependency — see [Requirements](docs/installation.md#requirements).
