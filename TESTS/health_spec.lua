@@ -120,6 +120,27 @@ return function(H)
     no_git()
   end
 
+  -- ------------------------------------------------- hard dependency missing
+
+  -- BUG, now fixed: the report's trailing `composer.checkhealth("Session")`
+  -- call used to run unconditionally, even when the earlier `pcall(require,
+  -- "lib.nvim.bindings.usercmd.composer")` had already failed and reported
+  -- the error above. `require`ing straight into a module that failed to load
+  -- once already re-raises ("loop or previous error loading module"), which
+  -- crashed the whole `:checkhealth sessions` report instead of degrading to
+  -- the error already issued -- the suite's hard dependency on lib.nvim
+  -- (see TESTS/README.md) meant this branch went untested and unnoticed.
+  do
+    local no_composer = H.stub("lib.nvim.bindings.usercmd.composer", false)
+    local ok = pcall(check)
+    H.ok(ok, "a missing composer must not crash the whole report")
+    H.ok(
+      reported("error", "lib.nvim not found"),
+      "the missing dependency is still reported as an error"
+    )
+    no_composer()
+  end
+
   -- ------------------------------------------------- a root that does exist
 
   do
