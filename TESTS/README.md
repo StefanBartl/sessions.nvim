@@ -107,13 +107,16 @@ Deliberately not covered:
   callback, the confirm and delete actions, the reopen-after-delete — but
   actually drawing a picker window needs snacks.nvim or telescope.nvim, and
   neither is a dependency of this plugin nor a CI checkout.
-- `health.lua`'s trailing `composer.checkhealth("Session")` call: it reports on
-  lib.nvim's own verb registry, which lib.nvim tests there.
+- `health.lua`'s trailing `composer.checkhealth("Session")` call, when it
+  actually runs: it reports on lib.nvim's own verb registry, which lib.nvim
+  tests there. The *guard* around that call — that it does not run at all
+  when `lib.nvim.bindings.usercmd.composer` failed to load — is covered in
+  `health_spec.lua` (see bug 3 below).
 
-## Two bugs found here, now fixed
+## Three bugs found here, now fixed
 
-Both were first pinned in their broken shape with a `BUG:` comment; both are
-**fixed**, and the assertions stayed on as regression guards.
+All three were first pinned in their broken shape with a `BUG:` comment; all
+three are **fixed**, and the assertions stayed on as regression guards.
 
 1. **`core.save`/`core.save_tab` used to raise instead of reporting.** `M.save`
    promises `(boolean ok, string|nil path_or_err)` and every caller renders the
@@ -133,6 +136,19 @@ Both were first pinned in their broken shape with a `BUG:` comment; both are
    with a recursive `is_valid_node` check before ever calling `build()`, so a
    malformed node fails the same way however deep it hides. Pinned in
    `layout_spec.lua`.
+3. **`health.lua`'s report used to crash instead of degrading when
+   `lib.nvim.bindings.usercmd.composer` failed to load.** The preflight check
+   a few lines up (`pcall(require, "lib.nvim.bindings.usercmd.composer")`)
+   already reports that as `vim.health.error(...)`, but the trailing
+   `composer.checkhealth("Session")` call at the end of `M.check()` ran
+   unconditionally — `require`ing straight back into a module that had
+   already failed to load re-raises ("loop or previous error loading
+   module"), turning the *diagnostic* command itself into an uncaught error
+   instead of the warning already on screen. Every other spec in this suite
+   runs with lib.nvim as a hard dependency (see above), so this was the one
+   branch nothing ever exercised. `M.check()` now guards the call with the
+   same `lib_composer_ok` the preflight check already computed. Pinned in
+   `health_spec.lua`.
 
 One further quirk is pinned as behaviour rather than as a defect
 (`core_spec.lua`): `core.rename` does not update `.state.json`, so between

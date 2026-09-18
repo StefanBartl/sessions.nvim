@@ -166,7 +166,14 @@ function M.check()
     vim.health.info(":SessionLoad not found (call setup() first)")
   end
 
-  require("lib.nvim.bindings.usercmd.composer").checkhealth("Session")
+  -- Guarded by the same `lib_composer_ok` checked above: without it this is
+  -- exactly the missing-dependency branch already reported as an error a few
+  -- lines up, and calling straight into a module that failed to `require`
+  -- would crash the whole `:checkhealth` report instead of degrading to the
+  -- warning already issued. BUG, now fixed: this used to run unconditionally.
+  if lib_composer_ok then
+    require("lib.nvim.bindings.usercmd.composer").checkhealth("Session")
+  end
 end
 
 return M

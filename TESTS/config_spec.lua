@@ -53,13 +53,19 @@ return function(H)
 
       local short = (temp:gsub("\\", "/"))
       H.ok(blacklisted(short .. "/f.txt"), "blacklist: $TEMP as spelled, forward slashes")
-      H.ok(blacklisted(temp .. "\f.txt"), "blacklist: $TEMP as spelled, backslashes")
+      -- `\\f.txt`, a literal backslash: `"\f.txt"` (without the doubled
+      -- backslash) is Lua's own escape for a form-feed byte, not "\f" as
+      -- text -- a typo that happened to still pass, since the blacklist also
+      -- carries the bare, separator-less spelling of $TEMP as one of its
+      -- candidates (see config/init.lua), which prefix-matches this string
+      -- regardless of what character follows it.
+      H.ok(blacklisted(temp .. "\\f.txt"), "blacklist: $TEMP as spelled, backslashes")
 
       local real = uv.fs_realpath(temp)
       if real and real ~= temp then
         local long = (real:gsub("\\", "/"))
         H.ok(blacklisted(long .. "/f.txt"), "blacklist: the resolved $TEMP, forward slashes")
-        H.ok(blacklisted(real .. "\f.txt"), "blacklist: the resolved $TEMP, backslashes")
+        H.ok(blacklisted(real .. "\\f.txt"), "blacklist: the resolved $TEMP, backslashes")
       end
 
       -- No entry may mix the two separators: a buffer name never does, so such

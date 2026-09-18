@@ -31,6 +31,54 @@ return function(H)
   H.contains(stored, "{{SESSION_ROOT}}", "it is a placeholder now")
   H.contains(stored, "/elsewhere/outside.lua", "a path outside the project is left alone")
 
+  -- boundary_replace: a sibling that merely starts with the same text -------
+  -- `E:/repos/ui.nvim` is a prefix of `E:/repos/ui.nvim-backup`, common in a
+  -- repos folder full of similarly-named plugin checkouts. A plain `gsub` on
+  -- the literal cwd would match that prefix too and corrupt the sibling's
+  -- path; the real boundary check is that the byte right after the match is
+  -- not itself a filename-continuation character (word char, `.`, `-`, `~`).
+  do
+    local sibling_dir = dir .. "/ui.nvim"
+    local sibling_session = dir .. "/sibling.vim"
+    vim.fn.writefile({
+      "badd +1 " .. sibling_dir .. "/init.lua",
+      "badd +1 " .. sibling_dir .. "-backup/init.lua",
+    }, sibling_session)
+
+    portable.make_relative(sibling_session, sibling_dir)
+    local sibling_stored = H.read(sibling_session)
+    H.contains(sibling_stored, "{{SESSION_ROOT}}/init.lua", "the project's own path is rewritten")
+    H.contains(
+      sibling_stored,
+      sibling_dir .. "-backup/init.lua",
+      "but a sibling that only shares the prefix is left exactly as it was"
+    )
+    H.excludes(
+      sibling_stored,
+      "{{SESSION_ROOT}}-backup",
+      "and never gets the placeholder spliced into its own name"
+    )
+  end
+
+  -- boundary_replace: an overlapping match starting mid-needle --------------
+  -- After a hit that fails the boundary check, the search must resume right
+  -- after *that hit's start* (not past its end), or a valid match beginning
+  -- one byte later inside the same run is skipped entirely. Needle "aa"
+  -- against "aaa": the first "aa" (positions 1-2) is followed by another "a"
+  -- (not a boundary) and is kept literal, but positions 2-3 is *also* "aa"
+  -- and this time is followed by nothing (a boundary), so it must still be
+  -- found and replaced.
+  do
+    local overlap_session = dir .. "/overlap.vim"
+    vim.fn.writefile({ "before aaa after" }, overlap_session)
+    portable.make_relative(overlap_session, "aa")
+    H.eq(
+      H.read(overlap_session),
+      "before a{{SESSION_ROOT}} after",
+      "a boundary-respecting match one byte into a rejected hit is still found"
+    )
+  end
+
   -- prepare_for_load ----------------------------------------------------------
   local elsewhere = dir .. "/moved"
   vim.fn.mkdir(elsewhere, "p")
