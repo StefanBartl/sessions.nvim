@@ -71,7 +71,15 @@ function M.check()
   if lib_map_ok then
     vim.health.ok("lib.nvim.bindings.keymap available (enhanced keymaps)")
   else
-    vim.health.info("lib.nvim.bindings.keymap not found — using vim.keymap.set fallback")
+    -- Unlike lib.nvim.notify above, sessions.bindings.keymaps has no
+    -- fallback for this submodule (bare require) -- it only ever runs when
+    -- `cfg.keymaps` is configured, but once it is, a missing submodule
+    -- throws instead of degrading.
+    vim.health.warn(
+      "lib.nvim.bindings.keymap not found -- there is no fallback: "
+        .. "setup({ keymaps = {...} }) will throw if this submodule is missing",
+      { "Update lib.nvim to a checkout that includes lib.nvim.bindings.keymap" }
+    )
   end
 
   local lib_git_ok = pcall(require, "lib.nvim.git")

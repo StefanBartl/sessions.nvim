@@ -10,8 +10,9 @@ local api = vim.api
 local fn = vim.fn
 
 -- lib.nvim and ui.nvim are both soft dependencies here, matching the
--- fallback convention used in bindings/keymaps and bindings/usercmds (see
--- health.lua).
+-- notify fallback convention used in bindings/usercmds (see health.lua).
+-- bindings/keymaps has no such fallback for lib.nvim.bindings.keymap --
+-- that submodule is a hard dependency once `keymaps` is configured.
 local autocmd_ok, autocmd = pcall(require, "lib.nvim.bindings.autocmd")
 local kit_ok, kit = pcall(require, "ui.kit")
 
