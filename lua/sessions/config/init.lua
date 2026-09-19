@@ -48,17 +48,18 @@ local function is_list(t)
 end
 
 ---Top-level keys `setup()` recognizes and, for the nested tables among them,
----their own direct sub-keys (one level, not recursive -- e.g. `marks.menu`'s
----own keys are not checked). `"list"` marks a curated array (`vim.tbl_deep_
----extend` replaces a non-empty array wholesale rather than index-merging it,
----so a stray scalar here would otherwise silently become one array entry
----instead of the type error it actually is). `"open"` marks a table whose
----keys are not a closed set (`root_remap` is an arbitrary old-root ->
----new-root map). `true` accepts any value unchecked -- covers scalars and
----leaf fields polymorphic enough (e.g. keymap values: `string|string[]|
----false`) that checking them here would duplicate what each consumer
----already guards for itself.
----@type table<string, true|"list"|"open"|table<string, true>>
+---their own sub-keys -- recursively, to whatever depth `Sessions.Config`
+---itself nests (e.g. `marks.menu`'s own keys, `ui`/`pin_marker`, are checked
+---too, not just `marks`'s and `marks.menu`'s presence). `"list"` marks a
+---curated array (`vim.tbl_deep_extend` replaces a non-empty array wholesale
+---rather than index-merging it, so a stray scalar here would otherwise
+---silently become one array entry instead of the type error it actually
+---is). `"open"` marks a table whose keys are not a closed set (`root_remap`
+---is an arbitrary old-root -> new-root map). `true` accepts any value
+---unchecked -- covers scalars and leaf fields polymorphic enough (e.g.
+---keymap values: `string|string[]|false`) that checking them here would
+---duplicate what each consumer already guards for itself.
+---@type table<string, true|"list"|"open"|table<string, any>>
 local KNOWN = {
   root = true,
   default_name = true,
@@ -119,16 +120,24 @@ local KNOWN = {
     defaults = true,
     import_harpoon = true,
     context_debounce_ms = true,
-    menu = true,
-    preview = true,
+    menu = {
+      ui = true,
+      pin_marker = true,
+    },
+    preview = {
+      max_kb = true,
+      max_lines = true,
+    },
     select_key = true,
     preview_key = true,
   },
 }
 
----Top-level keys whose known-table entry also accepts a bare `false`
+---Full dotted paths whose known-table entry also accepts a bare `false`
 ---instead of a table -- `keymaps = false` is the documented "register none"
----shape (config/DEFAULTS.lua's own default).
+---shape (config/DEFAULTS.lua's own default). Keyed by the same dotted path
+---`validate_value()` builds up, so a nested field could opt in too, not only
+---a top-level one -- none currently needs it.
 ---@type table<string, true>
 local ALLOW_FALSE = { keymaps = true }
 
@@ -160,11 +169,73 @@ local function describe_unknown(key, known, prefix)
   return ("unknown option '%s%s'"):format(prefix, name)
 end
 
+---@internal
+---Validate one `value` against its `known` entry (a `KNOWN[key]`, or one
+---reached by recursing into it), to whatever depth `known` itself nests --
+---an unknown key is caught no matter how deep it sits (ERR-50), and a value
+---whose shape does not fit is dropped so the built-in default takes effect
+---for that whole path instead of crashing a module downstream (ERR-22).
+---@param value any
+---@param known true|"list"|"open"|table<string, any>
+---@param path string  full dotted path to `value`, for messages and ALLOW_FALSE
+---@param found_issues string[]
+---@return any clean  nil means "drop this path -- the caller must not set it"
+local function validate_value(value, known, path, found_issues)
+  if known == true then
+    return value
+  elseif known == "list" then
+    if type(value) ~= "table" or not is_list(value) then
+      found_issues[#found_issues + 1] = ("option '%s' must be a list, got %s -- using the default"):format(
+        path,
+        type(value)
+      )
+      return nil
+    end
+    return value
+  elseif known == "open" then
+    if type(value) ~= "table" then
+      found_issues[#found_issues + 1] = ("option '%s' must be a table, got %s -- using the default"):format(
+        path,
+        type(value)
+      )
+      return nil
+    end
+    return value
+  end
+  -- type(known) == "table": a closed set of sub-keys, checked recursively.
+  if value == false and ALLOW_FALSE[path] then
+    return false
+  end
+  if type(value) ~= "table" then
+    local shape = ALLOW_FALSE[path] and "a table or false" or "a table"
+    found_issues[#found_issues + 1] = ("option '%s' must be %s, got %s -- using the default"):format(
+      path,
+      shape,
+      type(value)
+    )
+    return nil
+  end
+  local sub_clean = {}
+  for sub_key, sub_value in pairs(value) do
+    local sub_known = known[sub_key]
+    if sub_known == nil then
+      found_issues[#found_issues + 1] = describe_unknown(sub_key, known, path .. ".")
+    else
+      local cleaned = validate_value(sub_value, sub_known, path .. "." .. sub_key, found_issues)
+      if cleaned ~= nil then
+        sub_clean[sub_key] = cleaned
+      end
+    end
+  end
+  return sub_clean
+end
+
 ---Validate `opts` against `KNOWN` before the merge (ERR-50): an unknown key
 ---is dropped with a did-you-mean hint instead of silently vanishing into
 ---the default forever, and a value whose shape does not fit its option is
 ---dropped so the built-in default takes effect instead of crashing a module
----downstream (ERR-22). Does not mutate `opts`.
+---downstream (ERR-22). Recurses to arbitrary depth (see `validate_value()`),
+---not just into the top-level tables. Does not mutate `opts`.
 ---@internal
 ---@param opts table
 ---@return table clean  a copy of opts holding only recognized, well-typed entries
@@ -175,47 +246,11 @@ local function validate(opts)
     local known = KNOWN[key]
     if known == nil then
       found_issues[#found_issues + 1] = describe_unknown(key, KNOWN, "")
-    elseif known == "list" then
-      if type(value) ~= "table" or not is_list(value) then
-        found_issues[#found_issues + 1] = ("option '%s' must be a list, got %s -- using the default"):format(
-          key,
-          type(value)
-        )
-      else
-        clean[key] = value
-      end
-    elseif known == "open" then
-      if type(value) ~= "table" then
-        found_issues[#found_issues + 1] = ("option '%s' must be a table, got %s -- using the default"):format(
-          key,
-          type(value)
-        )
-      else
-        clean[key] = value
-      end
-    elseif type(known) == "table" then
-      if value == false and ALLOW_FALSE[key] then
-        clean[key] = false
-      elseif type(value) ~= "table" then
-        local shape = ALLOW_FALSE[key] and "a table or false" or "a table"
-        found_issues[#found_issues + 1] = ("option '%s' must be %s, got %s -- using the default"):format(
-          key,
-          shape,
-          type(value)
-        )
-      else
-        local sub_clean = {}
-        for sub_key, sub_value in pairs(value) do
-          if known[sub_key] == nil then
-            found_issues[#found_issues + 1] = describe_unknown(sub_key, known, key .. ".")
-          else
-            sub_clean[sub_key] = sub_value
-          end
-        end
-        clean[key] = sub_clean
-      end
     else
-      clean[key] = value
+      local cleaned = validate_value(value, known, key, found_issues)
+      if cleaned ~= nil then
+        clean[key] = cleaned
+      end
     end
   end
   table.sort(found_issues)
