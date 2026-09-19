@@ -370,6 +370,26 @@ return function(H)
   H.falsy(ok_p9, "preview past the end fails")
   H.contains(err_p9, "no mark at 9", "...")
 
+  -- pin_marker of the wrong type (ERR-22) ------------------------------------------
+
+  -- `marks.menu.pin_marker` is validated by config/init.lua's validate()
+  -- only as "some value" (a leaf polymorphic enough that checking its shape
+  -- there would duplicate the consumer's own guard) -- so mark_pins() itself
+  -- must degrade a non-string (a config typo like `pin_marker = {}`) to the
+  -- built-in icon instead of erroring on the `..` it feeds into virt_text.
+  config.setup({
+    root = dir .. "/sroot6",
+    branch_aware = false,
+    project_aware = false,
+    ---@diagnostic disable-next-line: assign-type-mismatch
+    marks = { enable = true, defaults = { a }, import_harpoon = false, menu = { pin_marker = {} } },
+  })
+  H.fresh("sessions.marks")
+  local menu2 = H.fresh("sessions.marks.menu")
+  local ok_pm, err_pm = pcall(menu2.open_edit)
+  H.ok(ok_pm, "a non-string pin_marker does not crash the edit menu: " .. tostring(err_pm))
+  menu2.open_edit() -- close it again
+
   -- restore ---------------------------------------------------------------------
 
   vim.cmd("silent! %bwipeout!")
