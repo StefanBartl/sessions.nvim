@@ -60,6 +60,30 @@ local UNMAPPABLE = {
 }
 
 ---@internal
+---Resolve a notifier; graceful fallback if lib.nvim's notify is absent,
+---matching the convention used in bindings/usercmds and marks (lib.nvim.notify
+---is soft-guarded per docs/installation.md -- unlike lib.nvim.bindings.keymap
+---just below, which has no such fallback and is documented separately).
+---@return table
+local function notifier()
+  local ok, lib = pcall(require, "lib.nvim.notify")
+  if ok then
+    return lib.create("[sessions.keymaps]")
+  end
+  return {
+    info = function(msg)
+      vim.notify("[sessions.keymaps] " .. msg, vim.log.levels.INFO)
+    end,
+    warn = function(msg)
+      vim.notify("[sessions.keymaps] " .. msg, vim.log.levels.WARN)
+    end,
+    error = function(msg)
+      vim.notify("[sessions.keymaps] " .. msg, vim.log.levels.ERROR)
+    end,
+  }
+end
+
+---@internal
 ---Whether the mark list is on, read from the live config. The `km` argument
 ---is only there so the check reads at its call site as being about the
 ---user's keymap table; the decision is the config's.
@@ -114,7 +138,7 @@ function M.attach(km, which_key)
     return {}
   end
 
-  local notify = require("lib.nvim.notify").create("[sessions.keymaps]")
+  local notify = notifier()
 
   -- Filter UNMAPPABLE names out before the registry sees them, so the user
   -- gets the "needs a name" reason rather than a bare "no such keymap action".
