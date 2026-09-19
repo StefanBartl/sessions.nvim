@@ -21,6 +21,7 @@ standalone `:LastSession` convenience command.
 | `:Session load-layout <name>` | Restore a window-split layout onto whatever buffers are currently open |
 | `:LastSession` | Load wherever you left off — same resolution as a bare `:Session load`, unquoted-CLI-friendly (`nvim +LastSession`) |
 | `:SessionLoad` | Open a session picker with live preview (Snacks.picker or Telescope) — see [Picker Integration](picker.md) |
+| `:Session marks …` | The mark list — an ordered set of files jumped to by number, with pins and defaults; `add`, `remove`, `pin`, `unpin`, `defaults sync\|reset`, `select <n>`, `preview <n>`, `menu [kind]`, `list`, `debug`, `import-harpoon`. Off unless `marks.enable = true`; see [Marks](marks.md) |
 
 ## Keymaps
 

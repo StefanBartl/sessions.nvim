@@ -177,6 +177,28 @@ pane layout to whatever files happen to be open. Stored as JSON under
 
 - **Usercmds:** `:Session save-layout <name>`, `:Session load-layout <name>`
 
+## Marks
+
+An ordered list of files jumped to by number — `:Session marks select 3`,
+or `<leader>3` once `marks.select_key` is set — with the cursor position
+remembered per file. Three kinds of entry: marks (the live list), defaults
+(`marks.defaults` in the config, `$REPOS_DIR`/`$HOME`/`$NVIM_HOME`-relative
+so one config serves every machine) and pins (runtime defaults, stored on
+this machine only). Defaults and pins are seeded once and come back on
+`defaults sync`; a mark you delete stays deleted. One list for everything by
+default (`scope = "global"`), or one per project and branch. An editable
+float (reorder, delete, paste), snacks/telescope/fzf pickers with shortened
+labels, a read-only preview, and a one-time import of a harpoon v2 list.
+Off by default.
+
+- **Module:** `lua/sessions/marks/` (`init.lua` store and operations,
+  `menu.lua`, `preview.lua`)
+- **Usercmds:** `:Session marks …` — see [marks.md](marks.md)
+- **Keymaps:** `marks_menu`, `marks_edit`, `marks_add`, `marks_add_front`,
+  `marks_pin`, `marks_remove`, `marks_sync`, `marks_debug`, plus the
+  `select_key`/`preview_key` templates for 1–9
+- **Config:** `opts.marks` (default `enable = false`)
+
 ## Statusline component
 
 A ready-made string for lualine/heirline: active session name plus a dirty

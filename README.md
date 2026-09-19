@@ -23,7 +23,9 @@
 Branch- and project-aware Neovim sessions. The session name resolves from the
 project root and the current git branch, so switching branches restores a
 different workspace and you never have to name anything. Built on Neovim's own
-`:mksession` and `:source`, not around them.
+`:mksession` and `:source`, not around them. Optionally also a mark list —
+files jumped to by number, with pins and remembered cursor positions — for
+the handful of files you want one keypress away in every project.
 
 ---
 
@@ -73,6 +75,7 @@ question each page answers.
 
 - [Features](docs/FEATURES.md) — everything this plugin does, in one file.
 - [Picker](docs/picker.md) — `:SessionLoad`, its live preview and multi-select delete.
+- [Marks](docs/marks.md) — the opt-in mark list: files jumped to by number, pins and defaults, the editable float, and taking over a harpoon list.
 - [Session scoping](docs/session-scoping.md) — two lighter alternatives to a full session, for when a whole one is more than you want.
 - [Workflow](docs/WORKFLOW.md) — how sessions, branches and scoping combine over a working day.
 - [Statusline](docs/statusline.md) — the ready-made component, what its dirty marker means, and why it is cheap enough for a hotpath.

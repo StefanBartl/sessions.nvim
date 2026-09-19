@@ -174,6 +174,56 @@ function M.check()
   if lib_composer_ok then
     require("lib.nvim.bindings.usercmd.composer").checkhealth("Session")
   end
+
+  -- marks
+  vim.health.start("sessions.nvim — marks")
+  local mc = cfg.marks
+  if not (mc and mc.enable) then
+    vim.health.info(
+      "marks off (marks.enable = false) — :Session marks and its keymaps are inactive"
+    )
+    return
+  end
+  local marks_ok, marks = pcall(require, "sessions.marks")
+  if not marks_ok then
+    vim.health.error("sessions.marks failed to load: " .. tostring(marks))
+    return
+  end
+  vim.health.info(("scope: %s (%s)"):format(mc.scope, marks.scope_key()))
+  vim.health.info("store: " .. marks.store_path())
+  local items = marks.list()
+  local defaults = marks.defaults()
+  local missing = {}
+  for _, p in ipairs(defaults) do
+    if not (uv.fs_stat(p) or {}).type then
+      missing[#missing + 1] = p
+    end
+  end
+  vim.health.ok(("%d mark(s) listed, %d default(s)/pin(s)"):format(#items, #defaults))
+  if #missing > 0 then
+    vim.health.warn(
+      ("%d default(s) point at no file and are skipped by sync:"):format(#missing),
+      missing
+    )
+  end
+  local ui = mc.menu and mc.menu.ui or "auto"
+  vim.health.info(
+    ("menu: %s; select_key: %s; preview_key: %s"):format(
+      ui,
+      tostring(mc.select_key),
+      tostring(mc.preview_key)
+    )
+  )
+  if mc.import_harpoon ~= false then
+    local files = marks.harpoon_data_files()
+    if #files > 0 then
+      vim.health.info(
+        ("harpoon data present (%d file(s)) — :Session marks import-harpoon can take it over"):format(
+          #files
+        )
+      )
+    end
+  end
 end
 
 return M

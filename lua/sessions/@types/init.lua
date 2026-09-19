@@ -32,6 +32,33 @@
 ---@field load_tab? string|string[]|false      `:Session load-tab`
 ---@field save_layout? string|string[]|false   `:Session save-layout`
 ---@field load_layout? string|string[]|false   `:Session load-layout`
+---@field marks_menu? string|string[]|false      `:Session marks` (configured picker)
+---@field marks_edit? string|string[]|false      `:Session marks menu edit`
+---@field marks_add? string|string[]|false       `:Session marks add`
+---@field marks_add_front? string|string[]|false `:Session marks add --front`
+---@field marks_pin? string|string[]|false       `:Session marks pin --front`
+---@field marks_remove? string|string[]|false    `:Session marks remove`
+---@field marks_sync? string|string[]|false      `:Session marks defaults sync`
+---@field marks_debug? string|string[]|false     `:Session marks debug`
+
+---@class Sessions.Marks.Menu
+---@field ui "auto"|"edit"|"snacks"|"telescope"|"fzf"
+---@field pin_marker string
+
+---@class Sessions.Marks.Preview
+---@field max_kb integer
+---@field max_lines integer
+
+---@class Sessions.Marks.Config
+---@field enable boolean
+---@field scope "global"|"project"
+---@field defaults (string|string[])[]   Path specs seeded on first use; segments may start with `$REPOS_DIR`, `$HOME`, `$NVIM_HOME`
+---@field import_harpoon boolean         First run: take over harpoon's single-global-list bucket when one exists
+---@field context_debounce_ms integer
+---@field menu Sessions.Marks.Menu
+---@field preview Sessions.Marks.Preview
+---@field select_key string|false        Template with `%d`, bound for 1..9
+---@field preview_key string|false       Template with `%d`, bound for 1..9
 
 ---@class Sessions.Config
 ---@field root string                    Root directory for session files
@@ -51,6 +78,7 @@
 ---@field blacklist Sessions.Blacklist
 ---@field keymaps Sessions.Keymaps|false Keymaps table or false to disable all keymaps
 ---@field which_key { enable: boolean } Register a which-key group label for the keymap prefix
+---@field marks Sessions.Marks.Config    The mark list (`:Session marks`); off by default
 
 ---@class Sessions.Info
 ---@field name string
@@ -88,6 +116,7 @@
 ---@field blacklist?       Sessions.Blacklist.Opts
 ---@field keymaps?         Sessions.Keymaps.Opts|false Keymaps table or false to disable all keymaps
 ---@field which_key?       { enable: boolean } Register a which-key group label for the keymap prefix
+---@field marks?           Sessions.Marks.Opts       The mark list (`:Session marks`); off by default
 
 ---@class Sessions.Blacklist.Opts
 ---@field buftypes?  string[]
@@ -110,4 +139,23 @@
 ---@field load_tab?     string|string[]|false      `:Session load-tab`
 ---@field save_layout?  string|string[]|false   `:Session save-layout`
 ---@field load_layout?  string|string[]|false   `:Session load-layout`
+---@field marks_menu?      string|string[]|false `:Session marks`
+---@field marks_edit?      string|string[]|false `:Session marks menu edit`
+---@field marks_add?       string|string[]|false `:Session marks add`
+---@field marks_add_front? string|string[]|false `:Session marks add --front`
+---@field marks_pin?       string|string[]|false `:Session marks pin --front`
+---@field marks_remove?    string|string[]|false `:Session marks remove`
+---@field marks_sync?      string|string[]|false `:Session marks defaults sync`
+---@field marks_debug?     string|string[]|false `:Session marks debug`
+
+---@class Sessions.Marks.Opts
+---@field enable?              boolean
+---@field scope?               "global"|"project"
+---@field defaults?            (string|string[])[]
+---@field import_harpoon?      boolean
+---@field context_debounce_ms? integer
+---@field menu?                { ui?: "auto"|"edit"|"snacks"|"telescope"|"fzf", pin_marker?: string }
+---@field preview?             { max_kb?: integer, max_lines?: integer }
+---@field select_key?          string|false
+---@field preview_key?         string|false
 return {}

@@ -78,11 +78,31 @@ require("sessions").setup({
   -- Names: save, load, save_ts, list, current, picker, toggle_track,
   -- save_tab, load_tab, save_layout, load_layout. (`delete`/`rename` take
   -- required arguments, so they cannot be mapped — use `picker`.)
+  -- With marks on, also: marks_menu, marks_edit, marks_add, marks_add_front,
+  -- marks_pin, marks_remove, marks_sync, marks_debug.
   keymaps = false, -- or { save = "<leader>ssa", picker = "<leader>spi", ... }
 
   -- Register a which-key group label for the keymap prefix, if which-key
   -- is installed and at least one keymap is configured.
   which_key = { enable = true },
+
+  -- The mark list: an ordered set of files jumped to by number, with pins
+  -- and defaults. Off by default — see docs/marks.md.
+  marks = {
+    enable = false,
+    scope = "global",              -- "global": one list everywhere; "project": per root (and branch)
+    defaults = {},                 -- seeded once, restored by `defaults reset`:
+                                   --   { "$NVIM_HOME", "init.lua" }, { "$REPOS_DIR", "notes.md" }, "/abs/path"
+    import_harpoon = true,         -- first run: take over harpoon's single-global-list bucket if found
+    context_debounce_ms = 200,     -- cursor position remembered on BufLeave, this many ms later
+    menu = {
+      ui = "auto",                 -- auto (snacks > telescope > fzf > edit) | edit | snacks | telescope | fzf
+      pin_marker = "📌 pin",       -- end-of-line flag on a default/pin in the edit float
+    },
+    preview = { max_kb = 1536, max_lines = 4000 },
+    select_key = false,            -- e.g. "<leader>%d": <leader>1..9 jump to entry N
+    preview_key = false,           -- e.g. "<M-%d>":     <M-1>..9 preview entry N
+  },
 })
 ```
 

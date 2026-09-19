@@ -61,6 +61,7 @@ local specs = {
   "layout_spec.lua",
   "statusline_spec.lua",
   "core_spec.lua",
+  "marks_spec.lua",
   "picker_spec.lua",
   "health_spec.lua",
   "keymaps_spec.lua",
