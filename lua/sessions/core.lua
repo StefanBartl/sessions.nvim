@@ -196,8 +196,17 @@ local function switch_windows_off(bufnr)
   if not alt then
     return
   end
+  -- Only split windows are retargeted. A floating window on a scratch
+  -- buffer (a notification toast, a keystroke HUD, a plugin's popup) is that
+  -- buffer's window: nvim_buf_delete closes it along with the buffer, and
+  -- moving it onto a file first would leave the float open, showing that
+  -- file, as if it were part of the layout.
   for _, win in ipairs(api.nvim_list_wins()) do
-    if api.nvim_win_is_valid(win) and api.nvim_win_get_buf(win) == bufnr then
+    if
+      api.nvim_win_is_valid(win)
+      and api.nvim_win_get_buf(win) == bufnr
+      and api.nvim_win_get_config(win).relative == ""
+    then
       pcall(api.nvim_win_set_buf, win, alt)
     end
   end
