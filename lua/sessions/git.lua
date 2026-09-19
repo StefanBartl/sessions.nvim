@@ -27,7 +27,8 @@ function M.current_branch()
   end
 
   local dotgit = found[1]
-  local stat = vim.uv.fs_stat(dotgit)
+  local uv = vim.uv or vim.loop
+  local stat = uv.fs_stat(dotgit)
   if not stat then
     return nil
   end
