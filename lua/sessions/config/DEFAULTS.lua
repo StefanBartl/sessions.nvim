@@ -1,4 +1,4 @@
----@module 'sessions.DEFAULTS'
+---@module 'sessions.config.DEFAULTS'
 --- Default `Sessions.Config` values, merged with user opts in
 --- `sessions.config`'s `setup()`.
 ---
