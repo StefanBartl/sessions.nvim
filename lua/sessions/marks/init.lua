@@ -35,6 +35,7 @@ local M = {}
 local uv = vim.uv or vim.loop
 local normkey = require("lib.nvim.fs.normkey")
 local json = require("lib.nvim.fs.json")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 ---@internal
 ---@return table
@@ -75,7 +76,9 @@ end
 ---@param p string
 ---@return string
 function M.canon(p)
-  local abs = vim.fs.normalize(vim.fn.fnamemodify(vim.fn.expand(p), ":p"))
+  -- expand_path, not vim.fn.expand (SEC-34): `p` can be a user-typed
+  -- `:SessionsMark add <path>` argument, not a Vim cmdline special.
+  local abs = vim.fs.normalize(vim.fn.fnamemodify(expand_path(p), ":p"))
   local real = uv.fs_realpath(abs)
   if type(real) == "string" and real ~= "" then
     return vim.fs.normalize(real)
