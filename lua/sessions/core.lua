@@ -474,7 +474,11 @@ function M.list()
   if not is_dir(cfg.root) then
     return {}
   end
-  local files = fn.globpath(cfg.root, "*.vim", false, true)
+  -- globpath reads its first argument as a pattern, not a path: an 8.3 short
+  -- component in cfg.root (e.g. Windows' %TEMP% for a long profile name)
+  -- contains a literal "~", which glob then tries to resolve as a
+  -- home-directory reference and silently returns an empty list for.
+  local files = fn.globpath(require("lib.nvim.fs.globbable")(cfg.root), "*.vim", false, true)
   table.sort(files)
   return files
 end
@@ -486,7 +490,7 @@ function M.list_tabs()
   if not is_dir(dir) then
     return {}
   end
-  local files = fn.globpath(dir, "*.vim", false, true)
+  local files = fn.globpath(require("lib.nvim.fs.globbable")(dir), "*.vim", false, true)
   table.sort(files)
   return files
 end
