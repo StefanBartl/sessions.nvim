@@ -86,6 +86,27 @@ return function(H)
   layout.restore("three")
   H.eq(shape(vim.fn.winlayout()), live_shape, "restoring again does not stack more splits")
 
+  -- A failure while rebuilding the tree (ERR-01) --------------------------------
+  -- split_children() -> vim.cmd("rightbelow vsplit"/"split") can throw (e.g.
+  -- real E36 "not enough room"); M.restore must report that as `false, err`
+  -- per its documented contract, not let it escape as a raw traceback.
+  do
+    vim.cmd("silent! only!")
+    local real_cmd = vim.cmd
+    ---@diagnostic disable-next-line: cast-local-type
+    vim.cmd = function(arg)
+      if type(arg) == "string" and arg:match("split") then
+        error("E36: Not enough room", 0)
+      end
+      return real_cmd(arg)
+    end
+    local build_ok, build_err = layout.restore("three")
+    vim.cmd = real_cmd
+    H.falsy(build_ok, "a split failure while rebuilding is reported, not raised")
+    H.contains(build_err, "failed to rebuild layout", "with a clear reason")
+    H.contains(build_err, "E36", "naming the underlying error")
+  end
+
   -- Corrupt file --------------------------------------------------------------
   vim.fn.writefile({ "{ not json at all" }, path)
   local bad_ok, bad_err = layout.restore("three")
