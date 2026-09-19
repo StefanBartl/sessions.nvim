@@ -158,6 +158,52 @@ local function resolve(name, use_auto_resolve)
 end
 
 ---@internal
+---Move every window currently showing `bufnr` onto another listed buffer
+---with a real file, so force-deleting a visible blacklisted buffer (e.g. a
+---sidebar) does not leave the window on whatever throwaway scratch buffer
+---Neovim auto-creates for it -- and does not have :mksession record that
+---substitution as if it were the user's actual layout.
+---@param bufnr integer
+local function switch_windows_off(bufnr)
+  local alt = nil
+  local altfile = fn.bufnr("#")
+  if
+    altfile ~= -1
+    and altfile ~= bufnr
+    and api.nvim_buf_is_valid(altfile)
+    and bo[altfile].buflisted
+    and api.nvim_buf_get_name(altfile) ~= ""
+  then
+    alt = altfile
+  end
+  if not alt then
+    for _, b in ipairs(api.nvim_list_bufs()) do
+      if
+        b ~= bufnr
+        and api.nvim_buf_is_valid(b)
+        and bo[b].buflisted
+        and bo[b].buftype == ""
+        and api.nvim_buf_get_name(b) ~= ""
+      then
+        alt = b
+        break
+      end
+    end
+  end
+  -- No usable alternate (e.g. every other buffer is itself blacklisted or
+  -- unnamed): fall through and let nvim_buf_delete substitute its own
+  -- scratch buffer rather than blocking the save over it.
+  if not alt then
+    return
+  end
+  for _, win in ipairs(api.nvim_list_wins()) do
+    if api.nvim_win_is_valid(win) and api.nvim_win_get_buf(win) == bufnr then
+      pcall(api.nvim_win_set_buf, win, alt)
+    end
+  end
+end
+
+---@internal
 ---Force-delete any loaded buffer matching `cfg.blacklist` (buftype, filetype,
 ---or path prefix) before a save, so it never ends up in the session file.
 local function wipe_blacklisted()
@@ -173,6 +219,7 @@ local function wipe_blacklisted()
         or (ft ~= "" and vim.tbl_contains(bl.filetypes, ft))
         or (name ~= "" and starts_with_any(name, bl.paths))
       if bad then
+        switch_windows_off(b)
         pcall(api.nvim_buf_delete, b, { force = true })
       end
     end
