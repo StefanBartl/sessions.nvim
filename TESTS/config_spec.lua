@@ -24,6 +24,61 @@ return function(H)
   config.setup({})
   H.eq(config.get().default_name, default_name, "setup({}) restores the defaults")
 
+  -- --------------------------------------------- DEFAULTS stays pure data (LUA-06)
+
+  -- A bare `require` must not compute anything env-/FS-dependent: the
+  -- platform-specific blacklist is resolved by config/init.lua's setup()
+  -- instead, right after DEFAULTS is required.
+  H.eq(#DEFAULTS.blacklist.paths, 0, "DEFAULTS.blacklist.paths is empty at require time")
+
+  -- ...but setup() still fills it in, for the common case of not overriding it.
+  config.setup({})
+  H.ok(#config.get().blacklist.paths > 0, "setup() resolves the platform default")
+
+  -- An explicit override is never clobbered by that resolution.
+  config.setup({ blacklist = { paths = { "/only/mine/" } } })
+  H.eq(
+    config.get().blacklist.paths[1],
+    "/only/mine/",
+    "an explicit blacklist.paths wins over the platform default"
+  )
+  config.setup({})
+
+  -- --------------------------------------------- setup() validation (ERR-50/ERR-22)
+
+  -- An unknown key is dropped (not silently merged in, and not left to crash
+  -- a module downstream) and reported with a did-you-mean hint.
+  config.setup({ defalt_name = "typo" })
+  H.eq(config.get().default_name, default_name, "an unknown key never reaches cfg")
+  local issues = config.issues()
+  H.eq(#issues, 1, "and is recorded as one issue")
+  H.contains(issues[1], "defalt_name", "naming the bad key")
+  H.contains(issues[1], "default_name", "with a did-you-mean hint")
+
+  -- A value of the wrong shape is dropped so the default takes effect,
+  -- instead of crashing whatever reads it as the documented type.
+  ---@diagnostic disable-next-line: assign-type-mismatch
+  config.setup({ project_markers = "not-a-list" })
+  H.eq(
+    table.concat(config.get().project_markers, ","),
+    table.concat(DEFAULTS.project_markers, ","),
+    "a wrong-shaped list value falls back to the default"
+  )
+  H.eq(#config.issues(), 1, "and is recorded as one issue")
+  H.contains(config.issues()[1], "project_markers", "naming the bad key")
+
+  -- An unknown key nested one level deep is caught too.
+  ---@diagnostic disable-next-line: missing-fields
+  config.setup({ blacklist = { pathz = { "/x" } } })
+  H.eq(#config.issues(), 1, "a nested unknown key is recorded")
+  H.contains(config.issues()[1], "blacklist.pathz", "qualified with its parent key")
+
+  -- A clean setup() reports nothing.
+  config.setup({ default_name = "custom" })
+  H.eq(#config.issues(), 0, "a fully recognized, well-typed opts table raises no issue")
+
+  config.setup({})
+
   -- ------------------------------------------------- the %TEMP% blacklist
 
   -- The blacklist is a plain prefix compare, so it only works on the exact

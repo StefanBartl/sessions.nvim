@@ -106,6 +106,16 @@ require("sessions").setup({
 })
 ```
 
+## Validation
+
+`setup()` checks `opts` against the option shape above before merging it
+onto the defaults. An unknown key (e.g. a typo like `keymaps.saev`) is
+dropped and reported with a did-you-mean hint when one is close enough; a
+value of the wrong shape (e.g. `project_markers = "x"` instead of a list, or
+`blacklist = "x"` instead of a table) is dropped so the built-in default
+takes effect instead of the option silently vanishing or crashing a module
+downstream. Every issue found is listed by `:checkhealth sessions`.
+
 ## Session Naming
 
 When no explicit name is given, the name is resolved from context:

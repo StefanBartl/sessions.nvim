@@ -125,6 +125,17 @@ function M.check()
 
   local cfg = cfg_mod.get()
 
+  if type(cfg_mod.issues) == "function" then
+    local setup_issues = cfg_mod.issues()
+    if #setup_issues > 0 then
+      for _, msg in ipairs(setup_issues) do
+        vim.health.warn(msg)
+      end
+    else
+      vim.health.ok("setup() options: no unknown keys, nothing invalid")
+    end
+  end
+
   vim.health.info("root: " .. cfg.root)
   vim.health.info("default_name: " .. cfg.default_name)
   vim.health.info("branch_aware: " .. tostring(cfg.branch_aware))
