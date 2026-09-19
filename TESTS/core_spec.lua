@@ -222,6 +222,40 @@ return function(H)
     setup()
   end
 
+  -- A *floating* window on a blacklisted scratch buffer (a toast, a HUD, a
+  -- popup) is not part of the layout: it goes away with its buffer instead
+  -- of being moved onto a file and left open over the session.
+  do
+    setup({ blacklist = { buftypes = { "nofile" } } })
+    local keeper = dir .. "/keeper2.lua"
+    vim.fn.writefile({ "-- keep" }, keeper)
+    local kept_buf = vim.fn.bufadd(keeper)
+    vim.fn.bufload(kept_buf)
+    vim.bo[kept_buf].buflisted = true
+    api.nvim_set_current_buf(kept_buf)
+
+    local hud_buf = api.nvim_create_buf(false, true)
+    vim.bo[hud_buf].buftype = "nofile"
+    local hud_win = api.nvim_open_win(hud_buf, false, {
+      relative = "editor",
+      row = 0,
+      col = 0,
+      width = 10,
+      height = 1,
+      style = "minimal",
+    })
+
+    H.ok(core.save("floating"))
+
+    H.falsy(api.nvim_buf_is_valid(hud_buf), "the blacklisted scratch buffer is wiped")
+    H.falsy(api.nvim_win_is_valid(hud_win), "and its float is gone, not retargeted onto a file")
+    H.eq(api.nvim_win_get_buf(0), kept_buf, "the real window is untouched")
+
+    core.delete("floating")
+    api.nvim_buf_delete(kept_buf, { force = true })
+    setup()
+  end
+
   -- --------------------------------------------------------- resolution order
 
   do
