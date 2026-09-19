@@ -73,6 +73,32 @@ return function(H)
   H.eq(#config.issues(), 1, "a nested unknown key is recorded")
   H.contains(config.issues()[1], "blacklist.pathz", "qualified with its parent key")
 
+  -- ...and so is one nested two levels deep (`marks.menu.*`, `marks.preview.*`)
+  -- -- validate() recurses to whatever depth Sessions.Config itself nests,
+  -- not just into the top-level tables.
+  ---@diagnostic disable-next-line: missing-fields
+  config.setup({ marks = { menu = { uii = "edit" } } })
+  H.eq(#config.issues(), 1, "a doubly-nested unknown key is recorded")
+  H.contains(config.issues()[1], "marks.menu.uii", "qualified with its full dotted path")
+  H.contains(config.issues()[1], "marks.menu.ui", "with a did-you-mean hint")
+  H.eq(
+    config.get().marks.menu.ui,
+    DEFAULTS.marks.menu.ui,
+    "the rest of marks.menu falls back to the default, not just vanishes"
+  )
+
+  -- A recognized doubly-nested key still reaches cfg unmangled.
+  config.setup({ marks = { preview = { max_kb = 42 } } })
+  H.eq(#config.issues(), 0, "a well-formed doubly-nested key raises no issue")
+  H.eq(config.get().marks.preview.max_kb, 42, "and survives into cfg")
+  H.eq(
+    config.get().marks.preview.max_lines,
+    DEFAULTS.marks.preview.max_lines,
+    "a sibling the user did not set keeps its default"
+  )
+
+  config.setup({})
+
   -- A clean setup() reports nothing.
   config.setup({ default_name = "custom" })
   H.eq(#config.issues(), 0, "a fully recognized, well-typed opts table raises no issue")
