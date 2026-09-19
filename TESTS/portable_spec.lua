@@ -24,12 +24,20 @@ return function(H)
     "badd +1 " .. project .. "/lua/init.lua",
     "badd +1 /elsewhere/outside.lua",
   })
-  portable.make_relative(session, project)
+  local rel_ok = portable.make_relative(session, project)
+  H.ok(rel_ok, "make_relative reports success (ERR-03: an explicit boolean, not a silent no-op)")
 
   local stored = H.read(session)
   H.excludes(stored, project, "the saved cwd no longer appears literally")
   H.contains(stored, "{{SESSION_ROOT}}", "it is a placeholder now")
   H.contains(stored, "/elsewhere/outside.lua", "a path outside the project is left alone")
+
+  -- make_relative on a file that cannot be read fails explicitly rather than
+  -- silently doing nothing (ERR-03).
+  local missing = dir .. "/does-not-exist-either.vim"
+  local miss_ok, miss_err = portable.make_relative(missing, project)
+  H.falsy(miss_ok, "make_relative on a missing file reports failure")
+  H.ok(miss_err, "with a reason")
 
   -- boundary_replace: a sibling that merely starts with the same text -------
   -- `E:/repos/ui.nvim` is a prefix of `E:/repos/ui.nvim-backup`, common in a

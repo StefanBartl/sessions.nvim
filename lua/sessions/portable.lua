@@ -15,16 +15,20 @@ local PLACEHOLDER = "{{SESSION_ROOT}}"
 
 ---@internal
 ---@param path string
----@return string
+---@return string content  "" on read failure or a genuinely empty file
+---@return string|nil err   set only on read failure
 local function read_all(path)
-  return require("lib.nvim.fs.read")(path) or ""
+  local content, err = require("lib.nvim.fs.read")(path)
+  return content or "", err
 end
 
 ---@internal
 ---@param path string
 ---@param content string
+---@return boolean ok
+---@return string|nil err
 local function write_all(path, content)
-  require("lib.nvim.fs.write.to_file")(path, content)
+  return require("lib.nvim.fs.write.to_file")(path, content)
 end
 
 ---@internal
@@ -110,18 +114,20 @@ end
 ---longer pins itself to the machine it was saved on.
 ---@param session_path string
 ---@param cwd string
+---@return boolean ok
+---@return string|nil err
 ---@see sessions.core
 function M.make_relative(session_path, cwd)
-  local content = read_all(session_path)
+  local content, read_err = read_all(session_path)
   if content == "" then
-    return
+    return false, read_err or ("empty session file: " .. session_path)
   end
 
   for _, needle in ipairs(spellings(cwd)) do
     content = boundary_replace(content, needle, PLACEHOLDER)
   end
 
-  write_all(session_path, content)
+  return write_all(session_path, content)
 end
 
 ---Build a load-ready copy of `session_path` with the placeholder re-anchored
@@ -134,10 +140,11 @@ end
 ---@param root_remap table<string, string>|nil
 ---@return string path_to_source
 ---@return boolean is_temp_copy
+---@return string|nil err  Set when a read/write failure fell back to `session_path`
 function M.prepare_for_load(session_path, cwd, root_remap)
-  local content = read_all(session_path)
+  local content, read_err = read_all(session_path)
   if content == "" then
-    return session_path, false
+    return session_path, false, read_err
   end
 
   local changed = false
@@ -166,7 +173,13 @@ function M.prepare_for_load(session_path, cwd, root_remap)
   end
 
   local tmp = fn.tempname() .. ".vim"
-  write_all(tmp, content)
+  local write_ok, write_err = write_all(tmp, content)
+  if not write_ok then
+    -- A failed temp write must not hand the caller a path that doesn't
+    -- exist -- fall back to the original, un-rewritten file rather than a
+    -- broken reference it would then try (and fail) to source.
+    return session_path, false, write_err
+  end
   return tmp, true
 end
 
