@@ -213,6 +213,23 @@ local function switch_windows_off(bufnr)
 end
 
 ---@internal
+---True when a non-floating window is showing `bufnr`.
+---@param bufnr integer
+---@return boolean
+local function shown_in_split(bufnr)
+  for _, win in ipairs(api.nvim_list_wins()) do
+    if
+      api.nvim_win_is_valid(win)
+      and api.nvim_win_get_buf(win) == bufnr
+      and api.nvim_win_get_config(win).relative == ""
+    then
+      return true
+    end
+  end
+  return false
+end
+
+---@internal
 ---Force-delete any loaded buffer matching `cfg.blacklist` (buftype, filetype,
 ---or path prefix) before a save, so it never ends up in the session file.
 local function wipe_blacklisted()
@@ -227,7 +244,12 @@ local function wipe_blacklisted()
       local bad = (bt ~= "" and vim.tbl_contains(bl.buftypes, bt))
         or (ft ~= "" and vim.tbl_contains(bl.filetypes, ft))
         or (name ~= "" and starts_with_any(name, bl.paths))
-      if bad then
+      -- Only what :mksession would otherwise record: a listed buffer, or one
+      -- a split window is showing. An unlisted scratch buffer that lives in
+      -- a floating window or in no window at all (a toast, a keystroke HUD,
+      -- a plugin's popup) never reaches the session file, and wiping it
+      -- would tear that UI down for nothing.
+      if bad and (bo[b].buflisted or shown_in_split(b)) then
         switch_windows_off(b)
         pcall(api.nvim_buf_delete, b, { force = true })
       end
