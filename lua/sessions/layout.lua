@@ -183,10 +183,15 @@ end
 ---@return string[]  Absolute paths to saved layout .json files
 function M.list()
   local cfg = require("sessions.config").cfg
-  if fn.isdirectory(layouts_dir(cfg)) == 0 then
+  local dir = layouts_dir(cfg)
+  if fn.isdirectory(dir) == 0 then
     return {}
   end
-  local files = fn.globpath(layouts_dir(cfg), "*.json", false, true)
+  -- globpath reads its first argument as a pattern, not a path: an 8.3 short
+  -- component in cfg.root (e.g. Windows' %TEMP% for a long profile name)
+  -- contains a literal "~", which glob then tries to resolve as a
+  -- home-directory reference and silently returns an empty list for.
+  local files = fn.globpath(require("lib.nvim.fs.globbable")(dir), "*.json", false, true)
   table.sort(files)
   return files
 end
