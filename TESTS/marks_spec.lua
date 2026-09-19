@@ -116,6 +116,30 @@ return function(H)
   H.falsy(marks.update_context(a, 3, 2), "the same position is not a change")
   H.falsy(marks.update_context(dir .. "/unlisted.md", 1, 0), "an unlisted file is ignored")
 
+  -- update_contexts: one read, one write for a whole batch (fix: the
+  -- debounced BufLeave flush used to call update_context per pending
+  -- file, each doing its own store read+write -- costing N of each for a
+  -- burst touching N marked files instead of the "one write" this
+  -- module's own header promises).
+  do
+    local json = require("lib.nvim.fs.json")
+    local real_write = json.write
+    local writes = 0
+    json.write = function(...)
+      writes = writes + 1
+      return real_write(...)
+    end
+    local changed =
+      marks.update_contexts({ [c] = { row = 5, col = 1 }, [b] = { row = 6, col = 2 } })
+    json.write = real_write
+    H.ok(changed, "update_contexts reports a change")
+    H.eq(writes, 1, "...in exactly one store write for two files")
+    H.eq(marks.list()[marks.index(c)].row, 5, "...c's position updated")
+    H.eq(marks.list()[marks.index(b)].row, 6, "...b's position updated")
+    H.falsy(marks.update_contexts({}), "an empty batch is a no-op")
+    H.falsy(marks.update_contexts(nil), "a nil batch is a no-op")
+  end
+
   H.eq(marks.defaults_reset(), 2, "reset yields exactly the existing defaults")
   H.eq(marks.list()[1].path, a, "...in defaults order")
   H.eq(marks.list()[1].row, 3, "...keeping the remembered position")
@@ -295,6 +319,25 @@ return function(H)
   H.eq(asked, 1, "removing a pinned line asks once")
   H.eq(#marks.list(), 2, "...and 'keep it' keeps it")
   H.ok(marks.index(a), "...listed still")
+
+  -- Fix: "keep it" must sync the buffer too (append the kept path back),
+  -- or the buffer still looks like the entry was removed and the SAME
+  -- prompt fires again on the very next apply() -- a second :w here, with
+  -- nothing else changed.
+  H.eq(
+    table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n"),
+    table.concat({ c, a }, "\n"),
+    "'keep it' writes the kept path back into the buffer"
+  )
+  local asked_again = 0
+  vim.fn.confirm = function()
+    asked_again = asked_again + 1
+    return 3
+  end
+  vim.cmd("write")
+  vim.fn.confirm = real_confirm
+  H.eq(asked_again, 0, "a second :w with nothing changed does not re-ask")
+  H.eq(#marks.list(), 2, "...the kept entry is still there")
 
   menu.open_edit()
   H.falsy(menu.is_open(), "opening again toggles it closed")

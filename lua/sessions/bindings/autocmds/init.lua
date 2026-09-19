@@ -203,7 +203,11 @@ local pending_context = {}
 local context_timer = nil
 
 ---@internal
----Write every remembered cursor position at once.
+---Write every remembered cursor position at once -- one store read and at
+---most one write for the whole batch (`marks.update_contexts`), not one
+---read/write pair per pending file: a burst that touched several marked
+---buffers used to cost one store rewrite per file instead of the single
+---write this module's own doc comment promises.
 local function flush_context()
   if context_timer then
     context_timer:stop()
@@ -211,9 +215,7 @@ local function flush_context()
     context_timer = nil
   end
   local marks = require("sessions.marks")
-  for path, pos in pairs(pending_context) do
-    pcall(marks.update_context, path, pos.row, pos.col)
-  end
+  pcall(marks.update_contexts, pending_context)
   pending_context = {}
 end
 
