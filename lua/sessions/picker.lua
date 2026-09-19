@@ -63,7 +63,12 @@ local function preview_lines(item)
 end
 
 ---@internal
+---Delete every name in `names`, reporting exactly what was and wasn't
+---removed -- `core.delete` can fail per-name (read-only file, held open by
+---another process), and the caller must know which ones actually left disk
+---to keep an open picker's item list in sync with reality.
 ---@param names string[]
+---@return string[] deleted  The subset that was actually removed
 ---@see sessions.core
 local function do_delete(names)
   local core = require("sessions.core")
@@ -73,11 +78,37 @@ local function do_delete(names)
       info = function(msg)
         vim.notify("[sessions] " .. msg, vim.log.levels.INFO)
       end,
+      warn = function(msg)
+        vim.notify("[sessions] " .. msg, vim.log.levels.WARN)
+      end,
     }
+  local deleted, failed = {}, {}
   for _, name in ipairs(names) do
-    core.delete(name)
+    local ok, err = core.delete(name)
+    if ok then
+      deleted[#deleted + 1] = name
+    else
+      failed[#failed + 1] = name .. " (" .. tostring(err) .. ")"
+    end
   end
-  n.info("deleted: " .. table.concat(names, ", "))
+  if #deleted > 0 then
+    n.info("deleted: " .. table.concat(deleted, ", "))
+  end
+  if #failed > 0 then
+    n.warn("failed to delete: " .. table.concat(failed, ", "))
+  end
+  return deleted
+end
+
+---@internal
+---A single confirmation for a bulk/destructive delete (UI-01) -- reuses the
+---float the `autoload = "ask"` prompt already ships instead of rolling a
+---second one.
+---@param names string[]
+---@param on_answer fun(yes: boolean)
+local function confirm_delete(names, on_answer)
+  local question = ("Delete %d session(s): %s?"):format(#names, table.concat(names, ", "))
+  require("sessions.bindings.autocmds").float_confirm(question, on_answer)
 end
 
 ---@internal
@@ -124,16 +155,25 @@ local function pick_snacks()
         for _, it in ipairs(sel) do
           names[#names + 1] = it.name
         end
-        do_delete(names)
 
-        local kept = {}
-        for _, it in ipairs(picker.opts.items) do
-          if not vim.tbl_contains(names, it.name) then
-            kept[#kept + 1] = it
+        confirm_delete(names, function(yes)
+          if not yes then
+            return
           end
-        end
-        picker.opts.items = kept
-        picker:refresh()
+          local deleted = do_delete(names)
+          if #deleted == 0 then
+            return
+          end
+
+          local kept = {}
+          for _, it in ipairs(picker.opts.items) do
+            if not vim.tbl_contains(deleted, it.name) then
+              kept[#kept + 1] = it
+            end
+          end
+          picker.opts.items = kept
+          picker:refresh()
+        end)
       end,
     },
     win = {
@@ -210,8 +250,12 @@ local function pick_telescope()
               names[#names + 1] = entry.value.name
             end
             actions.close(prompt_bufnr)
-            do_delete(names)
-            open()
+            confirm_delete(names, function(yes)
+              if yes then
+                do_delete(names)
+              end
+              open()
+            end)
           end
 
           map("i", "<C-d>", delete_selected)

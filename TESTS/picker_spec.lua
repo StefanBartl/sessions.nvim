@@ -36,6 +36,18 @@ return function(H)
     notified[#notified + 1] = { msg = msg, level = level }
   end
 
+  -- <C-d> asks for confirmation (UI-01) through sessions.bindings.autocmds'
+  -- float_confirm before deleting anything; stubbed so the spec controls the
+  -- answer instead of driving a real floating window.
+  local confirm_questions = {}
+  local confirm_answer = true
+  local restore_confirm = H.stub("sessions.bindings.autocmds", {
+    float_confirm = function(question, callback)
+      confirm_questions[#confirm_questions + 1] = question
+      callback(confirm_answer)
+    end,
+  })
+
   -- ------------------------------------------------------------ no sessions
 
   local no_snacks = H.stub("snacks", false)
@@ -125,16 +137,32 @@ return function(H)
       return selection
     end
 
+    -- A "no" answer asks, but deletes nothing.
+    confirm_answer = false
     opts.actions.sessions_delete(fake)
-    H.eq(vim.fn.filereadable(config.get().root .. "/alpha.vim"), 0, "<C-d> deletes the selection")
+    H.eq(#confirm_questions, 1, "<C-d> asks for confirmation before deleting anything")
+    H.contains(confirm_questions[1], "alpha", "naming what would be deleted")
+    H.eq(vim.fn.filereadable(config.get().root .. "/alpha.vim"), 1, "a decline deletes nothing")
+    H.falsy(fake.refreshed, "and does not touch the open picker's list")
+
+    -- A "yes" answer actually deletes.
+    confirm_answer = true
+    opts.actions.sessions_delete(fake)
+    H.eq(
+      vim.fn.filereadable(config.get().root .. "/alpha.vim"),
+      0,
+      "a confirmed <C-d> deletes the selection"
+    )
     H.ok(fake.refreshed, "and refreshes the picker")
     H.eq(#fake.opts.items, 1, "the deleted session is dropped from the open list")
     H.eq(fake.opts.items[1].name, "beta", "leaving the others")
 
-    -- Nothing selected: a no-op, not a delete-everything.
+    -- Nothing selected: a no-op, not a delete-everything -- and no prompt either.
     selection = {}
     fake.refreshed = false
+    confirm_questions = {}
     opts.actions.sessions_delete(fake)
+    H.eq(#confirm_questions, 0, "deleting an empty selection does not even ask")
     H.falsy(fake.refreshed, "deleting an empty selection does nothing at all")
     H.eq(#core.list(), 1, "and removes nothing")
 
@@ -243,14 +271,25 @@ return function(H)
     H.eq(closed[#closed], 42, "selecting closes the prompt")
     H.eq(core.current(), "gamma", "and loads the selected session")
 
-    -- Delete, with an explicit multi-selection.
+    -- Delete, with an explicit multi-selection. A decline asks but deletes
+    -- nothing, though the picker still reopens (the prompt was already
+    -- closed to show the confirmation float).
     multi = {
       { value = { name = "beta" } },
       { value = { name = "gamma" } },
     }
+    confirm_questions = {}
+    confirm_answer = false
     mapped["n<C-d>"]()
-    H.eq(#core.list(), 0, "<C-d> deletes every multi-selected session")
-    H.eq(#built, 2, "and reopens the picker on the shortened list")
+    H.eq(#confirm_questions, 1, "<C-d> asks before a multi-select delete too")
+    H.contains(confirm_questions[1], "beta", "naming both selected sessions")
+    H.eq(#core.list(), 2, "and a decline deletes nothing")
+    H.eq(#built, 2, "but the picker reopens either way")
+
+    confirm_answer = true
+    mapped["n<C-d>"]()
+    H.eq(#core.list(), 0, "a confirmed <C-d> deletes every multi-selected session")
+    H.eq(#built, 3, "and reopens the picker on the shortened list")
 
     -- With nothing multi-selected it falls back to the entry under the cursor,
     -- which `get_selected_entry` above always answers.
@@ -258,7 +297,7 @@ return function(H)
     cursor_name = "delta"
     H.ok(core.save("delta"))
     mapped["n<C-d>"]()
-    H.eq(#built, 3, "with no multi-selection the picker reopens too")
+    H.eq(#built, 4, "with no multi-selection the picker reopens too")
     H.eq(#core.list(), 0, "having deleted the entry under the cursor")
 
     for _, undo in ipairs(restores) do
@@ -273,6 +312,7 @@ return function(H)
   end
   H.falsy(core.current(), "no session stays active")
 
+  restore_confirm()
   vim.notify = real_notify
   config.setup({})
   vim.cmd("silent! %bwipeout!")
