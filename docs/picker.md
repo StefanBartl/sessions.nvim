@@ -19,7 +19,8 @@ Or from Lua: `require("sessions").pick()`.
 - `<CR>` loads the selected session.
 - `<C-d>` deletes the selection — multi-select first (`<Tab>` in
   Telescope; check your Snacks.picker multi-select mapping) to delete
-  several sessions at once.
+  several sessions at once. Asks for a single yes/no confirmation naming
+  every session about to be removed before anything is deleted.
 
 Which backend is used is decided automatically: Snacks first, then
 Telescope. There's no config option to pick one over the other — install

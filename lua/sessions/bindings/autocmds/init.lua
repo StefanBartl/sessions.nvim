@@ -89,10 +89,14 @@ local function hand_rolled_confirm(question, callback)
   end
 end
 
----@internal
+---Ask `question`, answering through `callback(yes)`. Prefers ui.kit's
+---confirm when installed, falls back to the hand-rolled float otherwise.
+---Exported (not just used for the `autoload = "ask"` prompt below) so other
+---UI-layer callers -- e.g. sessions.picker's bulk-delete confirmation --
+---reuse the same primitive instead of rolling their own.
 ---@param question string
 ---@param callback fun(yes: boolean)
-local function float_confirm(question, callback)
+function M.float_confirm(question, callback)
   if kit_ok then
     kit.confirm({ question = question, on_answer = callback })
     return
@@ -131,7 +135,7 @@ function M.enable()
         if not exists then
           return
         end
-        float_confirm(("Restore session '%s'?"):format(si.name), function(yes)
+        M.float_confirm(("Restore session '%s'?"):format(si.name), function(yes)
           if yes then
             do_autoload()
           end
