@@ -102,6 +102,13 @@ local KNOWN = {
     marks_remove = true,
     marks_sync = true,
     marks_debug = true,
+    -- Real subcommands, deliberately unmappable (see docs/BINDINGS.md, "Why
+    -- `delete` and `rename` have no keymap"): they must stay recognized here
+    -- so validate() does not strip them from `clean.keymaps` before
+    -- bindings/keymaps' own UNMAPPABLE table gets a chance to explain why,
+    -- which is the whole point of that table existing.
+    delete = true,
+    rename = true,
   },
   which_key = {
     enable = true,
