@@ -561,6 +561,33 @@ function M.set_paths(paths)
   return items
 end
 
+---Remember the cursor position of several marked files at once: one store
+---read and (at most) one write for the whole batch, unlike calling
+---`update_context` once per file -- what `bindings.autocmds`' debounced
+---`BufLeave` flush needs when the burst it coalesced touched more than one
+---marked file, or the "one write" its own docs (and this module's own
+---header) promise would only hold for a single-file burst.
+---@param updates table<string, { row: integer, col: integer }>
+---@return boolean changed
+function M.update_contexts(updates)
+  if type(updates) ~= "table" or next(updates) == nil then
+    return false
+  end
+  local items = read_items()
+  local changed = false
+  for path, pos in pairs(updates) do
+    local at = index_of(items, M.canon(path))
+    if at and (items[at].row ~= pos.row or items[at].col ~= pos.col) then
+      items[at].row, items[at].col = pos.row, pos.col
+      changed = true
+    end
+  end
+  if changed then
+    return write_items(items)
+  end
+  return false
+end
+
 ---Remember where the cursor was in a marked file. A no-op for a file that
 ---is not in the list, so it is safe to call from a `BufLeave` on anything.
 ---@param path string
@@ -571,16 +598,7 @@ function M.update_context(path, row, col)
   if type(path) ~= "string" or path == "" then
     return false
   end
-  local items = read_items()
-  local at = index_of(items, M.canon(path))
-  if not at then
-    return false
-  end
-  if items[at].row == row and items[at].col == col then
-    return false
-  end
-  items[at].row, items[at].col = row, col
-  return write_items(items)
+  return M.update_contexts({ [path] = { row = row, col = col } })
 end
 
 -- ---------------------------------------------------------------- navigation

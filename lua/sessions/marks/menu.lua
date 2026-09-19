@@ -153,7 +153,21 @@ local function apply(buf)
     return
   end
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local before = #lines
   lines = confirm_pinned_removals(lines)
+  if #lines > before then
+    -- confirm_pinned_removals() only ever appends a kept pinned path to
+    -- the end of `lines` -- write those lines into the BUFFER too, or the
+    -- buffer stays out of sync with the store (it still looks like the
+    -- entry was removed) and the same "about to leave the list" prompt
+    -- fires again on the very next apply(), e.g. a second `:w`, or
+    -- leaving the window right after one.
+    local kept = {}
+    for i = before + 1, #lines do
+      kept[#kept + 1] = lines[i]
+    end
+    vim.api.nvim_buf_set_lines(buf, before, before, false, kept)
+  end
   local items = marks.set_paths(lines)
   vim.bo[buf].modified = false
   return items
