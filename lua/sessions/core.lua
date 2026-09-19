@@ -287,7 +287,10 @@ function M.save(name)
   end
 
   if cfg.relative_paths then
-    require("sessions.portable").make_relative(si.path, save_cwd)
+    local rel_ok, rel_err = require("sessions.portable").make_relative(si.path, save_cwd)
+    if not rel_ok then
+      return false, "relative_paths post-processing failed: " .. tostring(rel_err)
+    end
   end
 
   _current = si.name
@@ -344,7 +347,10 @@ function M.save_tab(name)
   end
 
   if cfg.relative_paths then
-    require("sessions.portable").make_relative(path, save_cwd)
+    local rel_ok, rel_err = require("sessions.portable").make_relative(path, save_cwd)
+    if not rel_ok then
+      return false, "relative_paths post-processing failed: " .. tostring(rel_err)
+    end
   end
 
   if cfg.hooks.on_save then
