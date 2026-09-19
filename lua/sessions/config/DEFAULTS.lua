@@ -1,25 +1,15 @@
 ---@module 'sessions.DEFAULTS'
 --- Default `Sessions.Config` values, merged with user opts in
 --- `sessions.config`'s `setup()`.
-
----@internal
----Default blacklisted path prefixes for the current OS. Windows' actual
----%TEMP% value is re-checked and appended at runtime too (see config/init.lua),
----since it varies per machine/user — this just avoids a Unix-only default
----on a fresh Windows install before setup() runs.
----@see sessions.config
----@return string[]
-local function default_blacklist_paths()
-  if vim.fn.has("win32") == 1 then
-    -- Slash-normalized, so the pair is "<temp>/" and "<temp>\" and not the
-    -- mixed "C:/Users/.../Temp\" the earlier form produced -- a prefix that
-    -- matches nothing, since a buffer name never mixes the two that way.
-    local nix = vim.fn.expand("$TEMP"):gsub("\\", "/"):gsub("/+$", "")
-    local win = nix:gsub("/", "\\")
-    return { nix .. "/", win .. "\\" }
-  end
-  return { "/tmp/", "/private/tmp/" }
-end
+---
+--- Pure data only: a bare `require("sessions.config.DEFAULTS")` must stay
+--- side-effect-free (docgen, tests and any early accessor-less reference
+--- depend on that), so nothing here reads the environment or the
+--- filesystem. `blacklist.paths` below is deliberately empty for the same
+--- reason -- the platform-specific default is resolved by
+--- `sessions.config`'s `M.setup()` instead, right after DEFAULTS is
+--- required, the same place that already re-checks the runtime %TEMP% value
+--- (see config/init.lua's `default_blacklist_paths()`).
 
 ---@type Sessions.Config
 return {
@@ -54,7 +44,9 @@ return {
   blacklist = {
     buftypes = { "quickfix", "nofile", "prompt" },
     filetypes = { "gitcommit", "gitrebase" },
-    paths = default_blacklist_paths(),
+    -- Resolved by config/init.lua's M.setup() (platform-specific temp dir),
+    -- unless the caller sets this explicitly -- see the module comment above.
+    paths = {},
   },
   -- Optional normal-mode keymaps; `false` (the default) registers none.
   -- Set to a table of name -> lhs. Available names, one per `:Session`
