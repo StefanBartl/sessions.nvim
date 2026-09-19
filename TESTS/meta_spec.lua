@@ -18,15 +18,47 @@ return function(H)
   vim.fn.writefile({ "set nocompatible" }, session)
 
   -- Round-trip ----------------------------------------------------------------
-  -- Not a real meta: what this block checks is that the JSON round-trip
-  -- keeps a number a number, and `Sessions.Meta.saved_at` is an ISO-8601
-  -- string, so the value is off-type on purpose.
-  ---@diagnostic disable-next-line: assign-type-mismatch
-  meta.write(session, { branch = "main", saved_at = 1234 })
+  meta.write(session, {
+    branch = "main",
+    saved_at = "2026-09-19T00:00:00Z",
+    cwd = dir,
+    buffers = { dir .. "/a.lua", dir .. "/b.lua" },
+  })
   local read = meta.read(session)
   H.ok(read, "what was written comes back")
   H.eq(read.branch, "main", "string values survive")
-  H.eq(read.saved_at, 1234, "and numbers stay numbers rather than becoming strings")
+  H.eq(read.saved_at, "2026-09-19T00:00:00Z", "and so does the timestamp")
+  H.eq(#read.buffers, 2, "and the buffer list")
+
+  -- Validation (SEC-33 / LUA-16) -----------------------------------------------
+  -- A sidecar is untrusted input -- hand-editable, or synced in from another
+  -- machine/plugin version via `:Session toggle-track`. Every field is
+  -- re-validated on read, and the first bad one rejects the whole thing (the
+  -- same contract sessions.layout applies to its own persisted snapshot).
+  -- Before this, an off-type field sailed past the `meta.field and ...`
+  -- guards at the call sites -- a table is truthy -- and crashed on
+  -- concatenation or ipairs() instead.
+  do
+    local bad = dir .. "/bad.vim"
+    vim.fn.writefile({ "set nocompatible" }, bad)
+    local bad_sidecar = dir .. "/.bad.json"
+
+    -- JSON `null` decodes to a table sentinel (vim.NIL / lib.lua.null), not
+    -- Lua `nil` -- and that sentinel is truthy.
+    vim.fn.writefile({ '{"branch": null, "saved_at": "2026-01-01T00:00:00Z"}' }, bad_sidecar)
+    H.falsy(meta.read(bad), "a null field is rejected rather than passed through as a truthy table")
+
+    vim.fn.writefile({ '{"buffers": "not-a-list"}' }, bad_sidecar)
+    H.falsy(meta.read(bad), "a wrong-shaped buffers field is rejected")
+
+    vim.fn.writefile({ '{"saved_at": 1234}' }, bad_sidecar)
+    H.falsy(meta.read(bad), "an off-type scalar field is rejected")
+
+    vim.fn.writefile({ '{"buffers": [1, 2]}' }, bad_sidecar)
+    H.falsy(meta.read(bad), "a buffers entry that is not a string is rejected")
+
+    os.remove(bad_sidecar)
+  end
 
   -- No sidecar ----------------------------------------------------------------
   -- A session saved before this feature existed has no sidecar, and reading one
