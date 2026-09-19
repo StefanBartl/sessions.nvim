@@ -77,6 +77,18 @@ return function(H)
   config.setup({ default_name = "custom" })
   H.eq(#config.issues(), 0, "a fully recognized, well-typed opts table raises no issue")
 
+  -- `keymaps.delete`/`keymaps.rename` are real subcommands that are
+  -- deliberately unmappable (see docs/BINDINGS.md) -- sessions.bindings.
+  -- keymaps has its own UNMAPPABLE table that explains why and refuses to
+  -- bind them. validate() must recognize both names and let them through
+  -- unchanged, not treat them as typos and strip them before that dedicated
+  -- explanation ever gets a chance to run.
+  config.setup({ keymaps = { delete = "gQd", rename = "gQr", save = "gQs" } })
+  H.eq(#config.issues(), 0, "keymaps.delete/rename are not reported as unknown")
+  H.eq(config.get().keymaps.delete, "gQd", "and keymaps.delete survives into cfg")
+  H.eq(config.get().keymaps.rename, "gQr", "as does keymaps.rename")
+  H.eq(config.get().keymaps.save, "gQs", "alongside an ordinary mappable name")
+
   config.setup({})
 
   -- ------------------------------------------------- the %TEMP% blacklist
