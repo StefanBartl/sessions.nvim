@@ -80,14 +80,19 @@ local function ensure_highlight()
 end
 
 ---@internal
----Flag every line that is a default or pin.
+---Flag every line that is a default or pin. `pinned` is passed in rather
+---than recomputed here (PERF-93): this runs on every `TextChanged`/
+---`TextChangedI` in the edit buffer, i.e. on every keystroke, and
+---`marks.pinned_set()` re-reads pins.json and re-resolves every configured
+---default (a realpath syscall each) -- work whose result cannot change
+---while this transient buffer is open, so the caller computes it once.
 ---@param buf integer
-local function mark_pins(buf)
+---@param pinned table<string, boolean>
+local function mark_pins(buf, pinned)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
   end
   vim.api.nvim_buf_clear_namespace(buf, NS, 0, -1)
-  local pinned = marks.pinned_set()
   if not next(pinned) then
     return
   end
@@ -233,14 +238,17 @@ function M.open_edit()
   vim.wo[win].cursorline = true
   STATE.buf, STATE.win = buf, win
 
-  mark_pins(buf)
+  -- Computed once for the lifetime of this menu session, not per keystroke
+  -- (PERF-93) -- pins/defaults cannot change from inside this buffer.
+  local pinned = marks.pinned_set()
+  mark_pins(buf, pinned)
 
   local group = vim.api.nvim_create_augroup("SessionsMarksMenu", { clear = true })
   vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
     group = group,
     buffer = buf,
     callback = function()
-      mark_pins(buf)
+      mark_pins(buf, pinned)
     end,
   })
   vim.api.nvim_create_autocmd("BufWriteCmd", {
