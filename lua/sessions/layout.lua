@@ -154,8 +154,17 @@ function M.restore(name)
     vim.cmd("silent! only!")
   end)
 
+  -- `build()` recurses into split_children(), which throws (e.g. `E36: Not
+  -- enough room`) when the saved tree has more windows than the terminal can
+  -- fit -- a real possibility since `only!` above already collapsed to one
+  -- window. Every other editor call in this function is pcall-guarded; this
+  -- one was the exception, which let a raw traceback escape the documented
+  -- `boolean, string` contract instead of a clean `false, err`.
   local out = {}
-  build(tree, api.nvim_get_current_win(), out)
+  local build_ok, build_err = pcall(build, tree, api.nvim_get_current_win(), out)
+  if not build_ok then
+    return false, "failed to rebuild layout: " .. path .. " (" .. tostring(build_err) .. ")"
+  end
 
   -- Two passes, not one: setting window N's width/height redistributes
   -- space among its row/col siblings, which can quietly undo a size already
