@@ -183,6 +183,45 @@ return function(H)
     setup()
   end
 
+  -- ------------------------------------- blacklisted buffer, visible window (UI-55)
+
+  do
+    -- A visible window showing a blacklisted buffer (e.g. a sidebar) must be
+    -- redirected to another buffer *before* the force-delete, not left for
+    -- Neovim to auto-substitute a fresh, unnamed scratch buffer into.
+    setup({ blacklist = { buftypes = { "nofile" } } })
+
+    local keeper = dir .. "/visible-keep.lua"
+    vim.fn.writefile({ "-- keep" }, keeper)
+    local kept_buf = vim.fn.bufadd(keeper)
+    vim.fn.bufload(kept_buf)
+    vim.bo[kept_buf].buflisted = true
+    api.nvim_set_current_buf(kept_buf)
+
+    vim.cmd("vsplit")
+    local sidebar_win = api.nvim_get_current_win()
+    local sidebar_buf = api.nvim_create_buf(false, true)
+    vim.bo[sidebar_buf].buftype = "nofile"
+    api.nvim_win_set_buf(sidebar_win, sidebar_buf)
+
+    local wins_before = #api.nvim_list_wins()
+    H.ok(core.save("visible"))
+
+    H.eq(#api.nvim_list_wins(), wins_before, "the window itself is not closed")
+    H.falsy(api.nvim_buf_is_valid(sidebar_buf), "the blacklisted buffer is still wiped")
+    H.ok(api.nvim_win_is_valid(sidebar_win), "and the window survives")
+    H.eq(
+      api.nvim_win_get_buf(sidebar_win),
+      kept_buf,
+      "redirected to another real buffer, not left on a fresh scratch one"
+    )
+
+    core.delete("visible")
+    vim.cmd("silent! only!")
+    api.nvim_buf_delete(kept_buf, { force = true })
+    setup()
+  end
+
   -- --------------------------------------------------------- resolution order
 
   do
