@@ -92,7 +92,13 @@ local function mark_pins(buf)
     return
   end
   local normkey = require("lib.nvim.fs.normkey")
-  local icon = mcfg().menu and mcfg().menu.pin_marker or "📌 pin"
+  -- ERR-22: `pin_marker` is validated by config/init.lua's `validate()` only
+  -- as "some value" (true in KNOWN, a leaf polymorphic enough that checking
+  -- its shape there would duplicate this guard) -- so a non-string here (a
+  -- config typo like `pin_marker = {}`) must degrade to the default rather
+  -- than reach the `..` below, which errors on anything but a string/number.
+  local raw = mcfg().menu and mcfg().menu.pin_marker
+  local icon = type(raw) == "string" and raw or "📌 pin"
   for i, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
     local path = vim.trim(line)
     if path ~= "" and pinned[normkey(path, { realpath = true })] then
