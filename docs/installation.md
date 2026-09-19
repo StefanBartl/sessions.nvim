@@ -3,7 +3,7 @@
 ## Requirements
 
 - Neovim **0.9+**
-- [lib.nvim](https://github.com/stefanbartl/lib.nvim) — **required**: the `:Session`/`:LastSession` commands are built on `lib.nvim.bindings.usercmd.composer`. `lib.nvim.notify`, `lib.nvim.bindings.keymap`, and `lib.nvim.git` stay soft-guarded (used when available, native fallback otherwise).
+- [lib.nvim](https://github.com/stefanbartl/lib.nvim) — **required**: the `:Session`/`:LastSession` commands are built on `lib.nvim.bindings.usercmd.composer`. `lib.nvim.notify` and `lib.nvim.git` stay soft-guarded (used when available, native fallback otherwise). `lib.nvim.bindings.keymap` does **not**: it is only touched when you configure `setup({ keymaps = {...} })`, but once you do, that submodule is a hard requirement — a checkout of lib.nvim missing it will throw rather than degrade (`:checkhealth sessions` flags this).
 
 Optional, each detected at runtime and degrading to nothing when absent:
 
