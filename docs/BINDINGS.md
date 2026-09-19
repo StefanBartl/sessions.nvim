@@ -21,6 +21,19 @@ shows up in which-key (if installed) and `:map` without further work. A
 | n    | `load_tab`      | `<leader>slt`    | `:Session load-tab` |
 | n    | `save_layout`   | `<leader>sly`    | `:Session save-layout` |
 | n    | `load_layout`   | `<leader>sll`    | `:Session load-layout` |
+| n    | `marks_menu`    | `<leader>hm`     | `:Session marks` — the mark list in the configured picker (only with `marks.enable = true`) |
+| n    | `marks_edit`    | `<leader>he`     | `:Session marks menu edit` — the editable float |
+| n    | `marks_add`     | `<leader>ha`     | `:Session marks add` — mark the current file |
+| n    | `marks_add_front` | `<leader>hA`   | `:Session marks add --front` |
+| n    | `marks_pin`     | `<leader>hp`     | `:Session marks pin --front` |
+| n    | `marks_remove`  | `<leader>hd`     | `:Session marks remove` |
+| n    | `marks_sync`    | `<leader>hs`     | `:Session marks defaults sync` |
+| n    | `marks_debug`   | `<leader>hD`     | `:Session marks debug` |
+
+The numbered mark jumps are not `keymaps` entries but templates in the
+`marks` block — `select_key = "<leader>%d"` binds `<leader>1`…`<leader>9` to
+`:Session marks select N`, `preview_key = "<M-%d>"` binds `<M-1>`…`<M-9>` to
+`:Session marks preview N`. See [marks.md](marks.md#keymaps).
 
 Defined in `lua/sessions/bindings/keymaps/init.lua`. There are no defaults for the lhs
 strings themselves — every mapping is opt-in and only attached if you set it.
@@ -70,9 +83,18 @@ One command, `:Session <subcommand>` (built via
 | `:Session load-layout <name>` | Restore a window-split layout onto whatever buffers are currently open |
 | `:LastSession`             | Load the session named "last" — pure convenience layer over `:Session load last`, so `nvim +LastSession` works without CLI-arg quoting |
 | `:SessionLoad`             | Open a session picker with live preview (Snacks.picker or Telescope) — see [Picker Integration](picker.md) |
+| `:Session marks [menu [kind]]` | The mark list in a picker or the editable float — see [Marks](marks.md) |
+| `:Session marks add [path] [--front] [--permanent]` | Mark a file (current buffer by default) |
+| `:Session marks remove [path]` | Unmark |
+| `:Session marks pin [path] [--front]` / `unpin [path]` | A runtime default, and its undo |
+| `:Session marks defaults sync` / `reset` | Top the list up with the defaults, or rebuild it from them |
+| `:Session marks select <n>` / `preview <n>` | Jump to, or preview, entry `n` |
+| `:Session marks list` / `debug` | Print the list, or dump it with scope and store path |
+| `:Session marks import-harpoon [bucket]` | Take over a harpoon v2 list |
 
 All defined in `lua/sessions/bindings/usercmds/init.lua`; registered
-unconditionally by `setup()`. Session-name arguments (`save`/`load`/`delete`/
+unconditionally by `setup()` — the `marks` routes too, which answer with one
+line when `marks.enable` is off. Session-name arguments (`save`/`load`/`delete`/
 `rename`/`toggle-track`) tab-complete dynamically from the current list of
 saved sessions; `save-tab`/`load-tab` and `save-layout`/`load-layout`
 tab-complete from their own separate name lists.
@@ -83,3 +105,9 @@ tab-complete from their own separate name lists.
 autoload-on-enter behavior described in
 [Configuration](configuration.md#configuration) — see that file for the
 exact `autoload`/`autosave` semantics.
+
+With `marks.enable = true` it adds three more: `BufLeave` records the cursor
+position of a marked file (debounced by `marks.context_debounce_ms`),
+`VimLeavePre` flushes what is still pending, and a one-shot `VimEnter`
+seeds the list the first time its store is created — from a harpoon list
+when `marks.import_harpoon` finds one, else from `marks.defaults`.

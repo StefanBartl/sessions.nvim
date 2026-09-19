@@ -187,6 +187,94 @@ function M.enable()
       })
     end
   end
+
+  if cfg.marks and cfg.marks.enable then
+    M.enable_marks(cfg, aug)
+  end
+end
+
+---@type table<string, { row: integer, col: integer }>
+local pending_context = {}
+local context_timer = nil
+
+---@internal
+---Write every remembered cursor position at once.
+local function flush_context()
+  if context_timer then
+    context_timer:stop()
+    context_timer:close()
+    context_timer = nil
+  end
+  local marks = require("sessions.marks")
+  for path, pos in pairs(pending_context) do
+    pcall(marks.update_context, path, pos.row, pos.col)
+  end
+  pending_context = {}
+end
+
+---The mark-list autocmds: the first-run seed, and the cursor position of a
+---marked file remembered when its buffer is left -- debounced, so a burst
+---of window switches costs one store write.
+---@param cfg Sessions.Config
+---@param aug integer
+function M.enable_marks(cfg, aug)
+  local ms = cfg.marks.context_debounce_ms
+  if type(ms) ~= "number" or ms < 0 then
+    ms = 200
+  end
+
+  create_autocmd("BufLeave", function(ev)
+    if vim.bo[ev.buf].buftype ~= "" then
+      return
+    end
+    local name = api.nvim_buf_get_name(ev.buf)
+    if name == "" then
+      return
+    end
+    local ok, pos = pcall(api.nvim_win_get_cursor, 0)
+    if not ok then
+      return
+    end
+    pending_context[name] = { row = pos[1], col = pos[2] }
+    if ms == 0 then
+      flush_context()
+      return
+    end
+    local uv = vim.uv or vim.loop
+    if not context_timer then
+      context_timer = uv.new_timer()
+    end
+    context_timer:stop()
+    context_timer:start(ms, 0, function()
+      vim.schedule(flush_context)
+    end)
+  end, {
+    group = aug,
+    desc = "sessions.nvim: remember the cursor position of a marked file",
+  })
+
+  create_autocmd("VimLeavePre", function()
+    flush_context()
+  end, {
+    group = aug,
+    desc = "sessions.nvim: flush remembered mark positions on exit",
+  })
+
+  -- Seeding waits for VimEnter and one tick: the first run may import
+  -- harpoon's list, which needs the data directory readable and nothing
+  -- else racing for it, and a plugin manager may still be loading.
+  create_autocmd("VimEnter", function()
+    vim.schedule(function()
+      local what = require("sessions.marks").seed_once()
+      if what then
+        n.info(("marks: list seeded from %s"):format(what))
+      end
+    end)
+  end, {
+    group = aug,
+    desc = "sessions.nvim: seed the mark list on first use",
+    once = true,
+  })
 end
 
 return M

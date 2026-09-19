@@ -20,6 +20,7 @@ is the short version of all of it.
 | [commands.md](commands.md) | `:Session <subcommand>`, one command, subcommand by subcommand |
 | [BINDINGS.md](BINDINGS.md) | Every keymap, user command and autocommand — keys are off by default, so this is also where you learn what to switch on |
 | [picker.md](picker.md) | `:SessionLoad` and its live preview |
+| [marks.md](marks.md) | The mark list: files jumped to by number, pins and defaults, the editable float and the pickers, and how a harpoon list is taken over |
 | [session-scoping.md](session-scoping.md) | Two lighter alternatives to a full session, for when a whole one is more than you want |
 | [statusline.md](statusline.md) | The ready-made component: its options, the lualine/heirline/native wiring, what its dirty marker actually means, and why it is cheap enough to call on every redraw |
 | [WORKFLOW.md](WORKFLOW.md) | The different question: not what each subcommand does, but how sessions, branches and scoping combine over a working day |

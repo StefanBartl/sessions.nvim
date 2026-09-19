@@ -91,6 +91,34 @@ composer.register_type("LAYOUT", {
   end),
 })
 
+composer.register_type("MARKS_MENU", {
+  validate = function(raw)
+    return true, raw, nil
+  end,
+  complete = function(lead)
+    local out = {}
+    for _, kind in ipairs(require("sessions.marks.menu").KINDS) do
+      if lead == "" or kind:sub(1, #lead) == lead then
+        out[#out + 1] = kind
+      end
+    end
+    return out
+  end,
+})
+
+---@internal
+---Every `marks` route runs through this: the feature is opt-in, and a host
+---that has not turned it on gets told so in one line.
+---@return boolean
+local function marks_enabled()
+  local cfg = require("sessions.config").get()
+  if cfg.marks and cfg.marks.enable then
+    return true
+  end
+  n().warn("marks are off -- set `marks = { enable = true }` in setup()")
+  return false
+end
+
 ---@internal
 ---@param name string|nil
 ---@see sessions.core
@@ -279,6 +307,196 @@ function M.enable()
             n().info("layout restored: " .. (res or "?"))
           else
             n().error("layout restore failed: " .. (res or "?"))
+          end
+        end,
+      },
+
+      -- The mark list (sessions.marks). Registered whether or not
+      -- `marks.enable` is on: a disabled feature answers with one line
+      -- saying so, rather than "unknown subcommand".
+      {
+        path = { "marks" },
+        desc = "Open the mark list in the configured picker",
+        run = function()
+          if marks_enabled() then
+            require("sessions.marks.menu").open()
+          end
+        end,
+      },
+      {
+        path = { "marks", "menu" },
+        args = { { name = "kind", type = "MARKS_MENU", optional = true } },
+        desc = "Open the mark list: auto|edit|snacks|telescope|fzf",
+        run = function(ctx)
+          if marks_enabled() then
+            require("sessions.marks.menu").open(ctx.args.kind)
+          end
+        end,
+      },
+      {
+        path = { "marks", "add" },
+        args = { { name = "path", type = "FILE", optional = true } },
+        flags = {
+          { name = "front", short = "f", bool = true },
+          { name = "permanent", short = "p", bool = true },
+        },
+        desc = "Add a file to the list (default: current buffer, appended)",
+        run = function(ctx)
+          if not marks_enabled() then
+            return
+          end
+          local ok, err = require("sessions.marks").add(ctx.args.path, {
+            front = ctx.flags.front == true,
+            permanent = ctx.flags.permanent == true,
+          })
+          if not ok then
+            n().warn("marks add: " .. tostring(err))
+          elseif err then
+            n().info("marks: " .. err)
+          else
+            n().info("marks: added")
+          end
+        end,
+      },
+      {
+        path = { "marks", "remove" },
+        args = { { name = "path", type = "FILE", optional = true } },
+        desc = "Remove a file from the list (default: current buffer)",
+        run = function(ctx)
+          if not marks_enabled() then
+            return
+          end
+          local ok, err = require("sessions.marks").remove(ctx.args.path)
+          if ok then
+            n().info("marks: removed")
+          else
+            n().warn("marks remove: " .. tostring(err))
+          end
+        end,
+      },
+      {
+        path = { "marks", "pin" },
+        args = { { name = "path", type = "FILE", optional = true } },
+        flags = { { name = "front", short = "f", bool = true } },
+        desc = "Pin a file: a default that survives `defaults reset`",
+        run = function(ctx)
+          if not marks_enabled() then
+            return
+          end
+          local ok, err = require("sessions.marks").pin(ctx.args.path, {
+            front = ctx.flags.front == true,
+          })
+          if not ok then
+            n().warn("marks pin: " .. tostring(err))
+          else
+            n().info("marks: " .. (err or "pinned"))
+          end
+        end,
+      },
+      {
+        path = { "marks", "unpin" },
+        args = { { name = "path", type = "FILE", optional = true } },
+        desc = "Stop treating a file as a default (the list entry stays)",
+        run = function(ctx)
+          if not marks_enabled() then
+            return
+          end
+          local ok, err = require("sessions.marks").unpin(ctx.args.path)
+          if ok then
+            n().info("marks: unpinned")
+          else
+            n().warn("marks unpin: " .. tostring(err))
+          end
+        end,
+      },
+      {
+        path = { "marks", "defaults", "sync" },
+        desc = "Append every missing default and pin; the rest stays",
+        run = function()
+          if marks_enabled() then
+            local added = require("sessions.marks").defaults_sync()
+            n().info(("marks: %d default(s) added"):format(added))
+          end
+        end,
+      },
+      {
+        path = { "marks", "defaults", "reset" },
+        desc = "Rebuild the list from the defaults and pins, in that order",
+        run = function()
+          if marks_enabled() then
+            local count = require("sessions.marks").defaults_reset()
+            n().info(("marks: reset to %d default(s)"):format(count))
+          end
+        end,
+      },
+      {
+        path = { "marks", "select" },
+        args = { { name = "index", type = "INT" } },
+        desc = "Jump to mark <index>",
+        run = function(ctx)
+          if not marks_enabled() then
+            return
+          end
+          local ok, err = require("sessions.marks").select(ctx.args.index)
+          if not ok then
+            n().warn("marks: " .. tostring(err))
+          end
+        end,
+      },
+      {
+        path = { "marks", "preview" },
+        args = { { name = "index", type = "INT" } },
+        desc = "Read-only preview of mark <index> (q closes)",
+        run = function(ctx)
+          if not marks_enabled() then
+            return
+          end
+          local ok, err = require("sessions.marks.preview").open_index(ctx.args.index)
+          if not ok and err then
+            n().warn("marks: " .. err)
+          end
+        end,
+      },
+      {
+        path = { "marks", "list" },
+        desc = "Print the list",
+        run = function()
+          if marks_enabled() then
+            n().info(table.concat(require("sessions.marks").debug_lines(), "\n"))
+          end
+        end,
+      },
+      {
+        path = { "marks", "debug" },
+        desc = "Dump the list, its scope and its store into a scratch buffer",
+        run = function()
+          if not marks_enabled() then
+            return
+          end
+          local lines = require("sessions.marks").debug_lines()
+          vim.cmd("new")
+          vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+          vim.bo.buftype = "nofile"
+          vim.bo.bufhidden = "wipe"
+          vim.bo.swapfile = false
+          vim.bo.modifiable = false
+        end,
+      },
+      {
+        path = { "marks", "import-harpoon" },
+        args = { { name = "bucket", type = "STRING", optional = true } },
+        desc = "Take over a harpoon v2 list (bucket defaults to stdpath('config'))",
+        run = function(ctx)
+          if not marks_enabled() then
+            return
+          end
+          local count, err = require("sessions.marks").import_harpoon({ bucket = ctx.args.bucket })
+          if err then
+            n().warn("marks import: " .. err)
+          else
+            n().info(
+              ("marks: %d entr%s imported from harpoon"):format(count, count == 1 and "y" or "ies")
+            )
           end
         end,
       },

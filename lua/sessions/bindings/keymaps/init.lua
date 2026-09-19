@@ -34,6 +34,21 @@ local COMMANDS = {
   load_layout = { cmd = "Session load-layout", desc = "Session: load window layout" },
 }
 
+---The mark-list actions, declared only while `marks.enable` is on so a host
+---without the feature is not shown keys that would only say "marks are off".
+---@internal
+---@type table<string, { cmd: string, desc: string }>
+local MARKS_COMMANDS = {
+  marks_menu = { cmd = "Session marks", desc = "Session: marks (picker)" },
+  marks_edit = { cmd = "Session marks menu edit", desc = "Session: marks (edit list)" },
+  marks_add = { cmd = "Session marks add", desc = "Session: mark this file" },
+  marks_add_front = { cmd = "Session marks add --front", desc = "Session: mark this file first" },
+  marks_pin = { cmd = "Session marks pin --front", desc = "Session: pin this file" },
+  marks_remove = { cmd = "Session marks remove", desc = "Session: unmark this file" },
+  marks_sync = { cmd = "Session marks defaults sync", desc = "Session: add missing default marks" },
+  marks_debug = { cmd = "Session marks debug", desc = "Session: dump the mark list" },
+}
+
 ---Subcommands that exist but cannot be a keymap, and why. Kept distinct from
 ---an unknown-name error: `keymaps.delete` is a real subcommand, so "no such
 ---keymap" would send the user hunting a typo that isn't there.
@@ -43,6 +58,17 @@ local UNMAPPABLE = {
   delete = ":Session delete requires a name",
   rename = ":Session rename requires an old and a new name",
 }
+
+---@internal
+---Whether the mark list is on, read from the live config. The `km` argument
+---is only there so the check reads at its call site as being about the
+---user's keymap table; the decision is the config's.
+---@param _ table
+---@return boolean
+local function marks_on_for(_)
+  local cfg = require("sessions.config").get().marks
+  return type(cfg) == "table" and cfg.enable == true
+end
 
 ---@internal
 --- The longest prefix every configured lhs starts with, or nil.
@@ -96,6 +122,9 @@ function M.attach(km, which_key)
   local user = {}
   for name, lhs in pairs(km) do
     local why = UNMAPPABLE[name]
+    if not why and MARKS_COMMANDS[name] and not marks_on_for(km) then
+      why = "marks are off (marks.enable = false)"
+    end
     if why then
       notify.warn(
         ("keymaps.%s is not available: %s, and a keymap has nothing to pass. "):format(name, why)
@@ -106,21 +135,65 @@ function M.attach(km, which_key)
     end
   end
 
+  local marks_cfg = require("sessions.config").get().marks
+  local marks_on = type(marks_cfg) == "table" and marks_cfg.enable == true
+
+  ---@type table<string, { cmd: string, desc: string }>
+  local commands = vim.deepcopy(COMMANDS)
+  if marks_on then
+    for name, entry in pairs(MARKS_COMMANDS) do
+      commands[name] = entry
+    end
+  end
+
   ---@type table<string, Lib.Keymap.Action>
   local actions = {}
   ---@type string[]
-  local order = vim.tbl_keys(COMMANDS)
+  local order = vim.tbl_keys(commands)
   -- Sorted, so the docs and the health report read the same on every run
   -- rather than in whatever order `pairs` happened to walk the table.
   table.sort(order)
   for _, name in ipairs(order) do
-    local entry = COMMANDS[name]
+    local entry = commands[name]
     actions[name] = {
       -- No `default`: every one of these is opt-in, and always has been.
       rhs = ("<cmd>%s<cr>"):format(entry.cmd),
       -- The registry prefixes the plugin name itself.
       desc = entry.desc:gsub("^Session: ", ""),
     }
+  end
+
+  -- The numbered jumps: `marks.select_key`/`preview_key` are templates with
+  -- one `%d`, expanded for 1..9. Declared with a `default` -- the template
+  -- IS the configuration -- so they bind without a `keymaps` entry each.
+  if marks_on then
+    for _, spec in ipairs({
+      {
+        key = "select_key",
+        name = "marks_select_%d",
+        cmd = "Session marks select %d",
+        desc = "jump to mark %d",
+      },
+      {
+        key = "preview_key",
+        name = "marks_preview_%d",
+        cmd = "Session marks preview %d",
+        desc = "preview mark %d",
+      },
+    }) do
+      local template = marks_cfg[spec.key]
+      if type(template) == "string" and template:find("%%d") then
+        for i = 1, 9 do
+          local name = spec.name:format(i)
+          order[#order + 1] = name
+          actions[name] = {
+            default = template:format(i),
+            rhs = ("<cmd>%s<cr>"):format(spec.cmd:format(i)),
+            desc = spec.desc:format(i),
+          }
+        end
+      end
+    end
   end
 
   local bound = require("lib.nvim.bindings.keymap").register(

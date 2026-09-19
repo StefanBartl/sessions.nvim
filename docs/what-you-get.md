@@ -9,6 +9,7 @@
 | `:Session save-tab` / `load-tab` | Just the current tab's windows, independent of the rest |
 | `:Session save-layout` / `load-layout` | Reapply a split arrangement to whatever is open, without touching buffers |
 | `:Session toggle-track` | Flip `git skip-worktree` on a session file, for syncing named sessions |
+| `:Session marks …` | Opt-in (`marks.enable = true`): a numbered list of files to jump to, with pins, defaults and an editable float — see [marks.md](marks.md) |
 
 Keymaps are off by default — [BINDINGS.md](BINDINGS.md) is both the
 inventory and the list of what to switch on. Every option, including

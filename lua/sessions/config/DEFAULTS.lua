@@ -63,6 +63,47 @@ return {
   --   save_tab, load_tab, save_layout, load_layout
   -- `delete` and `rename` are deliberately absent: both require a name, and
   -- a bare keypress has nothing to pass. Use `picker` or the commands.
+  --
+  -- With `marks.enable = true` the list also takes: marks_menu, marks_edit,
+  -- marks_add, marks_add_front, marks_pin, marks_remove, marks_sync,
+  -- marks_debug -- and the numbered jumps come from `marks.select_key` /
+  -- `marks.preview_key` below.
   keymaps = false,
   which_key = { enable = true },
+
+  -- An ordered list of files to jump to by number, with a cursor position
+  -- per file: `:Session marks`. Off unless a host turns it on.
+  marks = {
+    enable = false,
+    -- "global": one list wherever Neovim runs. "project": one per project
+    -- root (and branch, when `branch_aware` is on), like sessions.
+    scope = "global",
+    -- Paths seeded into the list on first use and restored by
+    -- `:Session marks defaults reset`. Each entry is a list of path
+    -- segments -- the first may be `$REPOS_DIR`, `$HOME` or `$NVIM_HOME`
+    -- -- or one absolute string. Pins made at runtime layer on top.
+    defaults = {},
+    -- On the very first run, take over a harpoon v2 list (the bucket keyed
+    -- by `stdpath("config")`, i.e. a single-global-list setup) before
+    -- falling back to `defaults`. Also `:Session marks import-harpoon`.
+    import_harpoon = true,
+    -- Remember the cursor position of a marked file when its buffer is
+    -- left, debounced by this many ms (0 = write at once).
+    context_debounce_ms = 200,
+    menu = {
+      -- "auto": snacks, then telescope, then fzf-lua, then the editable
+      -- float. "edit" is the float itself; or name a picker.
+      ui = "auto",
+      pin_marker = "📌 pin", -- end-of-line flag on a default/pin in the float
+    },
+    preview = {
+      max_kb = 1536, -- larger files show only the first `max_lines`
+      max_lines = 4000,
+    },
+    -- Templates with one `%d` for 1..9: `select_key = "<leader>%d"` binds
+    -- <leader>1..<leader>9 to jump, `preview_key = "<M-%d>"` to preview.
+    -- Off by default.
+    select_key = false,
+    preview_key = false,
+  },
 }
