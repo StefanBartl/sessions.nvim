@@ -40,13 +40,13 @@ local function limits()
   }
 end
 
----@internal
 ---Read a file's lines; the head only past `max_kb`, so a huge log does not
----turn into one huge string.
+---turn into one huge string. Exported for `sessions.marks.menu`'s `kit`
+---menu, whose preview pane needs the same capped read this float uses.
 ---@param path string
 ---@return string[]|nil lines
 ---@return boolean truncated
-local function read_lines(path)
+function M.read_lines(path)
   local st = uv.fs_stat(path)
   if not st or st.type ~= "file" then
     return nil, false
@@ -117,7 +117,7 @@ end
 ---@param col integer|nil  0-based
 ---@return boolean ok
 function M.open_path(path, row, col)
-  local lines, truncated = read_lines(path)
+  local lines, truncated = M.read_lines(path)
   if not lines then
     notify().warn("cannot read " .. tostring(path))
     return false

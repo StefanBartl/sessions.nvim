@@ -42,7 +42,7 @@
 ---@field marks_debug? string|string[]|false     `:Session marks debug`
 
 ---@class Sessions.Marks.Menu
----@field ui "auto"|"edit"|"snacks"|"telescope"|"fzf"
+---@field ui "auto"|"edit"|"kit"|"snacks"|"telescope"|"fzf"
 ---@field pin_marker string
 
 ---@class Sessions.Marks.Preview
@@ -154,7 +154,7 @@
 ---@field defaults?            (string|string[])[]
 ---@field import_harpoon?      boolean
 ---@field context_debounce_ms? integer
----@field menu?                { ui?: "auto"|"edit"|"snacks"|"telescope"|"fzf", pin_marker?: string }
+---@field menu?                { ui?: "auto"|"edit"|"kit"|"snacks"|"telescope"|"fzf", pin_marker?: string }
 ---@field preview?             { max_kb?: integer, max_lines?: integer }
 ---@field select_key?          string|false
 ---@field preview_key?         string|false

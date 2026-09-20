@@ -326,7 +326,7 @@ function M.enable()
       {
         path = { "marks", "menu" },
         args = { { name = "kind", type = "MARKS_MENU", optional = true } },
-        desc = "Open the mark list: auto|edit|snacks|telescope|fzf",
+        desc = "Open the mark list: auto|edit|kit|snacks|telescope|fzf",
         run = function(ctx)
           if marks_enabled() then
             require("sessions.marks.menu").open(ctx.args.kind)

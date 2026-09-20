@@ -75,7 +75,7 @@ question each page answers.
 
 - [Features](docs/FEATURES.md) — everything this plugin does, in one file.
 - [Picker](docs/picker.md) — `:SessionLoad`, its live preview and multi-select delete.
-- [Marks](docs/marks.md) — the opt-in mark list: files jumped to by number, pins and defaults, the editable float, and taking over a harpoon list.
+- [Marks](docs/marks.md) — the opt-in mark list: files jumped to by number, pins and defaults, its own promptless list+preview UI, and taking over a harpoon list. Concept inspired by [ThePrimeagen's harpoon.nvim](https://github.com/ThePrimeagen/harpoon) — thanks!
 - [Session scoping](docs/session-scoping.md) — two lighter alternatives to a full session, for when a whole one is more than you want.
 - [Workflow](docs/WORKFLOW.md) — how sessions, branches and scoping combine over a working day.
 - [Statusline](docs/statusline.md) — the ready-made component, what its dirty marker means, and why it is cheap enough for a hotpath.

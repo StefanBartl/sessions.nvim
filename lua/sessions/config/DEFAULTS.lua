@@ -83,8 +83,9 @@ return {
     -- left, debounced by this many ms (0 = write at once).
     context_debounce_ms = 200,
     menu = {
-      -- "auto": snacks, then telescope, then fzf-lua, then the editable
-      -- float. "edit" is the float itself; or name a picker.
+      -- "auto": kit (ui.nvim's promptless list+preview -- no picker plugin
+      -- needed), then snacks, then telescope, then fzf-lua, then the
+      -- editable float. "edit" is the float itself; or name a picker.
       ui = "auto",
       pin_marker = "📌 pin", -- end-of-line flag on a default/pin in the float
     },
