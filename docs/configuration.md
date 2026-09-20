@@ -122,10 +122,10 @@ When no explicit name is given, the name is resolved from context:
 
 | `project_aware` | `branch_aware` | Result |
 |---|---|---|
-| ✓ | ✓ | `myapp_feature-login` |
-| ✓ | ✗ | `myapp` |
-| ✗ | ✓ | `feature-login` |
-| ✗ | ✗ | `last` (default_name) |
+| true | true | `myapp_feature-login` |
+| true | false | `myapp` |
+| false | true | `feature-login` |
+| false | false | `last` (default_name) |
 
 Unsafe filename characters (`/`, `\`, spaces) are replaced with `-` or `_`.
 `feature/login` → `feature-login`.

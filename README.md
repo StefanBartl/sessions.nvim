@@ -58,20 +58,20 @@ the handful of files you want one keypress away in every project.
 Start at [docs/README.md](docs/README.md), which says what is where and which
 question each page answers.
 
-**The Basics**
+### The Basics
 
 - [Requirements](docs/installation.md#requirements) — Neovim version, required plugins and CLI tools.
 - [Installation](docs/installation.md) — a spec per plugin manager.
 - [Quickstart](docs/quickstart.md) — the shortest path: save a session, load it back, including the `nvim '+Session load'` startup requirements and why it needs quoting.
 
-**Configuration**
+### Configuration
 
 - [What you get with the defaults](docs/what-you-get.md) — the full command surface at a glance.
 - [All options](docs/configuration.md) — every option, its default, and the session naming rules.
 - [Command reference](docs/commands.md) — `:Session <subcommand>`, subcommand by subcommand.
 - [Bindings](docs/BINDINGS.md) — every keymap, user command and autocommand. The keys are off by default, so this is also where you learn what to switch on.
 
-**The Rest**
+### The Rest
 
 - [Features](docs/FEATURES.md) — everything this plugin does, in one file.
 - [Picker](docs/picker.md) — `:SessionLoad`, its live preview and multi-select delete.

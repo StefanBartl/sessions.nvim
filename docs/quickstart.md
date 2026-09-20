@@ -1,12 +1,12 @@
 # Quick Start
 
-**Save a session**
+## Save a session
 ```bash
 nvim my-file.lua          # work on files...
 # :Session save           # inside Neovim, or just exit and let autosave do it
 ```
 
-**Restore the session**
+## Restore the session
 ```bash
 # Wherever you left off (project + branch aware) — no quoting, own command:
 nvim +LastSession
