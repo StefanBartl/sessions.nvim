@@ -187,8 +187,11 @@ so one config serves every machine) and pins (runtime defaults, stored on
 this machine only). Defaults and pins are seeded once and come back on
 `defaults sync`; a mark you delete stays deleted. One list for everything by
 default (`scope = "global"`), or one per project and branch. An editable
-float (reorder, delete, paste), snacks/telescope/fzf pickers with shortened
-labels, a read-only preview, and a one-time import of a harpoon v2 list.
+float (reorder, delete, paste); its own promptless list+preview UI (`kit`,
+built on `ui.nvim`, no picker plugin needed — see [marks.md](marks.md)) plus
+snacks/telescope/fzf pickers, all with shortened labels and a preview; a
+read-only standalone preview; and a one-time import of a harpoon v2 list.
+Concept and import inspired by [ThePrimeagen's harpoon.nvim](https://github.com/ThePrimeagen/harpoon).
 Off by default.
 
 - **Module:** `lua/sessions/marks/` (`init.lua` store and operations,

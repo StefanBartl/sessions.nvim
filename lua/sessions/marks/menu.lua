@@ -9,10 +9,15 @@
 --- list after all, drop it from the list only (it returns on the next
 --- `defaults sync`), or unpin it too.
 ---
---- The picker forms (`snacks`, `telescope`, `fzf`) show the same list with
---- shortened labels and open an entry in the current window, a split, a
---- vsplit or a tab. `auto` takes the first one installed and falls back to
---- `edit`, which needs nothing.
+--- `kit`, `snacks`, `telescope` and `fzf` show the same list with a
+--- preview and open an entry in the current window, a split, a vsplit or a
+--- tab. `kit` (ui.nvim's `ui.kit.shortlist` -- a promptless list+preview,
+--- no fuzzy search: this list rarely holds more than a handful of entries,
+--- so there is nothing to search through) needs no picker plugin and is
+--- tried first; `auto` then falls through `snacks`/`telescope`/`fzf` (the
+--- first one installed) and finally `edit`, which needs nothing at all.
+--- Concept and label formatting inspired by ThePrimeagen's harpoon.nvim --
+--- thanks!
 
 ---@class SessionsMarksMenu
 local M = {}
@@ -20,7 +25,7 @@ local M = {}
 local marks = require("sessions.marks")
 
 ---@type string[]
-M.KINDS = { "auto", "edit", "snacks", "telescope", "fzf" }
+M.KINDS = { "auto", "edit", "kit", "snacks", "telescope", "fzf" }
 
 local NS = vim.api.nvim_create_namespace("sessions_marks_menu")
 local HL = "SessionsMarksPin"
@@ -310,6 +315,93 @@ local function entries()
 end
 
 ---@internal
+---A promptless list+preview built on ui.kit -- no external picker plugin
+---needed, and no fuzzy-search prompt to type past either, which suits a
+---list that rarely holds more than a handful of entries. Preview sits above
+---the results (ui.kit's `shortlist` template), both full width, so a path
+---label can show more than a picker's narrow results column would leave
+---room for.
+---@return boolean handled
+local function open_kit()
+  local ok, kit = pcall(require, "ui.kit")
+  if not ok then
+    return false
+  end
+  local path_shorten = require("lib.nvim.fs.path_shorten")
+  local normkey = require("lib.nvim.fs.normkey")
+  local preview = require("sessions.marks.preview")
+  local pinned = marks.pinned_set()
+  local items = entries()
+  if #items == 0 then
+    return false
+  end
+
+  local raw = mcfg().menu and mcfg().menu.pin_marker
+  local pin_icon = type(raw) == "string" and raw or "📌 pin"
+
+  local function pin_suffix(path)
+    if not pinned[normkey(path, { realpath = true })] then
+      return ""
+    end
+    return "  " .. pin_icon
+  end
+
+  local h = kit.shortlist({
+    items = items,
+    title = ("Marks (%s)"):format(marks.scope_key()),
+    -- Blocks interactive edits, same spirit as the standalone
+    -- `:Session marks preview` float -- `surface:set_lines()` (used below)
+    -- still works, it saves/restores `modifiable` around its own write.
+    -- `readonly` is deliberately left alone: unlike the standalone float
+    -- (which sets it only once, after its one-time write), this pane is
+    -- rewritten on every selection change, and `nvim_buf_set_lines` logs a
+    -- W10 warning on a `readonly` buffer even while `modifiable` is
+    -- temporarily true -- that would fire on every arrow-key move here.
+    preview_bo = { modifiable = false },
+    format_item = function(item, width)
+      local suffix = pin_suffix(item.path)
+      local budget = width - vim.fn.strdisplaywidth(suffix)
+      return path_shorten(item.path, math.max(1, budget)) .. suffix
+    end,
+    render = function(item, surface)
+      local lines, truncated = preview.read_lines(item.path)
+      if not lines then
+        surface:set_lines({ "cannot read " .. item.path })
+        return
+      end
+      if truncated then
+        lines[#lines + 1] = ""
+        lines[#lines + 1] = "--- preview truncated ---"
+      end
+      surface:set_lines(lines)
+      local ft = vim.filetype.match({ filename = item.path }) or ""
+      pcall(vim.api.nvim_set_option_value, "filetype", ft, { buf = surface.bufnr })
+      local total = math.max(#lines, 1)
+      local row = math.min(math.max(item.row or 1, 1), total)
+      pcall(vim.api.nvim_win_set_cursor, surface.winid, { row, math.max(item.col or 0, 0) })
+    end,
+    on_submit = function(item)
+      open_with("edit", item.path)
+    end,
+  })
+  if not h then
+    return false
+  end
+
+  local mo = { buffer = h.results.bufnr, nowait = true }
+  for _, spec in ipairs({ { "<C-v>", "vsplit" }, { "<C-x>", "split" }, { "<C-t>", "tabedit" } }) do
+    vim.keymap.set("n", spec[1], function()
+      local item = h.current_item()
+      h.close()
+      if item then
+        open_with(spec[2], item.path)
+      end
+    end, mo)
+  end
+  return true
+end
+
+---@internal
 ---@return boolean handled
 local function open_snacks()
   local ok, snacks = pcall(require, "snacks")
@@ -468,6 +560,13 @@ function M.open(kind)
   if kind == "edit" then
     M.open_edit()
     return
+  end
+  if kind == "kit" or kind == "auto" then
+    if open_kit() then
+      return
+    elseif kind == "kit" then
+      notify().warn("ui.nvim not available -- opening the edit menu")
+    end
   end
   if kind == "snacks" or kind == "auto" then
     if open_snacks() then

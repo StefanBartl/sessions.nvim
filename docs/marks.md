@@ -12,6 +12,11 @@ the same everywhere. A cheatsheet, a notes file and your config's plugin
 spec are the files you want one keypress away regardless of which repository
 you are in.
 
+The list itself, the jump-by-number keymaps and the harpoon import below are
+a straight take on [ThePrimeagen's harpoon.nvim](https://github.com/ThePrimeagen/harpoon)
+— thanks for the idea. The `kit` menu (see below) is this plugin's own UI
+for it, built for the same "a handful of files, not a haystack" shape.
+
 Off by default. Turn it on with `marks = { enable = true }`.
 
 ## The three kinds of entry
@@ -58,7 +63,7 @@ either way; they are a property of the machine, not of a project.
 | Command | Does |
 | --- | --- |
 | `:Session marks` | Open the list in the configured picker (`marks.menu.ui`) |
-| `:Session marks menu [auto\|edit\|snacks\|telescope\|fzf]` | Open it in a specific UI |
+| `:Session marks menu [auto\|edit\|kit\|snacks\|telescope\|fzf]` | Open it in a specific UI |
 | `:Session marks add [path] [--front] [--permanent]` | Add (current buffer if no path); `--front` puts it first, `--permanent` also pins it |
 | `:Session marks remove [path]` | Drop from the list |
 | `:Session marks pin [path] [--front]` | Pin, and add if not listed |
@@ -84,10 +89,20 @@ open it in a split, vsplit or tab. Deleting a line that is a default or pin
 asks: *list only* (it returns on the next `defaults sync`), *unpin too*, or
 *keep it*.
 
+**`kit`** is this plugin's own UI (built on `ui.nvim`'s `ui.kit.shortlist`),
+tried first by `auto`: no fuzzy-search prompt — this list rarely holds more
+than a handful of entries, so there is nothing to search through — and the
+preview sits *above* the list instead of beside it, both full width, so a
+path label gets more room than a picker's narrow results column would leave.
+Pinned entries carry the same `📌 pin` marker as the edit menu, and
+`<C-x>`/`<C-v>`/`<C-t>` open a split, vsplit or tab. Needs `ui.nvim`
+installed; falls back to `edit` if it is not.
+
 **`snacks`**, **`telescope`** and **`fzf`** show the same list with shortened
 labels (`C:/…/parent/file.ext`), preview the file, and open an entry with the
-same `<C-x>`/`<C-v>`/`<C-t>` variants. `auto` — the default — takes the first
-one installed and falls back to `edit`, which needs nothing.
+same `<C-x>`/`<C-v>`/`<C-t>` variants. `auto` — the default — tries `kit`
+first, then the first of these installed, and falls back to `edit`, which
+needs nothing at all.
 
 ## Keymaps
 

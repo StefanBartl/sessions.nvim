@@ -96,7 +96,7 @@ require("sessions").setup({
     import_harpoon = true,         -- first run: take over harpoon's single-global-list bucket if found
     context_debounce_ms = 200,     -- cursor position remembered on BufLeave, this many ms later
     menu = {
-      ui = "auto",                 -- auto (snacks > telescope > fzf > edit) | edit | snacks | telescope | fzf
+      ui = "auto",                 -- auto (kit > snacks > telescope > fzf > edit) | edit | kit | snacks | telescope | fzf
       pin_marker = "📌 pin",       -- end-of-line flag on a default/pin in the edit float
     },
     preview = { max_kb = 1536, max_lines = 4000 },

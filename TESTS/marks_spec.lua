@@ -355,6 +355,124 @@ return function(H)
   H.eq(#marks.list(), 1, "...and just happens")
   menu.open_edit()
 
+  -- the kit menu (promptless list+preview, no picker plugin needed) -------------
+
+  config.setup({
+    root = dir .. "/sroot_kit",
+    branch_aware = false,
+    project_aware = false,
+    marks = { enable = true, defaults = { a }, import_harpoon = false, context_debounce_ms = 0 },
+  })
+  marks = H.fresh("sessions.marks")
+  -- `defaults = { a }` only makes `a` count as pinned (see "specs and
+  -- scope" above) -- it is not on the LIST until added/synced, same as the
+  -- edit-menu block above.
+  marks.add(a)
+  marks.add(b)
+  marks.update_context(b, 2, 0)
+
+  local kit_calls = {}
+  local fake_buf = vim.api.nvim_create_buf(false, true)
+  package.loaded["ui.kit"] = {
+    shortlist = function(opts)
+      kit_calls[#kit_calls + 1] = opts
+      return {
+        close = function() end,
+        current_item = function()
+          return opts.items[1]
+        end,
+        current_index = function()
+          return 1
+        end,
+        results = {
+          bufnr = fake_buf,
+          winid = -1,
+          is_valid = function()
+            return true
+          end,
+        },
+        preview = {
+          bufnr = fake_buf,
+          winid = -1,
+          is_valid = function()
+            return true
+          end,
+        },
+      }
+    end,
+  }
+
+  -- The stub above replaces a real module in the shared `package.loaded`
+  -- table, which every later spec file in this same headless process also
+  -- sees (health_spec.lua's "ui.nvim not found" branch in particular) -- so
+  -- it must come back out even if an assertion below fails and unwinds this
+  -- block early. `pcall` guarantees that; the outer `H.ok` re-raises so a
+  -- real failure here still fails the suite.
+  local kit_ok, kit_err = pcall(function()
+    local menu_kit = H.fresh("sessions.marks.menu")
+    menu_kit.open("kit")
+    H.eq(#kit_calls, 1, 'kind = "kit" reaches ui.kit.shortlist')
+    local kopts = kit_calls[1]
+    H.eq(#kopts.items, 2, "one item per mark")
+    H.contains(kopts.title, "Marks (", "the picker is titled with the scope")
+
+    -- format_item: the pinned entry (a, a config default) carries the
+    -- marker, the plain one (b) does not.
+    local label_a, label_b
+    for _, it in ipairs(kopts.items) do
+      if it.path == a then
+        label_a = kopts.format_item(it, 60)
+      elseif it.path == b then
+        label_b = kopts.format_item(it, 60)
+      end
+    end
+    H.contains(label_a, "pin", "a pinned entry's label carries the pin marker")
+    H.falsy(label_b:find("pin", 1, true), "a plain entry's label does not")
+
+    -- render(): fills the preview surface from the real file, cursor at the
+    -- remembered position.
+    local rendered_lines
+    local fake_surface = {
+      bufnr = fake_buf,
+      winid = vim.api.nvim_get_current_win(),
+      set_lines = function(_, new_lines)
+        rendered_lines = new_lines
+      end,
+      is_valid = function()
+        return true
+      end,
+    }
+    for _, it in ipairs(kopts.items) do
+      if it.path == b then
+        kopts.render(it, fake_surface)
+      end
+    end
+    H.eq(rendered_lines[1], "b.lua line 1", "render() reads the real file's content")
+    H.eq(
+      vim.api.nvim_win_get_cursor(fake_surface.winid)[1],
+      2,
+      "render() places the cursor at the remembered row"
+    )
+
+    -- on_submit(): opens the file, same as the edit menu's <CR>.
+    vim.cmd("silent! %bwipeout!")
+    for _, it in ipairs(kopts.items) do
+      if it.path == a then
+        kopts.on_submit(it)
+      end
+    end
+    H.eq(vim.fs.normalize(vim.api.nvim_buf_get_name(0)), a, "on_submit opens the picked mark")
+  end)
+  package.loaded["ui.kit"] = nil
+  H.ok(kit_ok, "the kit menu block: " .. tostring(kit_err))
+
+  -- ui.kit unavailable: falls back to the edit menu instead of erroring.
+  vim.cmd("silent! %bwipeout!")
+  local menu_fallback = H.fresh("sessions.marks.menu")
+  menu_fallback.open("kit")
+  H.ok(menu_fallback.is_open(), 'kind = "kit" without ui.nvim falls back to the edit menu')
+  menu_fallback.open_edit() -- close it again
+
   -- the preview -------------------------------------------------------------------
 
   local preview = H.fresh("sessions.marks.preview")

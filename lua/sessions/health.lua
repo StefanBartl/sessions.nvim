@@ -91,9 +91,14 @@ function M.check()
 
   local ui_kit_ok = pcall(require, "ui.kit")
   if ui_kit_ok then
-    vim.health.ok('ui.nvim found — autoload = "ask" uses ui.kit.confirm')
+    vim.health.ok(
+      'ui.nvim found — autoload = "ask" uses ui.kit.confirm; marks.menu.ui = "kit" available'
+    )
   else
-    vim.health.info('ui.nvim not found — autoload = "ask" uses a hand-rolled float fallback')
+    vim.health.info(
+      'ui.nvim not found — autoload = "ask" uses a hand-rolled float fallback; '
+        .. 'marks.menu.ui = "kit" falls back to "edit"'
+    )
   end
 
   if pcall(require, "which-key") then
