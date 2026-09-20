@@ -230,14 +230,20 @@ local function shown_in_split(bufnr)
 end
 
 ---@internal
----Force-delete any loaded buffer matching `cfg.blacklist` (buftype, filetype,
----or path prefix) before a save, so it never ends up in the session file.
+---Force-delete any buffer matching `cfg.blacklist` (buftype, filetype, or
+---path prefix) before a save, so it never ends up in the session file.
+---Unloaded buffers count too: `:mksession` writes every *listed* buffer as
+---`badd`, loaded or not, and a session load leaves its own `badd` entries
+---unloaded until visited -- gating on "loaded" let a path added to the
+---blacklist later be carried from one save to the next forever. (A
+---filetype is only set on load, so that check naturally applies to loaded
+---buffers alone.)
 local function wipe_blacklisted()
   local bl = require("sessions.config").cfg.blacklist
   local bufs = api.nvim_list_bufs()
   for i = 1, #bufs do
     local b = bufs[i]
-    if api.nvim_buf_is_loaded(b) then
+    if api.nvim_buf_is_valid(b) then
       local bt = bo[b].buftype
       local ft = bo[b].filetype
       local name = api.nvim_buf_get_name(b)

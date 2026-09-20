@@ -259,6 +259,32 @@ return function(H)
     setup()
   end
 
+  -- A listed but *unloaded* buffer (what a session load leaves behind for
+  -- every `badd`, or a plain `:badd`) is still written by `:mksession`; a
+  -- blacklisted path must be wiped whether the buffer was ever loaded.
+  do
+    local junk_dir = dir .. "/junkdir-unloaded"
+    vim.fn.mkdir(junk_dir, "p")
+    local junk_file = junk_dir .. "/stale.lua"
+    vim.fn.writefile({ "-- junk" }, junk_file)
+    setup({ blacklist = { paths = { junk_dir, (junk_dir:gsub("/", "\\")) } } })
+
+    local stale = vim.fn.bufadd(junk_file)
+    vim.bo[stale].buflisted = true
+    H.falsy(api.nvim_buf_is_loaded(stale), "precondition: listed, never loaded")
+
+    H.ok(core.save("unloaded"))
+
+    H.falsy(
+      api.nvim_buf_is_valid(stale),
+      "an unloaded listed buffer under a blacklisted path is wiped"
+    )
+    H.excludes(H.read(session_file("unloaded")), "stale.lua", "and never reaches the session file")
+
+    core.delete("unloaded")
+    setup()
+  end
+
   -- --------------------------------------------------------- resolution order
 
   do

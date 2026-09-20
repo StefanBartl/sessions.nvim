@@ -65,7 +65,12 @@ Blacklisted buffer types (`quickfix`, `nofile`, `prompt`), filetypes
 (`gitcommit`, `gitrebase`), and path prefixes (`/tmp/`, `/private/tmp/`,
 plus `%TEMP%` auto-added on Windows) are wiped from the buffer list before
 `:mksession` runs, so a saved session doesn't reload quickfix noise or
-scratch/temp buffers.
+scratch/temp buffers. A listed buffer is wiped whether or not it is loaded:
+the `badd` entries a session load leaves unvisited are still recorded by
+the next save, so a path blacklisted after the fact drops out on that save
+rather than being carried along. Only what the session file would record
+is touched: listed buffers, and ones a split window shows; an unlisted
+scratch buffer in a floating window (a toast, a HUD) is left alone.
 
 - **Config:** `opts.blacklist.{buftypes,filetypes,paths}`
 
