@@ -75,8 +75,8 @@ use {
 
 | Variant | Startup impact | Commands via `:Session ...` | Commands via `nvim +Cmd` | When to use |
 |---|---|---|---|---|
-| **`cmd` (lazy)** | Minimal | ✓ (loads on use) | ✗ | Large config, many plugins |
-| **`event = "VimEnter"`** | Minimal (after UI) | ✓ (loads at VimEnter) | ✗ | **Recommended** — autoload/autosave timing |
-| **`lazy = false`** | High (immediate) | ✓ | ✓ | Want `nvim +LastSession` / `nvim '+Session load'` to work, or instant command availability |
+| **`cmd` (lazy)** | Minimal | Yes (loads on use) | No | Large config, many plugins |
+| **`event = "VimEnter"`** | Minimal (after UI) | Yes (loads at VimEnter) | No | **Recommended** — autoload/autosave timing |
+| **`lazy = false`** | High (immediate) | Yes | Yes | Want `nvim +LastSession` / `nvim '+Session load'` to work, or instant command availability |
 
 **Note:** Command-line args like `nvim +LastSession` execute **before** lazy-loading hooks, so you need `lazy = false` for those to work. For all other use cases, `cmd` or `event = "VimEnter"` is recommended. `:Session` is a single command with subcommands (`load`, `save`, …) built via `lib.nvim.bindings.usercmd.composer` — a multi-word CLI invocation like `nvim +Session load` needs to be quoted as one shell argument (`nvim '+Session load'`), since Neovim's `+cmd` flag is a single word by default. `:LastSession` is a separate, single-word command specifically so the most common case (restore the last session) doesn't need quoting.
