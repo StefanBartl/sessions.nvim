@@ -9,7 +9,7 @@ function of where you are.
 | --- | --- |
 | **Naming** | The project root — `.git`, `package.json`, and the rest — plus the current git branch. Switch branches and a different workspace comes back |
 | **Lifecycle** | `save`, `load`, `delete` and `rename`, the last two missing from most session plugins, plus autosave on exit and an `autoload = "ask"` prompt on start |
-| **Clean saves** | Blacklisted buffer types, filetypes and path prefixes are wiped before `:mksession` — no quickfix noise, no temp files in tomorrow's session. Only buffers the session file would record are touched: listed ones, or ones a split window shows; a plugin's floating scratch buffer (a toast, a HUD) is left alone |
+| **Clean saves** | Blacklisted buffer types, filetypes and path prefixes are wiped before `:mksession` — no quickfix noise, no temp files in tomorrow's session. Only buffers the session file would record are touched: listed ones (loaded or not — a never-visited `badd` entry has its filetype inferred from the file name), or ones a split window shows; a plugin's floating scratch buffer (a toast, a HUD) is left alone |
 | **Portability** | `relative_paths` re-anchors a session wherever it is loaded, and `root_remap` translates absolute prefixes across machines and operating systems |
 | **Scoping** | `save-tab` / `load-tab` for one tab's windows, and `save-layout` / `load-layout` to reapply a split arrangement to whatever is already open |
 | **Metadata** | A companion `.json` recording the save timestamp, branch and buffer list, for a picker or a statusline to read without sourcing anything |

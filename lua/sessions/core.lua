@@ -235,9 +235,12 @@ end
 ---Unloaded buffers count too: `:mksession` writes every *listed* buffer as
 ---`badd`, loaded or not, and a session load leaves its own `badd` entries
 ---unloaded until visited -- gating on "loaded" let a path added to the
----blacklist later be carried from one save to the next forever. (A
----filetype is only set on load, so that check naturally applies to loaded
----buffers alone.)
+---blacklist later be carried from one save to the next forever. A filetype
+---is only detected on load, so for a listed buffer that was never loaded
+---it is inferred from the file name (`vim.filetype.match`), the same way
+---detection will resolve it once the buffer is visited; otherwise a
+---`filetypes` rule could never match a `badd` entry and it too would be
+---carried from save to save.
 local function wipe_blacklisted()
   local bl = require("sessions.config").cfg.blacklist
   local bufs = api.nvim_list_bufs()
@@ -247,6 +250,19 @@ local function wipe_blacklisted()
       local bt = bo[b].buftype
       local ft = bo[b].filetype
       local name = api.nvim_buf_get_name(b)
+      -- Only for a listed, never-loaded, named buffer: an unlisted unloaded
+      -- one (a `:bdelete` remnant) is never written, so it is not worth a
+      -- pattern match per save.
+      if
+        ft == ""
+        and name ~= ""
+        and #bl.filetypes > 0
+        and bo[b].buflisted
+        and not api.nvim_buf_is_loaded(b)
+      then
+        local ok, guess = pcall(vim.filetype.match, { filename = name })
+        ft = (ok and type(guess) == "string") and guess or ""
+      end
       local bad = (bt ~= "" and vim.tbl_contains(bl.buftypes, bt))
         or (ft ~= "" and vim.tbl_contains(bl.filetypes, ft))
         or (name ~= "" and starts_with_any(name, bl.paths))

@@ -285,6 +285,38 @@ return function(H)
     setup()
   end
 
+  -- The same for a filetype rule. An unloaded buffer has no filetype yet
+  -- (detection runs on load), so `bo.filetype` alone would let a `badd`
+  -- entry for a blacklisted filetype through on every save; the filetype is
+  -- inferred from the file name instead.
+  do
+    local msg_dir = dir .. "/ftdir-unloaded/.git"
+    vim.fn.mkdir(msg_dir, "p")
+    local msg_file = msg_dir .. "/COMMIT_EDITMSG"
+    vim.fn.writefile({ "wip" }, msg_file)
+    setup({ blacklist = { filetypes = { "gitcommit" } } })
+
+    local stale = vim.fn.bufadd(msg_file)
+    vim.bo[stale].buflisted = true
+    H.falsy(api.nvim_buf_is_loaded(stale), "precondition: listed, never loaded")
+    H.eq(vim.bo[stale].filetype, "", "precondition: no filetype until loaded")
+
+    H.ok(core.save("unloaded-ft"))
+
+    H.falsy(
+      api.nvim_buf_is_valid(stale),
+      "an unloaded listed buffer whose name resolves to a blacklisted filetype is wiped"
+    )
+    H.excludes(
+      H.read(session_file("unloaded-ft")),
+      "COMMIT_EDITMSG",
+      "and never reaches the session file"
+    )
+
+    core.delete("unloaded-ft")
+    setup()
+  end
+
   -- --------------------------------------------------------- resolution order
 
   do
