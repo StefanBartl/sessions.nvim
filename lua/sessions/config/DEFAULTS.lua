@@ -88,6 +88,10 @@ return {
       -- editable float. "edit" is the float itself; or name a picker.
       ui = "auto",
       pin_marker = "📌 pin", -- end-of-line flag on a default/pin in the float
+      -- preview_keys: not set here on purpose (nil = the kit's own defaults:
+      -- <C-f>/<C-p> scroll the preview, <Tab> hops into it, <CR> there opens
+      -- the file at the cursor line). A table changes single groups, `false`
+      -- turns them off -- see docs/marks.md.
     },
     preview = {
       max_kb = 1536, -- larger files show only the first `max_lines`

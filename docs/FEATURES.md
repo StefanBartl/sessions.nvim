@@ -193,7 +193,9 @@ this machine only). Defaults and pins are seeded once and come back on
 `defaults sync`; a mark you delete stays deleted. One list for everything by
 default (`scope = "global"`), or one per project and branch. An editable
 float (reorder, delete, paste); its own promptless list+preview UI (`kit`,
-built on `ui.nvim`, no picker plugin needed — see [marks.md](marks.md)) plus
+built on `ui.nvim`, no picker plugin needed — see [marks.md](marks.md)); its
+preview scrolls (`<C-f>`/`<C-p>`), can be entered (`<Tab>`) to copy from, and
+`<CR>` there opens the file at the cursor line; plus
 snacks/telescope/fzf pickers, all with shortened labels and a preview; a
 read-only standalone preview; and a one-time import of a harpoon v2 list.
 Concept and import inspired by [ThePrimeagen's harpoon.nvim](https://github.com/ThePrimeagen/harpoon).

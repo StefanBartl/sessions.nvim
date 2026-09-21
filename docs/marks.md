@@ -98,6 +98,57 @@ Pinned entries carry the same `📌 pin` marker as the edit menu, and
 `<C-x>`/`<C-v>`/`<C-t>` open a split, vsplit or tab. Needs `ui.nvim`
 installed; falls back to `edit` if it is not.
 
+### Working in the kit menu's preview
+
+The preview is a real window with the file's own highlighting, read-only, so
+you can look further into a file before you open it — and copy from it.
+
+| Where | Keys | Does |
+| --- | --- | --- |
+| list, preview | `<C-f>`, `<PageDown>` | scroll the preview one page down |
+| list, preview | `<C-p>`, `<C-b>`, `<PageUp>` | one page up |
+| list, preview | `<C-d>` / `<C-u>` | half a page down / up |
+| list, preview | `<Tab>`, `<C-w>w`, `<C-w><C-w>`, `<C-w>W` | hop between list and preview |
+| list | `<CR>` | open the entry where you left it |
+| list | `<C-x>`, `<C-v>`, `<C-t>` | open it in a split, vsplit or tab |
+| preview | `<CR>` | open the file **at the line the preview cursor is on** |
+| preview | `y`, visual mode, `/`, any motion | everything that reads works; nothing can be edited |
+| list, preview | `q`, `<Esc>` | close the menu |
+
+A page is Vim's own: the window height less two lines of overlap.
+`<C-p>` scrolls up although Vim means "one line up" by it — it pairs with
+`<C-f>`, and `<C-b>` is there for whoever's fingers know Vim's pair. The window
+cycle (`<C-w>w`) stays inside the menu: left alone it would walk on into the
+editor underneath and leave the menu stranded on top. For the same reason the
+menu closes when focus goes to any other window (a click into the editor,
+`<C-w>j`, a tab switch). The focused window's border is lit, and each window
+carries a footer with the keys that work in it.
+
+Change the keys, or switch them off, with `marks.menu.preview_keys` — one
+group at a time, a list replaces that group's defaults, `false` turns a group
+(or all of them) off:
+
+```lua
+marks = {
+  menu = {
+    preview_keys = {
+      scroll_down = { "<C-j>" },   -- default { "<C-f>", "<PageDown>" }
+      scroll_up   = { "<C-k>" },   -- default { "<C-p>", "<C-b>", "<PageUp>" }
+      half_down   = { "<C-d>" },   -- default { "<C-d>" }
+      half_up     = { "<C-u>" },   -- default { "<C-u>" }
+      focus       = { "<Tab>" },   -- list <-> preview
+      cycle       = false,         -- leave <C-w>w alone
+      close       = { "q", "<Esc>" },
+      submit      = { "<CR>" },    -- open at the preview cursor line
+    },
+    -- preview_keys = false,       -- or: none of them
+  },
+}
+```
+
+The groups are those of `ui.kit.shortlist`'s `preview_keys` (see ui.nvim's
+`ui.kit` README, "Shortlist").
+
 **`snacks`**, **`telescope`** and **`fzf`** show the same list with shortened
 labels (`C:/…/parent/file.ext`), preview the file, and open an entry with the
 same `<C-x>`/`<C-v>`/`<C-t>` variants. `auto` — the default — tries `kit`
