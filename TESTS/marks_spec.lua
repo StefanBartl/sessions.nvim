@@ -376,6 +376,9 @@ return function(H)
   package.loaded["ui.kit"] = {
     shortlist = function(opts)
       kit_calls[#kit_calls + 1] = opts
+      -- A buffer of its own per call: the menu binds keys on the results buffer,
+      -- and the specs below wipe every buffer between calls.
+      local results_buf = vim.api.nvim_create_buf(false, true)
       return {
         close = function() end,
         current_item = function()
@@ -385,7 +388,7 @@ return function(H)
           return 1
         end,
         results = {
-          bufnr = fake_buf,
+          bufnr = results_buf,
           winid = -1,
           is_valid = function()
             return true
@@ -462,6 +465,61 @@ return function(H)
       end
     end
     H.eq(vim.fs.normalize(vim.api.nvim_buf_get_name(0)), a, "on_submit opens the picked mark")
+
+    -- on_preview_submit(): <CR> inside the preview opens the file where the
+    -- preview's cursor is, not at the remembered position (b remembers row 2).
+    vim.cmd("silent! %bwipeout!")
+    for _, it in ipairs(kopts.items) do
+      if it.path == b then
+        kopts.on_preview_submit(it, 2, { row = 3, col = 0 })
+      end
+    end
+    H.eq(
+      vim.fs.normalize(vim.api.nvim_buf_get_name(0)),
+      b,
+      "on_preview_submit opens the previewed mark"
+    )
+    H.eq(
+      vim.api.nvim_win_get_cursor(0)[1],
+      3,
+      "...at the preview cursor's row, not the remembered row 2"
+    )
+    -- The preview can be longer than the file (a "truncated" notice at the end):
+    -- a row past the end lands on the last line instead of erroring.
+    vim.cmd("silent! %bwipeout!")
+    for _, it in ipairs(kopts.items) do
+      if it.path == b then
+        kopts.on_preview_submit(it, 2, { row = 9999, col = 40 })
+      end
+    end
+    H.eq(vim.api.nvim_win_get_cursor(0)[1], 3, "a row past the end is clamped to the last line")
+
+    -- marks.menu.preview_keys: nothing configured -> nothing passed, so the kit
+    -- keeps its own defaults; `false` and a table go through; a wrong type is a
+    -- config typo and degrades to the defaults instead of reaching the kit.
+    H.eq(kopts.preview_keys, nil, "no preview_keys configured -> the kit's defaults")
+    local function passed_keys(value)
+      config.setup({
+        root = dir .. "/sroot_kit",
+        branch_aware = false,
+        project_aware = false,
+        marks = {
+          enable = true,
+          defaults = { a },
+          import_harpoon = false,
+          context_debounce_ms = 0,
+          menu = { preview_keys = value },
+        },
+      })
+      H.fresh("sessions.marks.menu").open("kit")
+      return kit_calls[#kit_calls].preview_keys
+    end
+    H.eq(passed_keys(false), false, "preview_keys = false turns the keys off")
+    H.ok(
+      vim.deep_equal(passed_keys({ close = false }), { close = false }),
+      "a table reaches the kit untouched"
+    )
+    H.eq(passed_keys("typo"), nil, "a value of the wrong type is dropped")
   end)
   package.loaded["ui.kit"] = nil
   H.ok(kit_ok, "the kit menu block: " .. tostring(kit_err))

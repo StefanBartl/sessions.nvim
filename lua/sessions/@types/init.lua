@@ -44,6 +44,7 @@
 ---@class Sessions.Marks.Menu
 ---@field ui "auto"|"edit"|"kit"|"snacks"|"telescope"|"fzf"
 ---@field pin_marker string
+---@field preview_keys? table|false  the kit menu's preview keys (ui.nvim's `ui.kit.shortlist` `preview_keys`); nil = its defaults, false = none
 
 ---@class Sessions.Marks.Preview
 ---@field max_kb integer
@@ -154,7 +155,7 @@
 ---@field defaults?            (string|string[])[]
 ---@field import_harpoon?      boolean
 ---@field context_debounce_ms? integer
----@field menu?                { ui?: "auto"|"edit"|"kit"|"snacks"|"telescope"|"fzf", pin_marker?: string }
+---@field menu?                { ui?: "auto"|"edit"|"kit"|"snacks"|"telescope"|"fzf", pin_marker?: string, preview_keys?: table|false }
 ---@field preview?             { max_kb?: integer, max_lines?: integer }
 ---@field select_key?          string|false
 ---@field preview_key?         string|false

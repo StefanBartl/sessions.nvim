@@ -35,6 +35,13 @@ The numbered mark jumps are not `keymaps` entries but templates in the
 `:Session marks select N`, `preview_key = "<M-%d>"` binds `<M-1>`…`<M-9>` to
 `:Session marks preview N`. See [marks.md](marks.md#keymaps).
 
+The `kit` marks menu has buffer-local keys of its own (not `keymaps` entries,
+and not global): `<C-f>`/`<C-p>` (or `<PageDown>`/`<PageUp>`) scroll the preview,
+`<C-d>`/`<C-u>` half a page, `<Tab>` (and `<C-w>w`) hop between list and
+preview, `<CR>` in the preview opens the file at the cursor line, `q`/`<Esc>`
+close it. Configurable through `marks.menu.preview_keys`; see
+[marks.md](marks.md#working-in-the-kit-menus-preview).
+
 Defined in `lua/sessions/bindings/keymaps/init.lua`. There are no defaults for the lhs
 strings themselves — every mapping is opt-in and only attached if you set it.
 

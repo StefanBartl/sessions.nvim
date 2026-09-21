@@ -98,6 +98,8 @@ require("sessions").setup({
     menu = {
       ui = "auto",                 -- auto (kit > snacks > telescope > fzf > edit) | edit | kit | snacks | telescope | fzf
       pin_marker = "📌 pin",       -- end-of-line flag on a default/pin in the edit float
+      -- preview_keys = nil,       -- kit menu: keys of the preview pane (a table per group, or false); nil = defaults,
+                                   --   <C-f>/<C-p> scroll it, <Tab> hops in, <CR> there opens at the cursor line (marks.md)
     },
     preview = { max_kb = 1536, max_lines = 4000 },
     select_key = false,            -- e.g. "<leader>%d": <leader>1..9 jump to entry N

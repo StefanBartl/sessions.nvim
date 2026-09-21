@@ -123,6 +123,7 @@ local KNOWN = {
     menu = {
       ui = true,
       pin_marker = true,
+      preview_keys = true,
     },
     preview = {
       max_kb = true,

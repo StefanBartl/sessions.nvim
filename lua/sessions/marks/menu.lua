@@ -59,12 +59,21 @@ end
 ---@internal
 ---@param cmd string  edit|split|vsplit|tabedit
 ---@param path string
-local function open_with(cmd, path)
+---@param pos? { row: integer, col: integer }  # put the cursor here (1-based row, 0-based col) instead of at the mark's remembered position; clamped to the file
+local function open_with(cmd, path, pos)
   vim.cmd(cmd .. " " .. vim.fn.fnameescape(path))
+  local last = vim.api.nvim_buf_line_count(0)
+  if pos then
+    pcall(
+      vim.api.nvim_win_set_cursor,
+      0,
+      { math.min(math.max(pos.row, 1), last), math.max(pos.col, 0) }
+    )
+    return
+  end
   local at = marks.index(path)
   local items = at and marks.list() or nil
   if items and items[at] then
-    local last = vim.api.nvim_buf_line_count(0)
     pcall(vim.api.nvim_win_set_cursor, 0, {
       math.min(math.max(items[at].row, 1), last),
       math.max(items[at].col, 0),
@@ -339,6 +348,14 @@ local function open_kit()
   local raw = mcfg().menu and mcfg().menu.pin_marker
   local pin_icon = type(raw) == "string" and raw or "📌 pin"
 
+  -- `marks.menu.preview_keys` goes to the kit as it is. Validated only as far as
+  -- its shape (`config/init.lua` accepts any value there): anything but a table
+  -- or `false` is a config typo and degrades to the kit's own defaults.
+  local preview_keys = mcfg().menu and mcfg().menu.preview_keys
+  if preview_keys ~= false and type(preview_keys) ~= "table" then
+    preview_keys = nil
+  end
+
   local function pin_suffix(path)
     if not pinned[normkey(path, { realpath = true })] then
       return ""
@@ -383,6 +400,12 @@ local function open_kit()
     on_submit = function(item)
       open_with("edit", item.path)
     end,
+    -- <CR> inside the preview: open the file where the preview cursor is, so a
+    -- line found by scrolling (or by `/`) is the line you land on.
+    on_preview_submit = function(item, _idx, pos)
+      open_with("edit", item.path, pos)
+    end,
+    preview_keys = preview_keys,
   })
   if not h then
     return false
