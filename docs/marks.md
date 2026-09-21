@@ -124,6 +124,9 @@ menu closes when focus goes to any other window (a click into the editor,
 `<C-w>j`, a tab switch). The focused window's border is lit, and each window
 carries a footer with the keys that work in it.
 
+A file with NUL bytes (a binary, a UTF-16 file) previews too: each NUL shows as
+`^@`, the way Vim draws it, in this preview and in `:Session marks preview`.
+
 Change the keys, or switch them off, with `marks.menu.preview_keys` — one
 group at a time, a list replaces that group's defaults, `false` turns a group
 (or all of them) off:
