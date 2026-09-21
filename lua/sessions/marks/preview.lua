@@ -40,9 +40,26 @@ local function limits()
   }
 end
 
+---@internal
+---`readfile()` hands a NUL byte back as "\n" inside its line, and
+---`nvim_buf_set_lines` refuses a line that holds one -- a binary file or a UTF-16
+---one (both plausible marks) made the preview raise instead of showing anything.
+---Show the byte the way Vim does: `^@`.
+---@param lines string[]
+---@return string[]
+local function show_nuls(lines)
+  for i, line in ipairs(lines) do
+    if line:find("\n", 1, true) then
+      lines[i] = (line:gsub("\n", "^@"))
+    end
+  end
+  return lines
+end
+
 ---Read a file's lines; the head only past `max_kb`, so a huge log does not
 ---turn into one huge string. Exported for `sessions.marks.menu`'s `kit`
----menu, whose preview pane needs the same capped read this float uses.
+---menu, whose preview pane needs the same capped read this float uses. A NUL
+---byte shows as `^@`, so every line is one `nvim_buf_set_lines` accepts.
 ---@param path string
 ---@return string[]|nil lines
 ---@return boolean truncated
@@ -57,13 +74,13 @@ function M.read_lines(path)
     if not ok then
       return nil, false
     end
-    return lines, #lines >= lim.max_lines
+    return show_nuls(lines), #lines >= lim.max_lines
   end
   local ok, lines = pcall(vim.fn.readfile, path)
   if not ok then
     return nil, false
   end
-  return lines, false
+  return show_nuls(lines), false
 end
 
 ---@internal

@@ -546,6 +546,31 @@ return function(H)
   H.falsy(ok_p9, "preview past the end fails")
   H.contains(err_p9, "no mark at 9", "...")
 
+  -- a file with NUL bytes (a binary, a UTF-16 file) ----------------------------------
+
+  -- `readfile()` returns a NUL as "\n" inside its line, and `nvim_buf_set_lines`
+  -- refuses such a line: the preview used to raise on a marked binary (and the kit
+  -- pane, whose render error is swallowed, kept showing the previous file's text).
+  -- The NUL shows as `^@`, the way Vim itself draws it.
+  local bin = dir .. "/bin.dat"
+  local bin_fh = assert(io.open(bin, "wb"))
+  bin_fh:write("MZ\0\0data\nsecond\n")
+  bin_fh:close()
+  local bin_lines = preview.read_lines(bin)
+  H.eq(bin_lines[1], "MZ^@^@data", "a NUL byte in a line shows as ^@")
+  H.eq(bin_lines[2], "second", "...and a line without one is untouched")
+  local scratch_buf = vim.api.nvim_create_buf(false, true)
+  H.ok(
+    pcall(vim.api.nvim_buf_set_lines, scratch_buf, 0, -1, false, bin_lines),
+    "the lines are ones a buffer accepts"
+  )
+  vim.api.nvim_buf_delete(scratch_buf, { force = true })
+  local ok_bin, err_bin = pcall(preview.open_path, bin, 1, 0)
+  H.ok(ok_bin, "the standalone preview opens a file with NUL bytes: " .. tostring(err_bin))
+  H.contains(vim.api.nvim_get_current_line(), "^@", "...and shows them as ^@")
+  H.falsy(vim.bo.modifiable, "...still read-only")
+  vim.api.nvim_win_close(0, true)
+
   -- pin_marker of the wrong type (ERR-22) ------------------------------------------
 
   -- `marks.menu.pin_marker` is validated by config/init.lua's validate()
