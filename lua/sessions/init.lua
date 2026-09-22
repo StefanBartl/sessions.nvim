@@ -48,13 +48,14 @@ end
 ---@param name? string  Explicit name; nil = auto-resolve (project/branch-aware)
 ---@return boolean ok
 ---@return string|nil path_or_err
+---@return string[]|nil stale  Buffers dropped because their file no longer exists
 function M.save(name)
   return require("sessions.core").save(name)
 end
 
 ---Load a session.
 ---@param name? string
----@return boolean, string|nil, string[]|nil
+---@return boolean, string|nil, string[]|nil, string[]|nil
 function M.load(name)
   return require("sessions.core").load(name)
 end

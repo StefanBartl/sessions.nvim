@@ -60,6 +60,12 @@ require("sessions").setup({
   -- sidecar; a no-op that writes nothing when no such tabline is in use.
   restore_buffer_order = true,
 
+  -- Attach opts.title = "Sessions" to :Session/autoload notify calls. A
+  -- rich vim.notify backend (ui.nvim's ui.notify, nvim-notify, noice,
+  -- snacks) can render a title/colour from it; the plain :messages echo
+  -- ignores it. false calls vim.notify exactly as before.
+  notify_title = true,
+
   -- Callbacks invoked after save/load (errors are swallowed via pcall).
   hooks = {
     on_save = nil, -- fun(name: string, path: string)

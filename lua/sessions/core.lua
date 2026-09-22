@@ -280,6 +280,35 @@ local function wipe_blacklisted()
 end
 
 ---@internal
+---Force-delete any listed, unmodified buffer whose backing file no longer
+---exists on disk -- deleted or moved outside Neovim since the buffer was
+---opened. Run before a save so the session file is never written pointing
+---at a file that is already gone, and after a load so a session that
+---outlived a since-deleted file does not resurrect it as an empty buffer
+---sitting in the layout under its old name (see UI-71: a `:mksession`
+---`badd`/`edit` for a path that no longer exists just opens a blank "[New]"
+---buffer). A modified buffer is left alone even when its file is missing --
+---the unsaved content is still there, and wiping it would throw that away
+---instead of just tidying up the session.
+---@return string[] removed  Names (paths) of the buffers that were wiped
+local function wipe_stale()
+  local removed = {}
+  local bufs = api.nvim_list_bufs()
+  for i = 1, #bufs do
+    local b = bufs[i]
+    if api.nvim_buf_is_valid(b) and bo[b].buftype == "" and not bo[b].modified then
+      local name = api.nvim_buf_get_name(b)
+      if name ~= "" and uv.fs_stat(name) == nil and (bo[b].buflisted or shown_in_split(b)) then
+        removed[#removed + 1] = name
+        switch_windows_off(b)
+        pcall(api.nvim_buf_delete, b, { force = true })
+      end
+    end
+  end
+  return removed
+end
+
+---@internal
 ---@return string[]
 local function modified_buffer_names()
   local out = {}
@@ -322,6 +351,7 @@ end
 ---@param name string|nil  Explicit name; nil = auto-resolve
 ---@return boolean ok
 ---@return string|nil path_or_err
+---@return string[]|nil stale  Buffers dropped because their file no longer exists
 ---@see sessions.layout, sessions.portable, sessions.meta
 function M.save(name)
   local cfg = require("sessions.config").cfg
@@ -331,6 +361,7 @@ function M.save(name)
     return false, dir_err
   end
   wipe_blacklisted()
+  local stale = wipe_stale()
 
   local si = resolve(name, true) -- save: auto-resolve a project/branch name when unnamed
   local save_cwd = fn.getcwd()
@@ -368,7 +399,7 @@ function M.save(name)
     pcall(cfg.hooks.on_save, si.name, si.path)
   end
 
-  return true, si.path
+  return true, si.path, stale
 end
 
 --- Tab-scoped save: only the current tab's window layout, stored separately
@@ -385,6 +416,7 @@ function M.save_tab(name)
     return false, dir_err
   end
   wipe_blacklisted()
+  wipe_stale()
 
   local si = resolve(name, true)
   local path = cfg.root .. "/.tabs/" .. si.name .. ".vim"
@@ -417,6 +449,7 @@ end
 ---@return boolean ok
 ---@return string|nil path_or_err
 ---@return string[]|nil hidden_modified_bufs
+---@return string[]|nil stale  Buffers dropped because their file no longer exists
 ---@see sessions.portable, sessions.state
 function M.load(name)
   local cfg = require("sessions.config").cfg
@@ -451,6 +484,12 @@ function M.load(name)
     return false, err
   end
 
+  -- Buffers whose file vanished (deleted/moved) since this session was
+  -- saved source back as blank "[New]" buffers under their old name; drop
+  -- them before buforder picks up the ordering, which already treats a
+  -- buffer absent from the live list as "gone" and skips it gracefully.
+  local stale = wipe_stale()
+
   _current = si.name
   _dirty = false
   require("sessions.state").set_last_loaded(cfg, si.name)
@@ -463,7 +502,7 @@ function M.load(name)
     pcall(cfg.hooks.on_load, si.name, si.path)
   end
 
-  return true, si.path, hidden
+  return true, si.path, hidden, stale
 end
 
 --- Tab-scoped load: opens a new tab and restores a tab-scoped snapshot
@@ -473,6 +512,7 @@ end
 ---@param name string  Tab-session name (as passed to M.save_tab)
 ---@return boolean ok
 ---@return string|nil path_or_err
+---@return string[]|nil stale  Buffers dropped because their file no longer exists
 function M.load_tab(name)
   if type(name) ~= "string" or name == "" then
     return false, "tab session name required"
@@ -505,11 +545,13 @@ function M.load_tab(name)
     return false, err
   end
 
+  local stale = wipe_stale()
+
   if cfg.hooks.on_load then
     pcall(cfg.hooks.on_load, name, path)
   end
 
-  return true, path
+  return true, path, stale
 end
 
 ---Resolve what `M.load(nil)` would load, without loading it. Used by the
