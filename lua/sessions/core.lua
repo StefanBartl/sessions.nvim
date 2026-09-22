@@ -230,6 +230,30 @@ local function shown_in_split(bufnr)
 end
 
 ---@internal
+---True when a non-floating window OUTSIDE `tab` is showing `bufnr`.
+---`nvim_list_wins()` returns windows across every tabpage, not just the
+---current one, so `wipe_stale()`'s tab-scoped callers (M.load_tab, which
+---promises to leave every other tab untouched) must not force-delete a
+---buffer this returns true for -- doing so would still yank it out from
+---under that other tab's window.
+---@param bufnr integer
+---@param tab integer
+---@return boolean
+local function shown_outside_tab(bufnr, tab)
+  for _, win in ipairs(api.nvim_list_wins()) do
+    if
+      api.nvim_win_is_valid(win)
+      and api.nvim_win_get_buf(win) == bufnr
+      and api.nvim_win_get_config(win).relative == ""
+      and api.nvim_win_get_tabpage(win) ~= tab
+    then
+      return true
+    end
+  end
+  return false
+end
+
+---@internal
 ---Force-delete any buffer matching `cfg.blacklist` (buftype, filetype, or
 ---path prefix) before a save, so it never ends up in the session file.
 ---Unloaded buffers count too: `:mksession` writes every *listed* buffer as
@@ -290,15 +314,21 @@ end
 ---buffer). A modified buffer is left alone even when its file is missing --
 ---the unsaved content is still there, and wiping it would throw that away
 ---instead of just tidying up the session.
+---@param scope_tab? integer  Restrict to buffers not shown outside this tabpage (M.load_tab's "leave every other tab untouched" promise); omit for the global sweep save/load use.
 ---@return string[] removed  Names (paths) of the buffers that were wiped
-local function wipe_stale()
+local function wipe_stale(scope_tab)
   local removed = {}
   local bufs = api.nvim_list_bufs()
   for i = 1, #bufs do
     local b = bufs[i]
     if api.nvim_buf_is_valid(b) and bo[b].buftype == "" and not bo[b].modified then
       local name = api.nvim_buf_get_name(b)
-      if name ~= "" and uv.fs_stat(name) == nil and (bo[b].buflisted or shown_in_split(b)) then
+      if
+        name ~= ""
+        and uv.fs_stat(name) == nil
+        and (bo[b].buflisted or shown_in_split(b))
+        and not (scope_tab and shown_outside_tab(b, scope_tab))
+      then
         removed[#removed + 1] = name
         switch_windows_off(b)
         pcall(api.nvim_buf_delete, b, { force = true })
@@ -545,7 +575,10 @@ function M.load_tab(name)
     return false, err
   end
 
-  local stale = wipe_stale()
+  -- Scoped to this tab: unlike M.load, load_tab promises every other tab
+  -- stays untouched, so a stale buffer still shown in one of them must be
+  -- left alone rather than force-deleted out from under its window.
+  local stale = wipe_stale(api.nvim_get_current_tabpage())
 
   if cfg.hooks.on_load then
     pcall(cfg.hooks.on_load, name, path)
