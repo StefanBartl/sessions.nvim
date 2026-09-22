@@ -108,7 +108,9 @@ you can look further into a file before you open it — and copy from it.
 | list, preview | `<C-f>`, `<PageDown>` | scroll the preview one page down |
 | list, preview | `<C-p>`, `<C-b>`, `<PageUp>` | one page up |
 | list, preview | `<C-d>` / `<C-u>` | half a page down / up |
-| list, preview | `<Tab>`, `<C-w>w`, `<C-w><C-w>`, `<C-w>W`, `<C-w>j`, `<C-w>k` | hop between list and preview |
+| list, preview | `<Tab>`, `<C-w>w`, `<C-w><C-w>`, `<C-w>W` | hop between list and preview |
+| preview | `<C-w>j` | down to the list (a no-op in the list — nothing below it) |
+| list | `<C-w>k` | up to the preview (a no-op in the preview — nothing above it) |
 | list | `<CR>` | open the entry where you left it |
 | list | `<C-x>`, `<C-v>`, `<C-t>` | open it in a split, vsplit or tab |
 | preview | `<CR>` | open the file **at the line the preview cursor is on** |
@@ -118,13 +120,16 @@ you can look further into a file before you open it — and copy from it.
 A page is Vim's own: the window height less two lines of overlap.
 `<C-p>` scrolls up although Vim means "one line up" by it — it pairs with
 `<C-f>`, and `<C-b>` is there for whoever's fingers know Vim's pair. The window
-cycle (`<C-w>w`, and `<C-w>j`/`<C-w>k`) stays inside the menu: left alone it
-would walk on into the editor underneath, or do nothing at all (the list and
-preview are two separate floats, not a real split), and leave the menu
-stranded on top. For the same reason the menu closes when focus goes to any
-other window (a click into the editor, `<C-w>h`, a tab switch). The focused
-window's border is lit, and each window carries a footer with the keys that
-work in it.
+cycle (`<C-w>w`) stays inside the menu: left alone it would walk on into the
+editor underneath and leave the menu stranded on top. `<C-w>j`/`<C-w>k` join
+it, but direction-aware rather than a blind toggle: the preview sits above the
+list, so `<C-w>j` only moves from the preview down to the list and `<C-w>k`
+only from the list up to the preview — the edge case (`<C-w>j` in the list,
+`<C-w>k` in the preview) is a no-op, the way a real window-cycle does nothing
+at the edge of a layout, not a jump the wrong way. For the same "leaves the
+menu stranded" reason, the menu closes when focus goes to any other window (a
+click into the editor, `<C-w>h`, a tab switch). The focused window's border is
+lit, and each window carries a footer with the keys that work in it.
 
 A file with NUL bytes (a binary, a UTF-16 file) previews too: each NUL shows as
 `^@`, the way Vim draws it, in this preview and in `:Session marks preview`.
