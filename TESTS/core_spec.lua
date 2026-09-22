@@ -255,6 +255,47 @@ return function(H)
     setup()
   end
 
+  -- ------ blacklisted buffer, last window in its tab, no alternate anywhere
+
+  do
+    -- Same shape as the case above, but with no other real, named buffer
+    -- open anywhere in the editor. switch_windows_off must hand the window
+    -- a fresh blank buffer itself rather than leave the substitution to the
+    -- caller's nvim_buf_delete: deleting a buffer out from under its last
+    -- window, with no alternate, closes that window whenever any other
+    -- window exists anywhere else in the editor -- silently taking the
+    -- whole tabpage down with it, exactly what the "last window in its
+    -- tab" guard above exists to prevent.
+    setup({ blacklist = { buftypes = { "nofile" } } })
+    vim.cmd("silent! %bwipeout!")
+
+    -- A second tab elsewhere, so the lone window below is not literally the
+    -- editor's last window (that's the E444 case, not this one).
+    vim.cmd("tabnew")
+
+    vim.cmd("tabnew")
+    local tabs_before = #api.nvim_list_tabpages()
+    local lone_win = api.nvim_get_current_win()
+    local lone_buf = api.nvim_create_buf(false, true)
+    vim.bo[lone_buf].buftype = "nofile"
+    api.nvim_win_set_buf(lone_win, lone_buf)
+
+    H.ok(core.save("no-alt"))
+
+    H.falsy(api.nvim_buf_is_valid(lone_buf), "the blacklisted buffer is still wiped")
+    H.eq(#api.nvim_list_tabpages(), tabs_before, "the tab is not silently closed")
+    H.ok(api.nvim_win_is_valid(lone_win), "the tab's only window survives")
+    H.ok(
+      api.nvim_win_get_buf(lone_win) ~= lone_buf,
+      "showing something other than the wiped buffer"
+    )
+
+    core.delete("no-alt")
+    vim.cmd("tabclose") -- the lone tab
+    vim.cmd("tabclose") -- the extra tab
+    setup()
+  end
+
   -- An unlisted scratch buffer in a *floating* window (a toast, a HUD, a
   -- popup) never reaches the session file, so the save leaves it -- and
   -- its float -- alone instead of wiping it and moving the float onto a

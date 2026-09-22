@@ -215,8 +215,13 @@ end
 ---
 ---A window that is the only one left in its tabpage can't be closed, so
 ---that one is redirected onto another real, listed buffer instead (the
----previous behaviour), falling back to Neovim's own substitution when no
----such buffer exists.
+---previous behaviour). When no such buffer exists anywhere, it is pointed
+---at a fresh blank buffer *now* rather than left as-is: the caller force-
+---deletes `bufnr` right after this returns, and Neovim's own substitution
+---for a buffer deleted out from under its last window is to close that
+---window if any other window exists anywhere in the editor -- which would
+---silently take the whole tabpage down with it, defeating the reason this
+---branch exists in the first place.
 ---@param bufnr integer
 local function switch_windows_off(bufnr)
   -- Only split windows are touched. A floating window on a scratch buffer
@@ -231,10 +236,8 @@ local function switch_windows_off(bufnr)
       and api.nvim_win_get_config(win).relative == ""
     then
       if only_window_in_tab(win) then
-        local alt = find_alt_buffer(bufnr)
-        if alt then
-          pcall(api.nvim_win_set_buf, win, alt)
-        end
+        local alt = find_alt_buffer(bufnr) or api.nvim_create_buf(true, false)
+        pcall(api.nvim_win_set_buf, win, alt)
       else
         pcall(api.nvim_win_close, win, true)
       end
