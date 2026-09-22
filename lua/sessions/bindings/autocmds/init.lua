@@ -16,13 +16,36 @@ local fn = vim.fn
 local autocmd_ok, autocmd = pcall(require, "lib.nvim.bindings.autocmd")
 local kit_ok, kit = pcall(require, "ui.kit")
 
-local notify_ok, notify_lib = pcall(require, "lib.nvim.notify")
-local n = notify_ok and notify_lib.create("[sessions]")
-  or {
+-- Same title enrichment as bindings/usercmds' `n()` (see its comment):
+-- `cfg.notify_title` (default true) attaches a `title`, a no-op for the
+-- plain `:messages` echo and picked up by a rich `vim.notify` backend
+-- when one is installed.
+local n = (function()
+  local notify_opts = (require("sessions.config").cfg.notify_title ~= false)
+      and { title = "Sessions" }
+    or nil
+
+  local notify_ok, notify_lib = pcall(require, "lib.nvim.notify")
+  if notify_ok then
+    local base = notify_lib.create("[sessions]")
+    return {
+      info = function(msg)
+        base.info(msg, notify_opts)
+      end,
+      warn = function(msg)
+        base.warn(msg, notify_opts)
+      end,
+    }
+  end
+  return {
     info = function(msg)
-      vim.notify("[sessions] " .. msg, vim.log.levels.INFO)
+      vim.notify("[sessions] " .. msg, vim.log.levels.INFO, notify_opts)
+    end,
+    warn = function(msg)
+      vim.notify("[sessions] " .. msg, vim.log.levels.WARN, notify_opts)
     end,
   }
+end)()
 
 ---@internal
 ---@param event string
@@ -124,9 +147,12 @@ function M.enable()
       local core = require("sessions.core")
 
       local function do_autoload()
-        local ok, path = core.load(nil)
+        local ok, path, _, stale = core.load(nil)
         if ok then
           n.info("autoloaded: " .. (path or ""))
+          if stale and #stale > 0 then
+            n.warn("dropped (file no longer exists): " .. table.concat(stale, ", "))
+          end
         end
       end
 

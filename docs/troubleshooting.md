@@ -29,3 +29,19 @@ If the order still resets:
   finishes sourcing. If your tabline plugin builds that list lazily on a
   later event, the reorder may need a `:redrawtabline` (or just a buffer
   switch) to show.
+
+## A buffer shows up blank in the tabline after loading a session
+
+Fixed: this happened when a file that was open in a saved session got
+deleted or moved outside Neovim before the session was loaded again.
+`:mksession` writes a listed buffer as `edit <path>`/`badd <path>`
+regardless of whether that path still exists, so sourcing it just opened a
+new, empty buffer under the old name and left it sitting in the layout.
+
+sessions.nvim now checks every listed buffer's backing file both when
+saving (so a session is never written pointing at a file that is already
+gone) and right after loading (so a buffer resurrected from a
+since-deleted path is wiped instead of left blank). A modified buffer is
+never touched by this, even if its file is missing, so in-memory unsaved
+content is never discarded. Dropped paths are reported by `:Session save`
+and `:Session load` as `dropped (file no longer exists): ...`.

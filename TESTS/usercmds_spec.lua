@@ -303,7 +303,65 @@ return function(H)
     vim.system = real_system
   end
 
+  -- -------------------------------------------------------------- notify_title
+
+  do
+    -- The shared `said` recorder above never captures `opts` (its `create`
+    -- stub ignores everything but `msg` -- see the H.stub call at the top
+    -- of this file), so exercise the title enrichment with a dedicated
+    -- recorder instead. `M.toggle_track` on a name with no session file is
+    -- the cheapest route into `n()`: it reports through `n().error(...)`
+    -- before touching git or the filesystem beyond one readable-file check.
+    restore_notify()
+
+    local seen
+    local function stub_notify()
+      return H.stub("lib.nvim.notify", {
+        create = function(prefix)
+          local rec = {}
+          for _, level in ipairs({ "info", "warn", "error" }) do
+            rec[level] = function(msg, opts)
+              seen[#seen + 1] = { prefix = prefix, msg = msg, opts = opts }
+            end
+          end
+          return rec
+        end,
+      })
+    end
+
+    -- Default: a title, for rich notify backends to key off of.
+    seen = {}
+    local restore1 = stub_notify()
+    config.setup({ root = root, branch_aware = false, project_aware = false })
+    local fresh1 = H.fresh("sessions.bindings.usercmds")
+    fresh1.toggle_track("no-such-session")
+    H.eq(#seen, 1, "one notification")
+    H.eq(seen[1].prefix, "[sessions]", "the prefix is unchanged")
+    H.eq(seen[1].opts and seen[1].opts.title, "Sessions", "and a title is attached")
+    restore1()
+    package.loaded["sessions.bindings.usercmds"] = nil
+
+    -- notify_title = false: no opts at all, calling exactly as before.
+    seen = {}
+    local restore2 = stub_notify()
+    config.setup({ root = root, branch_aware = false, project_aware = false, notify_title = false })
+    local fresh2 = H.fresh("sessions.bindings.usercmds")
+    fresh2.toggle_track("no-such-session")
+    H.eq(#seen, 1, "one notification")
+    H.eq(seen[1].prefix, "[sessions]", "same prefix")
+    H.falsy(seen[1].opts, "notify_title = false attaches no opts at all")
+    restore2()
+    package.loaded["sessions.bindings.usercmds"] = nil
+  end
+
   -- Leave nothing behind ------------------------------------------------------
+  config.setup({
+    root = root,
+    branch_aware = false,
+    project_aware = false,
+    metadata = true,
+    restore_buffer_order = false,
+  })
   for _, p in ipairs(core.list()) do
     core.delete(vim.fn.fnamemodify(p, ":t:r"))
   end

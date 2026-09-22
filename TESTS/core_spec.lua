@@ -373,6 +373,64 @@ return function(H)
     setup()
   end
 
+  -- --------------------------------------------------------- stale buffers
+
+  do
+    -- Save time: a buffer whose backing file was deleted (or moved) before
+    -- the save must never be written into the session file at all.
+    local vanishing = dir .. "/vanishing.lua"
+    vim.fn.writefile({ "-- gone soon" }, vanishing)
+    local vbuf = vim.fn.bufadd(vanishing)
+    vim.fn.bufload(vbuf)
+    vim.bo[vbuf].buflisted = true
+    vim.fn.delete(vanishing)
+
+    setup()
+    local save_ok, _, save_stale = core.save("stale-on-save")
+    H.ok(save_ok, "save still succeeds")
+    H.eq(#save_stale, 1, "the buffer whose file is gone is reported")
+    H.eq(save_stale[1], vanishing, "naming it")
+    H.falsy(api.nvim_buf_is_valid(vbuf), "and wiped")
+    H.excludes(
+      H.read(session_file("stale-on-save")),
+      "vanishing.lua",
+      "so it never reaches the session file"
+    )
+    core.delete("stale-on-save")
+
+    -- Load time (UI-71): the file existed when the session was saved, and
+    -- is deleted afterwards -- the reported bug. Without the fix, sourcing
+    -- the session re-`edit`s the now-missing path into a blank "[New]"
+    -- buffer that just sits in the layout under its old name.
+    local ghost = dir .. "/ghost.lua"
+    vim.fn.writefile({ "-- will vanish after save" }, ghost)
+    local gbuf = vim.fn.bufadd(ghost)
+    vim.fn.bufload(gbuf)
+    vim.bo[gbuf].buflisted = true
+    api.nvim_set_current_buf(gbuf)
+
+    H.ok(core.save("ghost"))
+
+    -- Close the buffer and delete the file, so sourcing the session below
+    -- has to resurrect it from scratch -- exactly what a fresh Neovim start
+    -- would do, and exactly where the blank buffer used to appear.
+    api.nvim_buf_delete(gbuf, { force = true })
+    vim.fn.delete(ghost)
+
+    local load_ok, _, _, load_stale = core.load("ghost")
+    H.ok(load_ok, "load still succeeds even though a file it names is now gone")
+    H.eq(#load_stale, 1, "the resurrected-but-blank buffer is reported")
+    H.eq(load_stale[1], ghost, "naming the missing file")
+    H.falsy(
+      vim.fn.bufexists(ghost) == 1,
+      "and is not left behind as a blank buffer under the old name"
+    )
+
+    core.delete("ghost")
+    vim.cmd("silent! %bwipeout!")
+    setup()
+  end
+
   -- ------------------------------------------------------------------- load
 
   do

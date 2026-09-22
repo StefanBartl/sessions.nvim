@@ -74,6 +74,44 @@ scratch buffer in a floating window (a toast, a HUD) is left alone.
 
 - **Config:** `opts.blacklist.{buftypes,filetypes,paths}`
 
+## Stale-file cleanup
+
+A buffer whose backing file was deleted or moved outside Neovim is wiped
+the same way a blacklisted one is: before `:mksession` on save, so a
+session is never written pointing at a file that is already gone, and
+again right after `:source` on load, so a session that outlived a
+since-deleted file does not resurrect it as a blank `[New]` buffer sitting
+in the layout under its old name. A modified buffer is left alone even
+when its file is missing, so unsaved content is never thrown away. Every
+call that can trigger a wipe (`save`, `save_tab`, `load`, `load_tab`,
+autoload) reports the paths it dropped as an extra return value, surfaced
+by the usercmds/autoload notify calls as `dropped (file no longer
+exists): ...`.
+
+- **Module:** `lua/sessions/core.lua` (`wipe_stale`)
+- **API:** `S.save`/`S.load` third/fourth return value (see [api.md](api.md))
+
+## Rich notify title
+
+Every `:Session`/autoload notify call carries `opts.title = "Sessions"`. A
+rich `vim.notify` backend that keys its own icon/colour off a title --
+ui.nvim's `ui.notify`, nvim-notify, noice, snacks -- renders one when
+installed and enabled; the plain `:messages` echo that is the fallback
+when none of those are set up just ignores the `opts` table it does not
+recognize, so nothing regresses either way.
+
+- **Module:** `lua/sessions/bindings/usercmds/init.lua`,
+  `lua/sessions/bindings/autocmds/init.lua`
+- **Config:** `opts.notify_title` (default `true`; `false` calls
+  `vim.notify` exactly as before)
+- **To actually see it:** the title is inert until something intercepts
+  `vim.notify` and renders it. ui.nvim ships exactly that: `require("ui").setup({ notify = true })`
+  (or `:UI notify on`) turns every `vim.notify` call, this plugin's
+  included, into a coloured corner toast titled from `opts.title`, with a
+  scrollable history (`:UI notify history`). nvim-notify, noice.nvim and
+  snacks.nvim's notifier all read the same `opts.title` field if you use
+  one of those instead.
+
 ## E445 fix on load
 
 Modified buffers are hidden rather than discarded before loading a new

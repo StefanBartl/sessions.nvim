@@ -37,6 +37,13 @@ return {
   -- lost on load. No-op (and no sidecar written) when no tabline maintains
   -- such a list.
   restore_buffer_order = true,
+  -- Attach `opts.title = "Sessions"` to `:Session`/autoload notify calls --
+  -- picked up by any rich `vim.notify` backend (ui.nvim's `ui.notify`,
+  -- nvim-notify, noice, snacks) that renders a title/colour from it.
+  -- Costs nothing when none of those are installed/enabled: the default
+  -- `:messages` echo just ignores an `opts` table it does not recognize.
+  -- `false` opts out and calls `vim.notify` exactly as before.
+  notify_title = true,
   hooks = {
     on_save = nil,
     on_load = nil,

@@ -9,6 +9,11 @@ local composer = require("lib.nvim.bindings.usercmd.composer")
 local M = {}
 
 -- Resolve a notifier once per session; graceful fallback if lib.nvim absent.
+-- `cfg.notify_title` (default true) attaches `opts.title = "Sessions"` to
+-- every call -- picked up by any rich `vim.notify` backend (ui.nvim's
+-- `ui.notify`, nvim-notify, noice, snacks) that renders a title/colour
+-- from it, and silently ignored by the plain `:messages` echo that is the
+-- fallback when none of those are installed/enabled.
 local _n
 ---@internal
 ---@return table
@@ -16,19 +21,33 @@ local function n()
   if _n then
     return _n
   end
+  local cfg = require("sessions.config").cfg
+  local notify_opts = (cfg.notify_title ~= false) and { title = "Sessions" } or nil
+
   local ok, lib = pcall(require, "lib.nvim.notify")
   if ok then
-    _n = lib.create("[sessions]")
+    local base = lib.create("[sessions]")
+    _n = {
+      info = function(msg)
+        base.info(msg, notify_opts)
+      end,
+      warn = function(msg)
+        base.warn(msg, notify_opts)
+      end,
+      error = function(msg)
+        base.error(msg, notify_opts)
+      end,
+    }
   else
     _n = {
       info = function(msg)
-        vim.notify("[sessions] " .. msg, vim.log.levels.INFO)
+        vim.notify("[sessions] " .. msg, vim.log.levels.INFO, notify_opts)
       end,
       warn = function(msg)
-        vim.notify("[sessions] " .. msg, vim.log.levels.WARN)
+        vim.notify("[sessions] " .. msg, vim.log.levels.WARN, notify_opts)
       end,
       error = function(msg)
-        vim.notify("[sessions] " .. msg, vim.log.levels.ERROR)
+        vim.notify("[sessions] " .. msg, vim.log.levels.ERROR, notify_opts)
       end,
     }
   end
@@ -123,9 +142,12 @@ end
 ---@param name string|nil
 ---@see sessions.core
 local function do_save(name)
-  local ok, res = require("sessions.core").save(name)
+  local ok, res, stale = require("sessions.core").save(name)
   if ok then
     n().info("saved: " .. (res or "?"))
+    if stale and #stale > 0 then
+      n().warn("dropped (file no longer exists): " .. table.concat(stale, ", "))
+    end
   else
     n().error("save failed: " .. (res or "?"))
   end
@@ -135,11 +157,14 @@ end
 ---@param name string|nil
 ---@see sessions.core
 local function do_load(name)
-  local ok, res, hidden = require("sessions.core").load(name)
+  local ok, res, hidden, stale = require("sessions.core").load(name)
   if ok then
     n().info("loaded: " .. (res or "?"))
     if hidden and #hidden > 0 then
       n().info("hidden (unsaved): " .. table.concat(hidden, ", "))
+    end
+    if stale and #stale > 0 then
+      n().warn("dropped (file no longer exists): " .. table.concat(stale, ", "))
     end
   else
     n().error("load failed: " .. (res or "?"))
@@ -272,9 +297,12 @@ function M.enable()
         args = { { name = "name", type = "TAB_SESSION" } },
         desc = "Load a tab session into a new tab: :Session load-tab <name>",
         run = function(ctx)
-          local ok, res = require("sessions.core").load_tab(ctx.args.name)
+          local ok, res, stale = require("sessions.core").load_tab(ctx.args.name)
           if ok then
             n().info("tab session loaded: " .. (res or "?"))
+            if stale and #stale > 0 then
+              n().warn("dropped (file no longer exists): " .. table.concat(stale, ", "))
+            end
           else
             n().error("tab session load failed: " .. (res or "?"))
           end

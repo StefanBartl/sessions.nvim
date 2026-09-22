@@ -75,6 +75,7 @@
 ---@field autosave_name string|boolean   Autosave target: `true` = branch/project-aware auto-resolve (like a bare `:Session save`); a string pins autosave to that fixed name regardless of project; `false` disables autosave despite `autosave = true`
 ---@field metadata boolean               Write a companion .json file with save context
 ---@field restore_buffer_order boolean   Persist/restore per-tabpage `vim.t.bufs` order (NvChad tabufline etc.); no-op without such a tabline
+---@field notify_title boolean           Attach opts.title = "Sessions" to :Session/autoload notify calls, for rich vim.notify backends; false calls vim.notify exactly as before
 ---@field hooks Sessions.Hooks
 ---@field blacklist Sessions.Blacklist
 ---@field keymaps Sessions.Keymaps|false Keymaps table or false to disable all keymaps
@@ -113,6 +114,7 @@
 ---@field autosave_name?   string|boolean   Autosave target: `true` = branch/project-aware auto-resolve (like a bare `:Session save`); a string pins autosave to that fixed name regardless of project; `false` disables autosave despite `autosave = true`
 ---@field metadata?        boolean               Write a companion .json file with save context
 ---@field restore_buffer_order? boolean          Persist/restore per-tabpage `vim.t.bufs` order (NvChad tabufline etc.); no-op without such a tabline
+---@field notify_title?    boolean               Attach opts.title = "Sessions" to :Session/autoload notify calls, for rich vim.notify backends; false calls vim.notify exactly as before
 ---@field hooks?           Sessions.Hooks.Opts
 ---@field blacklist?       Sessions.Blacklist.Opts
 ---@field keymaps?         Sessions.Keymaps.Opts|false Keymaps table or false to disable all keymaps
