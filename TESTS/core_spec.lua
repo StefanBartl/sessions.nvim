@@ -630,6 +630,49 @@ return function(H)
     vim.cmd("silent! only!")
   end
 
+  -- --------------------------------------------- load_tab leaves other tabs alone
+
+  do
+    -- Regression: wipe_stale() must not reach into a tab load_tab never
+    -- touches. Before the scoping fix, the sweep was global, so a stale
+    -- buffer only shown in an unrelated tab's window got force-deleted
+    -- anyway -- breaking load_tab's own "leaves every other tab untouched"
+    -- promise.
+    vim.cmd("silent! tabonly!")
+    vim.cmd("silent! only!")
+    local home_win = api.nvim_get_current_win()
+
+    local other_tabfile = dir .. "/other-tab.lua"
+    vim.fn.writefile({ "-- other" }, other_tabfile)
+    vim.cmd("tabnew " .. vim.fn.fnameescape(other_tabfile))
+    H.ok(core.save_tab("sibling-check"))
+    vim.cmd("tabclose")
+
+    -- Only now does the home tab get its stale buffer -- after save_tab's
+    -- own (global, pre-existing) sweep already ran, so it does not eat it.
+    local sibling = dir .. "/sibling.lua"
+    vim.fn.writefile({ "-- sibling" }, sibling)
+    local sibling_buf = vim.fn.bufadd(sibling)
+    vim.fn.bufload(sibling_buf)
+    vim.bo[sibling_buf].buflisted = true
+    api.nvim_win_set_buf(home_win, sibling_buf)
+    vim.fn.delete(sibling)
+
+    local load_ok, _, stale = core.load_tab("sibling-check")
+    H.ok(load_ok, "load_tab reports success")
+    H.ok(api.nvim_buf_is_valid(sibling_buf), "the unrelated tab's stale buffer survives")
+    H.eq(
+      api.nvim_win_get_buf(home_win),
+      sibling_buf,
+      "and its window is not redirected out from under it"
+    )
+    H.falsy(vim.tbl_contains(stale or {}, sibling), "load_tab does not report it as dropped")
+
+    vim.cmd("tabclose") -- close the tab load_tab just opened
+    api.nvim_buf_delete(sibling_buf, { force = true })
+    vim.cmd("silent! only!")
+  end
+
   -- ------------------------------------------------------- an unwritable root
 
   do

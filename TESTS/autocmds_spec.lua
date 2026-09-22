@@ -248,6 +248,61 @@ return function(H)
     no_kit()
   end
 
+  -- -------------------------------------------------------------- notify_title
+
+  do
+    -- Dedicated to this module's own notifier: it is built once at
+    -- module-load time (unlike bindings/usercmds' lazily-memoized `n()` --
+    -- see that module's own comment), and the shared `loaded_notices` stub
+    -- above never captures `opts`, so exercise the title enrichment with a
+    -- recorder that does.
+    restore_notify()
+
+    local seen
+    local function stub_notify()
+      return H.stub("lib.nvim.notify", {
+        create = function(prefix)
+          local rec = {}
+          for _, level in ipairs({ "info", "warn", "error" }) do
+            rec[level] = function(msg, opts)
+              seen[#seen + 1] = { prefix = prefix, msg = msg, opts = opts }
+            end
+          end
+          return rec
+        end,
+      })
+    end
+
+    -- Default: a title, for rich notify backends to key off of.
+    seen = {}
+    local restore1 = stub_notify()
+    setup({ autoload = true, autosave = false })
+    H.ok(core.save("titlecheck"))
+    require("sessions.state").set_last_loaded(config.get(), "titlecheck")
+    vim.cmd("silent! %bwipeout!")
+    load_module().enable()
+    vim.api.nvim_exec_autocmds("VimEnter", {})
+    H.eq(#seen, 1, "one notification")
+    H.eq(seen[1].opts and seen[1].opts.title, "Sessions", "a title is attached")
+    restore1()
+
+    -- notify_title = false: no opts at all, calling exactly as before.
+    seen = {}
+    local restore2 = stub_notify()
+    core.delete("titlecheck")
+    setup({ autoload = true, autosave = false, notify_title = false })
+    H.ok(core.save("titlecheck2"))
+    require("sessions.state").set_last_loaded(config.get(), "titlecheck2")
+    vim.cmd("silent! %bwipeout!")
+    load_module().enable()
+    vim.api.nvim_exec_autocmds("VimEnter", {})
+    H.eq(#seen, 1, "one notification")
+    H.falsy(seen[1].opts, "notify_title = false attaches no opts at all")
+    restore2()
+
+    core.delete("titlecheck2")
+  end
+
   restore_notify()
 
   -- Leave nothing behind ------------------------------------------------------
