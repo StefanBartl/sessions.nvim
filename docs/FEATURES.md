@@ -70,7 +70,12 @@ the `badd` entries a session load leaves unvisited are still recorded by
 the next save, so a path blacklisted after the fact drops out on that save
 rather than being carried along. Only what the session file would record
 is touched: listed buffers, and ones a split window shows; an unlisted
-scratch buffer in a floating window (a toast, a HUD) is left alone.
+scratch buffer in a floating window (a toast, a HUD) is left alone. A
+sidebar (nvim-tree, neo-tree, etc. — `buftype=nofile` by default) still
+open in a split is closed along with its buffer, rather than left behind
+showing some unrelated real buffer; only when it is the tab's one
+remaining window (closing it isn't possible) does it get redirected onto
+another real buffer instead.
 
 - **Config:** `opts.blacklist.{buftypes,filetypes,paths}`
 

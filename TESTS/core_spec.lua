@@ -187,8 +187,9 @@ return function(H)
 
   do
     -- A visible window showing a blacklisted buffer (e.g. a sidebar) must be
-    -- redirected to another buffer *before* the force-delete, not left for
-    -- Neovim to auto-substitute a fresh, unnamed scratch buffer into.
+    -- closed *before* the force-delete, not left open on some other real
+    -- buffer that happened to be listed -- which used to read back as the
+    -- sidebar's split silently duplicating whatever the user was editing.
     setup({ blacklist = { buftypes = { "nofile" } } })
 
     local keeper = dir .. "/visible-keep.lua"
@@ -207,17 +208,49 @@ return function(H)
     local wins_before = #api.nvim_list_wins()
     H.ok(core.save("visible"))
 
-    H.eq(#api.nvim_list_wins(), wins_before, "the window itself is not closed")
+    H.eq(#api.nvim_list_wins(), wins_before - 1, "the sidebar window is closed, not duplicated")
     H.falsy(api.nvim_buf_is_valid(sidebar_buf), "the blacklisted buffer is still wiped")
-    H.ok(api.nvim_win_is_valid(sidebar_win), "and the window survives")
-    H.eq(
-      api.nvim_win_get_buf(sidebar_win),
-      kept_buf,
-      "redirected to another real buffer, not left on a fresh scratch one"
-    )
+    H.falsy(api.nvim_win_is_valid(sidebar_win), "and the window is gone")
 
     core.delete("visible")
-    vim.cmd("silent! only!")
+    api.nvim_buf_delete(kept_buf, { force = true })
+    setup()
+  end
+
+  -- ---------------------- blacklisted buffer, last window in its tab (UI-55)
+
+  do
+    -- A blacklisted buffer filling the *only* window in a tab can't have
+    -- that window closed (E444, or it would take the tab down with it), so
+    -- it falls back to the previous behaviour: redirect onto another real,
+    -- listed buffer instead of Neovim's own scratch substitution.
+    setup({ blacklist = { buftypes = { "nofile" } } })
+
+    local keeper = dir .. "/lastwin-keep.lua"
+    vim.fn.writefile({ "-- keep" }, keeper)
+    local kept_buf = vim.fn.bufadd(keeper)
+    vim.fn.bufload(kept_buf)
+    vim.bo[kept_buf].buflisted = true
+    api.nvim_set_current_buf(kept_buf)
+
+    vim.cmd("tabnew")
+    local lone_win = api.nvim_get_current_win()
+    local lone_buf = api.nvim_create_buf(false, true)
+    vim.bo[lone_buf].buftype = "nofile"
+    api.nvim_win_set_buf(lone_win, lone_buf)
+
+    H.ok(core.save("lastwin"))
+
+    H.falsy(api.nvim_buf_is_valid(lone_buf), "the blacklisted buffer is still wiped")
+    H.ok(api.nvim_win_is_valid(lone_win), "the tab's only window survives")
+    H.eq(
+      api.nvim_win_get_buf(lone_win),
+      kept_buf,
+      "redirected to another real buffer since the window itself could not close"
+    )
+
+    core.delete("lastwin")
+    vim.cmd("tabclose")
     api.nvim_buf_delete(kept_buf, { force = true })
     setup()
   end

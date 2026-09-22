@@ -158,14 +158,9 @@ local function resolve(name, use_auto_resolve)
 end
 
 ---@internal
----Move every window currently showing `bufnr` onto another listed buffer
----with a real file, so force-deleting a visible blacklisted buffer (e.g. a
----sidebar) does not leave the window on whatever throwaway scratch buffer
----Neovim auto-creates for it -- and does not have :mksession record that
----substitution as if it were the user's actual layout.
 ---@param bufnr integer
-local function switch_windows_off(bufnr)
-  local alt = nil
+---@return integer|nil  Another real, listed buffer to redirect a window onto
+local function find_alt_buffer(bufnr)
   local altfile = fn.bufnr("#")
   if
     altfile ~= -1
@@ -174,40 +169,75 @@ local function switch_windows_off(bufnr)
     and bo[altfile].buflisted
     and api.nvim_buf_get_name(altfile) ~= ""
   then
-    alt = altfile
+    return altfile
   end
-  if not alt then
-    for _, b in ipairs(api.nvim_list_bufs()) do
-      if
-        b ~= bufnr
-        and api.nvim_buf_is_valid(b)
-        and bo[b].buflisted
-        and bo[b].buftype == ""
-        and api.nvim_buf_get_name(b) ~= ""
-      then
-        alt = b
-        break
+  for _, b in ipairs(api.nvim_list_bufs()) do
+    if
+      b ~= bufnr
+      and api.nvim_buf_is_valid(b)
+      and bo[b].buflisted
+      and bo[b].buftype == ""
+      and api.nvim_buf_get_name(b) ~= ""
+    then
+      return b
+    end
+  end
+  return nil
+end
+
+---@internal
+---True when `win` is the only non-floating window in its tabpage, i.e. it
+---cannot be closed without either erroring (E444, Neovim's last window) or
+---taking the whole tabpage down with it.
+---@param win integer
+---@return boolean
+local function only_window_in_tab(win)
+  local tab = api.nvim_win_get_tabpage(win)
+  local count = 0
+  for _, w in ipairs(api.nvim_tabpage_list_wins(tab)) do
+    if api.nvim_win_is_valid(w) and api.nvim_win_get_config(w).relative == "" then
+      count = count + 1
+      if count > 1 then
+        return false
       end
     end
   end
-  -- No usable alternate (e.g. every other buffer is itself blacklisted or
-  -- unnamed): fall through and let nvim_buf_delete substitute its own
-  -- scratch buffer rather than blocking the save over it.
-  if not alt then
-    return
-  end
-  -- Only split windows are retargeted. A floating window on a scratch
-  -- buffer (a notification toast, a keystroke HUD, a plugin's popup) is that
+  return true
+end
+
+---@internal
+---Close every non-floating window still showing `bufnr` before it is
+---force-deleted (e.g. a sidebar/filetree's buftype=nofile buffer). A closed
+---window is simply gone from the saved layout, rather than left open on
+---some unrelated real buffer just because that buffer happened to be
+---listed -- which used to read back as though the sidebar's split had been
+---silently duplicated onto whatever the user was last editing.
+---
+---A window that is the only one left in its tabpage can't be closed, so
+---that one is redirected onto another real, listed buffer instead (the
+---previous behaviour), falling back to Neovim's own substitution when no
+---such buffer exists.
+---@param bufnr integer
+local function switch_windows_off(bufnr)
+  -- Only split windows are touched. A floating window on a scratch buffer
+  -- (a notification toast, a keystroke HUD, a plugin's popup) is that
   -- buffer's window: nvim_buf_delete closes it along with the buffer, and
-  -- moving it onto a file first would leave the float open, showing that
-  -- file, as if it were part of the layout.
+  -- closing or redirecting it first would tear down (or repurpose) UI that
+  -- was never part of the saved layout to begin with.
   for _, win in ipairs(api.nvim_list_wins()) do
     if
       api.nvim_win_is_valid(win)
       and api.nvim_win_get_buf(win) == bufnr
       and api.nvim_win_get_config(win).relative == ""
     then
-      pcall(api.nvim_win_set_buf, win, alt)
+      if only_window_in_tab(win) then
+        local alt = find_alt_buffer(bufnr)
+        if alt then
+          pcall(api.nvim_win_set_buf, win, alt)
+        end
+      else
+        pcall(api.nvim_win_close, win, true)
+      end
     end
   end
 end
