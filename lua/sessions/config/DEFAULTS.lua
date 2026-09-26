@@ -113,13 +113,14 @@ return {
 
   -- A persistent editor-corner indicator (ui.kit.chip) mirroring
   -- sessions.statusline.component(), alongside the one-shot notify on
-  -- save/load/autoload rather than instead of it. Off by default; soft
+  -- save/load/autoload rather than instead of it. On by default: soft
   -- dependency on ui.kit -- does nothing when it isn't installed, same as
-  -- the `autoload = "ask"` confirm float's own fallback. See docs/statusline.md.
+  -- the `autoload = "ask"` confirm float's own fallback, so this default
+  -- is a no-op for anyone without ui.kit. See docs/statusline.md.
   chip = {
-    enable = false,
+    enable = true,
     anchor = "bottom-left", -- "bottom-left" | "bottom-right" | "top-left" | "top-right"
-    shape = "rounded", -- "rounded" | "rect"
+    shape = "rounded", -- "rounded" (bordered capsule) | "rect" (borderless block) | "text" (no box at all)
     color = nil, -- a highlight-group name, or { fg = "#...", bg = "#..." }; nil = kit's own default
     -- Flash the chip's colour on save/load/autoload, on top of the
     -- persistent state. `false` keeps the chip's colour steady.
