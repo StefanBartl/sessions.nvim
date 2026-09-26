@@ -133,6 +133,15 @@ local KNOWN = {
     select_key = true,
     preview_key = true,
   },
+  chip = {
+    enable = true,
+    anchor = true,
+    shape = true,
+    color = true,
+    pulse = true,
+    pulse_color = true,
+    pulse_duration_ms = true,
+  },
 }
 
 ---Full dotted paths whose known-table entry also accepts a bare `false`

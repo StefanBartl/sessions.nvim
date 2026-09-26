@@ -148,6 +148,8 @@ local function do_save(name)
     if stale and #stale > 0 then
       n().warn("dropped (file no longer exists): " .. table.concat(stale, ", "))
     end
+    require("sessions.chip").refresh()
+    require("sessions.chip").pulse()
   else
     n().error("save failed: " .. (res or "?"))
   end
@@ -166,6 +168,8 @@ local function do_load(name)
     if stale and #stale > 0 then
       n().warn("dropped (file no longer exists): " .. table.concat(stale, ", "))
     end
+    require("sessions.chip").refresh()
+    require("sessions.chip").pulse()
   else
     n().error("load failed: " .. (res or "?"))
   end
@@ -213,6 +217,7 @@ function M.enable()
           local ok, res = require("sessions.core").delete(ctx.args.name)
           if ok then
             n().info("deleted: " .. ctx.args.name)
+            require("sessions.chip").refresh()
           else
             n().error("delete failed: " .. (res or "?"))
           end
@@ -227,6 +232,7 @@ function M.enable()
           local ok, res = require("sessions.core").rename(ctx.args.old, ctx.args.new)
           if ok then
             n().info(("renamed '%s' → '%s'"):format(ctx.args.old, ctx.args.new))
+            require("sessions.chip").refresh()
           else
             n().error("rename failed: " .. (res or "?"))
           end
