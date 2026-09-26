@@ -26,7 +26,15 @@ local function n()
 
   local ok, lib = pcall(require, "lib.nvim.notify")
   if ok then
-    local base = lib.create("[sessions]")
+    -- `popup = true`: a non-focus-stealing, level-coloured `ui.kit.toast`
+    -- (top-right, auto-dismissing per level -- ~4s for info) instead of the
+    -- plain `vim.notify` a bare Neovim UI renders as an `:echomsg` that never
+    -- clears on its own. That bare echo used to sit at the very bottom of the
+    -- screen indefinitely, right where a bottom-left `chip` (see
+    -- sessions.chip) also lives -- reading as one confusing, half-duplicated
+    -- blob instead of two distinct things. Falls back to the exact old
+    -- behaviour when `ui.kit` isn't installed (see `lib.nvim.notify.popup`).
+    local base = lib.create("[sessions]", { popup = true, source = "sessions" })
     _n = {
       info = function(msg)
         base.info(msg, notify_opts)
