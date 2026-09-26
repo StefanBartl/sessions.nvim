@@ -81,7 +81,7 @@
 ---@field keymaps Sessions.Keymaps|false Keymaps table or false to disable all keymaps
 ---@field which_key { enable: boolean } Register a which-key group label for the keymap prefix
 ---@field marks Sessions.Marks.Config    The mark list (`:Session marks`); off by default
----@field chip Sessions.Chip.Config      Persistent ui.kit.chip indicator alongside the notify; off by default
+---@field chip Sessions.Chip.Config      Persistent ui.kit.chip indicator (replaces the save/load/autoload notify while active); on by default
 
 ---A colour accepted by `ui.kit.chip`: a highlight-group name (theme-linked),
 ---or an explicit fixed pair.
@@ -134,7 +134,7 @@
 ---@field keymaps?         Sessions.Keymaps.Opts|false Keymaps table or false to disable all keymaps
 ---@field which_key?       { enable: boolean } Register a which-key group label for the keymap prefix
 ---@field marks?           Sessions.Marks.Opts       The mark list (`:Session marks`); off by default
----@field chip?            Sessions.Chip.Opts        Persistent ui.kit.chip indicator alongside the notify; off by default
+---@field chip?            Sessions.Chip.Opts        Persistent ui.kit.chip indicator (replaces the save/load/autoload notify while active); on by default
 
 ---@class Sessions.Chip.Opts
 ---@field enable?            boolean
