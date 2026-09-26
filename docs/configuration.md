@@ -114,12 +114,13 @@ require("sessions").setup({
 
   -- A persistent editor-corner indicator (ui.kit.chip) mirroring the same
   -- text as sessions.statusline.component(), alongside (not instead of) the
-  -- notify above. Off by default; soft dependency on ui.kit -- does nothing
-  -- when it isn't installed. See docs/statusline.md.
+  -- notify above. On by default; soft dependency on ui.kit -- does nothing
+  -- when it isn't installed, so this default is a no-op without it. See
+  -- docs/statusline.md.
   chip = {
-    enable = false,
+    enable = true,
     anchor = "bottom-left",     -- bottom-left | bottom-right | top-left | top-right
-    shape = "rounded",          -- rounded | rect
+    shape = "rounded",          -- rounded (bordered capsule) | rect (borderless block) | text (no box at all)
     color = nil,                -- a highlight-group name, or { fg = "#...", bg = "#..." }
     pulse = true,                -- flash the chip's colour on save/load/autoload
     pulse_color = nil,           -- nil = kit.chip.pulse's own default ("DiagnosticWarn")

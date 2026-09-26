@@ -90,7 +90,7 @@
 ---@class Sessions.Chip.Config
 ---@field enable boolean
 ---@field anchor "bottom-left"|"bottom-right"|"top-left"|"top-right"
----@field shape "rounded"|"rect"
+---@field shape "rounded"|"rect"|"text"
 ---@field color Sessions.Chip.Color|nil
 ---@field pulse boolean                  Flash the chip's colour on save/load/autoload
 ---@field pulse_color Sessions.Chip.Color|nil
@@ -139,7 +139,7 @@
 ---@class Sessions.Chip.Opts
 ---@field enable?            boolean
 ---@field anchor?            "bottom-left"|"bottom-right"|"top-left"|"top-right"
----@field shape?             "rounded"|"rect"
+---@field shape?             "rounded"|"rect"|"text"
 ---@field color?             Sessions.Chip.Color|nil
 ---@field pulse?             boolean
 ---@field pulse_color?       Sessions.Chip.Color|nil

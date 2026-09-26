@@ -78,7 +78,7 @@ calls it on every redraw. `:Session save`/`load`/autoload also *push* a
 one-shot `vim.notify` toast — easy to miss, and gone (and forgotten) five
 seconds later.
 
-`chip = { enable = true }` adds a third option: a small, persistent
+`chip` adds a third option, **on by default**: a small, persistent
 editor-corner indicator (built on [ui.kit](https://github.com/StefanBartl/ui.nvim)'s
 `ui.kit.chip`) showing the exact same text as `component()`, kept on screen
 between saves/loads instead of only in the statusline or a fading toast. It
@@ -88,11 +88,11 @@ so a save is *also* visible without needing to glance at the statusline.
 ```lua
 require("sessions").setup({
   chip = {
-    enable = true,
-    anchor = "bottom-left",              -- or bottom-right / top-left / top-right
-    shape = "rounded",                   -- or "rect" (borderless block)
-    color = "DiagnosticInfo",            -- a highlight group, or { fg = "#...", bg = "#..." }
-    pulse = true,                        -- flash on save/load/autoload
+    enable = true,                        -- the default; set false to go back to notify-only
+    anchor = "bottom-left",               -- or bottom-right / top-left / top-right
+    shape = "rounded",                    -- rounded (bordered capsule, the default) | rect (borderless block) | text (no box at all)
+    color = "DiagnosticInfo",             -- a highlight group, or { fg = "#...", bg = "#..." }
+    pulse = true,                         -- flash on save/load/autoload
   },
 })
 ```
