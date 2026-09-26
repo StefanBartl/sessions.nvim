@@ -35,7 +35,16 @@ local n = (function()
     -- sessions.chip) also lives -- reading as one confusing, half-duplicated
     -- blob instead of two distinct things. Falls back to the exact old
     -- behaviour when `ui.kit` isn't installed (see `lib.nvim.notify.popup`).
-    local base = notify_lib.create("[sessions]", { popup = true, source = "sessions" })
+    --
+    -- `messages = false`: skips `lib.nvim.notify.popup`'s own "write silently
+    -- to :messages" step. That step attaches a throwaway `ext_messages` UI
+    -- consumer (`vim.ui_attach`) for the duration of one `nvim_echo` call --
+    -- and, verified directly, that hangs Neovim indefinitely the moment ANY
+    -- floating window is already open, which a mounted `chip` now always is.
+    -- Root cause belongs in lib.nvim's `write_messages`, not here; this just
+    -- never takes that path.
+    local base =
+      notify_lib.create("[sessions]", { popup = true, source = "sessions", messages = false })
     return {
       info = function(msg)
         base.info(msg, notify_opts)
