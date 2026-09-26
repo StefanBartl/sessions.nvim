@@ -303,6 +303,56 @@ return function(H)
     core.delete("titlecheck2")
   end
 
+  -- -------------------------------------------------- chip active: notify skipped
+
+  do
+    -- While the chip is actually mounted (ensure_mounted() runs at the top of
+    -- enable()), autoload's own "autoloaded:" notify is skipped entirely --
+    -- only one session-status indicator at a time.
+    restore_notify()
+    local seen = {}
+    local restore3 = H.stub("lib.nvim.notify", {
+      create = function()
+        local rec = {}
+        for _, level in ipairs({ "info", "warn", "error" }) do
+          rec[level] = function(msg)
+            seen[#seen + 1] = { level = level, msg = tostring(msg) }
+          end
+        end
+        return rec
+      end,
+    })
+    local refreshed, pulsed = {}, {}
+    local restore_kit = H.stub("ui.kit", {
+      chip = {
+        mount = function() end,
+        refresh = function(id)
+          refreshed[#refreshed + 1] = id
+        end,
+        pulse = function(_id, opts)
+          pulsed[#pulsed + 1] = opts
+        end,
+      },
+    })
+
+    setup({ autoload = true, autosave = false })
+    H.ok(core.save("chipcheck"))
+    require("sessions.state").set_last_loaded(config.get(), "chipcheck")
+    vim.cmd("silent! %bwipeout!")
+    package.loaded["sessions.chip"] = nil
+    load_module().enable()
+    H.ok(require("sessions.chip").is_active(), "chip actually mounted with ui.kit stubbed")
+
+    vim.api.nvim_exec_autocmds("VimEnter", {})
+    H.eq(#seen, 0, "no notify at all -- the chip already shows/pulses this")
+    H.ok(#refreshed > 0 and #pulsed > 0, "but the chip was refreshed and pulsed")
+
+    core.delete("chipcheck")
+    restore_kit()
+    restore3()
+    package.loaded["sessions.chip"] = nil
+  end
+
   restore_notify()
 
   -- Leave nothing behind ------------------------------------------------------

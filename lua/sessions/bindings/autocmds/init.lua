@@ -168,7 +168,9 @@ function M.enable()
       local function do_autoload()
         local ok, path, _, stale = core.load(nil)
         if ok then
-          n.info("autoloaded: " .. (path or ""))
+          if not require("sessions.chip").is_active() then
+            n.info("autoloaded: " .. (path or ""))
+          end
           if stale and #stale > 0 then
             n.warn("dropped (file no longer exists): " .. table.concat(stale, ", "))
           end

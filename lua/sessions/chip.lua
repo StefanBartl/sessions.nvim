@@ -1,9 +1,15 @@
 ---@module 'sessions.chip'
 ---@brief Wires sessions.statusline's component into a persistent
----`ui.kit.chip` corner indicator, alongside (not instead of) the existing
----`vim.notify` toast on save/load/autoload -- opt-in via `cfg.chip.enable`,
----soft dependency on `ui.kit`: silently does nothing without it installed,
----same as `bindings.autocmds`' own `kit.confirm` fallback.
+---`ui.kit.chip` corner indicator -- opt-in via `cfg.chip.enable`, soft
+---dependency on `ui.kit`: silently does nothing without it installed, same
+---as `bindings.autocmds`' own `kit.confirm` fallback.
+---@description
+---Only one session-status indicator is ever shown at a time: while the chip
+---is actually mounted (`is_active()`), `bindings.usercmds`/`bindings.autocmds`
+---skip the plain save/load/autoload notify entirely instead of showing it
+---alongside the chip -- the chip's own persistent text plus its `pulse()`
+---already say the same thing. Without the chip (off, or `ui.kit` missing),
+---the notify is exactly what it always was.
 
 require("sessions.@types")
 
@@ -88,6 +94,15 @@ function M.pulse()
   if kit_mod then
     kit_mod.chip.pulse(CHIP_ID, { color = c.pulse_color, duration_ms = c.pulse_duration_ms })
   end
+end
+
+---Whether the chip is actually mounted (`cfg.chip.enable` was true and
+---`ui.kit` was present the first time `ensure_mounted()` ran). Callers use
+---this to skip a one-shot notify that would otherwise say the same thing the
+---chip already shows persistently -- see the module doc comment.
+---@return boolean
+function M.is_active()
+  return mounted
 end
 
 return M

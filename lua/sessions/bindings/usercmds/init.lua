@@ -160,7 +160,11 @@ end
 local function do_save(name)
   local ok, res, stale = require("sessions.core").save(name)
   if ok then
-    n().info("saved: " .. (res or "?"))
+    -- The chip (when active) already shows this persistently and pulses on
+    -- exactly this event -- only one session-status indicator at a time.
+    if not require("sessions.chip").is_active() then
+      n().info("saved: " .. (res or "?"))
+    end
     if stale and #stale > 0 then
       n().warn("dropped (file no longer exists): " .. table.concat(stale, ", "))
     end
@@ -177,7 +181,9 @@ end
 local function do_load(name)
   local ok, res, hidden, stale = require("sessions.core").load(name)
   if ok then
-    n().info("loaded: " .. (res or "?"))
+    if not require("sessions.chip").is_active() then
+      n().info("loaded: " .. (res or "?"))
+    end
     if hidden and #hidden > 0 then
       n().info("hidden (unsaved): " .. table.concat(hidden, ", "))
     end

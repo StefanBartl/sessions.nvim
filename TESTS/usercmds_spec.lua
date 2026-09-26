@@ -354,6 +354,71 @@ return function(H)
     package.loaded["sessions.bindings.usercmds"] = nil
   end
 
+  -- ---------------------------------------------------- chip active: notify skipped
+
+  do
+    -- While the chip is actually mounted, save/load's own "saved:"/"loaded:"
+    -- notify is skipped entirely -- only one session-status indicator at a
+    -- time (the chip already shows/pulses the same information).
+    local mounted_opts, refreshed, pulsed = nil, {}, {}
+    local restore_kit = H.stub("ui.kit", {
+      chip = {
+        mount = function(opts)
+          mounted_opts = opts
+        end,
+        refresh = function(id)
+          refreshed[#refreshed + 1] = id
+        end,
+        pulse = function(_id, opts)
+          pulsed[#pulsed + 1] = opts
+        end,
+      },
+    })
+
+    local seen = {}
+    local restore3 = H.stub("lib.nvim.notify", {
+      create = function()
+        local rec = {}
+        for _, level in ipairs({ "info", "warn", "error" }) do
+          rec[level] = function(msg)
+            seen[#seen + 1] = { level = level, msg = tostring(msg) }
+          end
+        end
+        return rec
+      end,
+    })
+
+    config.setup({
+      root = root,
+      branch_aware = false,
+      project_aware = false,
+      chip = { enable = true },
+    })
+    package.loaded["sessions.chip"] = nil
+    local chip = require("sessions.chip")
+    chip.ensure_mounted()
+    H.ok(chip.is_active(), "chip actually mounted with ui.kit stubbed")
+    H.ok(mounted_opts ~= nil and mounted_opts.id == "sessions", "kit.chip.mount was called")
+
+    local fresh3 = H.fresh("sessions.bindings.usercmds")
+    fresh3.enable()
+    vim.cmd("Session save chiptest")
+    H.eq(#seen, 0, "no notify at all -- the chip already shows/pulses this")
+    H.ok(#refreshed > 0, "but the chip WAS refreshed")
+    H.ok(#pulsed > 0, "and pulsed")
+
+    seen, refreshed, pulsed = {}, {}, {}
+    vim.cmd("Session load chiptest")
+    H.eq(#seen, 0, "load is likewise silent while the chip is active")
+    H.ok(#refreshed > 0 and #pulsed > 0, "and still refreshed/pulsed")
+
+    core.delete("chiptest")
+    restore3()
+    restore_kit()
+    package.loaded["sessions.bindings.usercmds"] = nil
+    package.loaded["sessions.chip"] = nil
+  end
+
   -- Leave nothing behind ------------------------------------------------------
   config.setup({
     root = root,
