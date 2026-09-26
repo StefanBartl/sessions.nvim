@@ -71,7 +71,7 @@ table literal on every redraw still works, it just gives up the memoization.
 Everything else the component does is two table lookups: the current session
 name and the dirty flag, both already in memory.
 
-## Persistent corner chip (alongside the notify)
+## Persistent corner chip (replaces the notify while active)
 
 `component()` above is a *pull*-style integration: your statusline plugin
 calls it on every redraw. `:Session save`/`load`/autoload also *push* a
@@ -85,11 +85,17 @@ between saves/loads instead of only in the statusline or a fading toast. It
 flashes its colour once on save/load/autoload, on top of the steady state,
 so a save is *also* visible without needing to glance at the statusline.
 
+Only one session-status indicator is ever shown at a time: while the chip is
+actually mounted (`cfg.chip.enable = true` and `ui.kit` installed), the
+save/load/autoload notify is skipped entirely — the chip's own persistent
+text plus its pulse already say the same thing. Without the chip, the notify
+is exactly what it always was.
+
 ```lua
 require("sessions").setup({
   chip = {
     enable = true,                        -- the default; set false to go back to notify-only
-    anchor = "bottom-left",               -- or bottom-right / top-left / top-right
+    anchor = "top-right",                 -- the default; or bottom-left / bottom-right / top-left
     shape = "rounded",                    -- rounded (bordered capsule, the default) | rect (borderless block) | text (no box at all)
     color = "DiagnosticInfo",             -- a highlight group, or { fg = "#...", bg = "#..." }
     pulse = true,                         -- flash on save/load/autoload

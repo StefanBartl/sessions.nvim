@@ -1,6 +1,9 @@
 -- TESTS/chip_spec.lua — sessions.chip: the persistent ui.kit.chip wrapper
--- around sessions.statusline.component(), alongside (not instead of) the
--- existing save/load/autoload notify.
+-- around sessions.statusline.component(). `is_active()` (whether the chip
+-- actually mounted) is what bindings/usercmds and bindings/autocmds use to
+-- skip the save/load/autoload notify -- see usercmds_spec.lua/
+-- autocmds_spec.lua for that side of the contract; this file covers the
+-- module's own mount/refresh/pulse/is_active behaviour in isolation.
 --
 -- `ui.kit` is genuinely not installed here (same situation as
 -- autocmds_spec.lua's own note), so every path is exercised via `H.stub`:
@@ -50,6 +53,7 @@ return function(H)
 
     chip.ensure_mounted()
     H.eq(#calls, 0, "enable = false: mount is never called")
+    H.falsy(chip.is_active(), "and is_active() says so")
     chip.refresh()
     chip.pulse()
     H.eq(#calls, 0, "...nor are refresh/pulse")
@@ -65,6 +69,7 @@ return function(H)
     local restore = H.stub("ui.kit", false)
 
     H.ok(pcall(chip.ensure_mounted), "no ui.kit: ensure_mounted does not error")
+    H.falsy(chip.is_active(), "and it never became active")
     H.ok(pcall(chip.refresh), "...nor does refresh")
     H.ok(pcall(chip.pulse), "...nor does pulse")
 
@@ -104,6 +109,7 @@ return function(H)
 
     chip.ensure_mounted()
     H.eq(#calls, 1, "ensure_mounted mounts once")
+    H.ok(chip.is_active(), "is_active() reflects the successful mount")
     H.eq(calls[1][1], "mount")
     H.eq(calls[1][2].id, "sessions")
     H.eq(calls[1][2].anchor, "top-right", "cfg.chip.anchor is forwarded")
