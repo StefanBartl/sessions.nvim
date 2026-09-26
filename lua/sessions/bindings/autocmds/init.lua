@@ -134,6 +134,8 @@ end
 function M.enable()
   local cfg = require("sessions.config").cfg
 
+  require("sessions.chip").ensure_mounted()
+
   local aug = autocmd_ok and autocmd.group("SessionsNvim", true)
     or api.nvim_create_augroup("SessionsNvim", { clear = true })
 
@@ -153,6 +155,8 @@ function M.enable()
           if stale and #stale > 0 then
             n.warn("dropped (file no longer exists): " .. table.concat(stale, ", "))
           end
+          require("sessions.chip").refresh()
+          require("sessions.chip").pulse()
         end
       end
 
@@ -212,6 +216,7 @@ function M.enable()
     }) do
       create_autocmd(event, function()
         require("sessions.core").mark_dirty()
+        require("sessions.chip").refresh()
       end, {
         group = aug,
         desc = "sessions.nvim: mark session dirty for statusline",

@@ -67,6 +67,7 @@ local specs = {
   "keymaps_spec.lua",
   "usercmds_spec.lua",
   "autocmds_spec.lua",
+  "chip_spec.lua",
   "init_spec.lua",
 }
 

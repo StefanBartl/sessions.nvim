@@ -71,6 +71,38 @@ table literal on every redraw still works, it just gives up the memoization.
 Everything else the component does is two table lookups: the current session
 name and the dirty flag, both already in memory.
 
+## Persistent corner chip (alongside the notify)
+
+`component()` above is a *pull*-style integration: your statusline plugin
+calls it on every redraw. `:Session save`/`load`/autoload also *push* a
+one-shot `vim.notify` toast — easy to miss, and gone (and forgotten) five
+seconds later.
+
+`chip = { enable = true }` adds a third option: a small, persistent
+editor-corner indicator (built on [ui.kit](https://github.com/StefanBartl/ui.nvim)'s
+`ui.kit.chip`) showing the exact same text as `component()`, kept on screen
+between saves/loads instead of only in the statusline or a fading toast. It
+flashes its colour once on save/load/autoload, on top of the steady state,
+so a save is *also* visible without needing to glance at the statusline.
+
+```lua
+require("sessions").setup({
+  chip = {
+    enable = true,
+    anchor = "bottom-left",              -- or bottom-right / top-left / top-right
+    shape = "rounded",                   -- or "rect" (borderless block)
+    color = "DiagnosticInfo",            -- a highlight group, or { fg = "#...", bg = "#..." }
+    pulse = true,                        -- flash on save/load/autoload
+  },
+})
+```
+
+Soft dependency: without `ui.kit` installed, `chip.enable = true` does
+nothing (no error) — same as `autoload = "ask"`'s confirm prompt, which
+falls back to a hand-rolled float instead. See
+[ui.kit's own README](https://github.com/StefanBartl/ui.nvim/blob/main/lua/ui/kit/README.md#chip-persistent-corner-status)
+for the primitive itself (any plugin can mount its own chip, not just this one).
+
 ## Beyond the component
 
 If you want something the component does not render — the save timestamp, the

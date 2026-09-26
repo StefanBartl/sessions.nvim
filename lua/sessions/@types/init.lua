@@ -81,6 +81,20 @@
 ---@field keymaps Sessions.Keymaps|false Keymaps table or false to disable all keymaps
 ---@field which_key { enable: boolean } Register a which-key group label for the keymap prefix
 ---@field marks Sessions.Marks.Config    The mark list (`:Session marks`); off by default
+---@field chip Sessions.Chip.Config      Persistent ui.kit.chip indicator alongside the notify; off by default
+
+---A colour accepted by `ui.kit.chip`: a highlight-group name (theme-linked),
+---or an explicit fixed pair.
+---@alias Sessions.Chip.Color string|{ fg: string|integer, bg?: (string|integer)? }
+
+---@class Sessions.Chip.Config
+---@field enable boolean
+---@field anchor "bottom-left"|"bottom-right"|"top-left"|"top-right"
+---@field shape "rounded"|"rect"
+---@field color Sessions.Chip.Color|nil
+---@field pulse boolean                  Flash the chip's colour on save/load/autoload
+---@field pulse_color Sessions.Chip.Color|nil
+---@field pulse_duration_ms integer|nil
 
 ---@class Sessions.Info
 ---@field name string
@@ -120,6 +134,16 @@
 ---@field keymaps?         Sessions.Keymaps.Opts|false Keymaps table or false to disable all keymaps
 ---@field which_key?       { enable: boolean } Register a which-key group label for the keymap prefix
 ---@field marks?           Sessions.Marks.Opts       The mark list (`:Session marks`); off by default
+---@field chip?            Sessions.Chip.Opts        Persistent ui.kit.chip indicator alongside the notify; off by default
+
+---@class Sessions.Chip.Opts
+---@field enable?            boolean
+---@field anchor?            "bottom-left"|"bottom-right"|"top-left"|"top-right"
+---@field shape?             "rounded"|"rect"
+---@field color?             Sessions.Chip.Color|nil
+---@field pulse?             boolean
+---@field pulse_color?       Sessions.Chip.Color|nil
+---@field pulse_duration_ms? integer|nil
 
 ---@class Sessions.Blacklist.Opts
 ---@field buftypes?  string[]

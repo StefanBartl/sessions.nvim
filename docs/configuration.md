@@ -111,6 +111,20 @@ require("sessions").setup({
     select_key = false,            -- e.g. "<leader>%d": <leader>1..9 jump to entry N
     preview_key = false,           -- e.g. "<M-%d>":     <M-1>..9 preview entry N
   },
+
+  -- A persistent editor-corner indicator (ui.kit.chip) mirroring the same
+  -- text as sessions.statusline.component(), alongside (not instead of) the
+  -- notify above. Off by default; soft dependency on ui.kit -- does nothing
+  -- when it isn't installed. See docs/statusline.md.
+  chip = {
+    enable = false,
+    anchor = "bottom-left",     -- bottom-left | bottom-right | top-left | top-right
+    shape = "rounded",          -- rounded | rect
+    color = nil,                -- a highlight-group name, or { fg = "#...", bg = "#..." }
+    pulse = true,                -- flash the chip's colour on save/load/autoload
+    pulse_color = nil,           -- nil = kit.chip.pulse's own default ("DiagnosticWarn")
+    pulse_duration_ms = nil,     -- nil = kit.chip.pulse's own default (300)
+  },
 })
 ```
 
