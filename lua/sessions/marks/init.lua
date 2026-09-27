@@ -38,23 +38,11 @@ local json = require("lib.nvim.fs.json")
 local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 ---@internal
+---Graceful fallback if lib.nvim's notify is absent -- see `sessions.util.notify`
+---for the shared "create, or fall back" logic.
 ---@return table
 local function notify()
-  local ok, lib = pcall(require, "lib.nvim.notify")
-  if ok then
-    return lib.create("[sessions.marks]")
-  end
-  return {
-    info = function(msg)
-      vim.notify("[sessions.marks] " .. msg, vim.log.levels.INFO)
-    end,
-    warn = function(msg)
-      vim.notify("[sessions.marks] " .. msg, vim.log.levels.WARN)
-    end,
-    error = function(msg)
-      vim.notify("[sessions.marks] " .. msg, vim.log.levels.ERROR)
-    end,
-  }
+  return require("sessions.util.notify").create("[sessions.marks]")
 end
 
 ---@internal

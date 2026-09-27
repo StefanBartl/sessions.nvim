@@ -16,44 +16,15 @@ local fn = vim.fn
 local autocmd_ok, autocmd = pcall(require, "lib.nvim.bindings.autocmd")
 local kit_ok, kit = pcall(require, "ui.kit")
 
--- Same title enrichment as bindings/usercmds' `n()` (see its comment):
--- `cfg.notify_title` (default true) attaches a `title`, a no-op for the
--- plain `:messages` echo and picked up by a rich `vim.notify` backend
--- when one is installed.
-local n = (function()
-  local notify_opts = (require("sessions.config").cfg.notify_title ~= false)
-      and { title = "Sessions" }
-    or nil
-
-  local notify_ok, notify_lib = pcall(require, "lib.nvim.notify")
-  if notify_ok then
-    -- `popup = true`: a non-focus-stealing, level-coloured `ui.kit.toast`
-    -- (top-right, auto-dismissing per level -- ~4s for info) instead of the
-    -- plain `vim.notify` a bare Neovim UI renders as an `:echomsg` that never
-    -- clears on its own. That bare echo used to sit at the very bottom of the
-    -- screen indefinitely, right where a bottom-left `chip` (see
-    -- sessions.chip) also lives -- reading as one confusing, half-duplicated
-    -- blob instead of two distinct things. Falls back to the exact old
-    -- behaviour when `ui.kit` isn't installed (see `lib.nvim.notify.popup`).
-    local base = notify_lib.create("[sessions]", { popup = true, source = "sessions" })
-    return {
-      info = function(msg)
-        base.info(msg, notify_opts)
-      end,
-      warn = function(msg)
-        base.warn(msg, notify_opts)
-      end,
-    }
-  end
-  return {
-    info = function(msg)
-      vim.notify("[sessions] " .. msg, vim.log.levels.INFO, notify_opts)
-    end,
-    warn = function(msg)
-      vim.notify("[sessions] " .. msg, vim.log.levels.WARN, notify_opts)
-    end,
-  }
-end)()
+-- `sessions.util.notify.create_titled`: `lib.nvim.notify.popup` toast when
+-- lib.nvim is installed (non-focus-stealing, level-coloured, auto-dismissing
+-- -- doesn't collide with the bottom-left `sessions.chip` status indicator
+-- the way a bare, never-clearing `vim.notify` echo used to), plain
+-- `vim.notify` fallback otherwise. `cfg.notify_title` (default true) attaches
+-- a `title`, a no-op for the plain fallback and picked up by a rich
+-- `vim.notify` backend when one is installed. Resolved once at module-load
+-- time (see bindings/usercmds' `n()` for the lazily-memoized alternative).
+local n = require("sessions.util.notify").create_titled("[sessions]")
 
 ---@internal
 ---@param event string
