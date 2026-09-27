@@ -8,56 +8,17 @@ local composer = require("lib.nvim.bindings.usercmd.composer")
 ---@class SessionsBindingsUsercmds
 local M = {}
 
--- Resolve a notifier once per session; graceful fallback if lib.nvim absent.
--- `cfg.notify_title` (default true) attaches `opts.title = "Sessions"` to
--- every call -- picked up by any rich `vim.notify` backend (ui.nvim's
--- `ui.notify`, nvim-notify, noice, snacks) that renders a title/colour
--- from it, and silently ignored by the plain `:messages` echo that is the
--- fallback when none of those are installed/enabled.
+-- Resolve a notifier once per session (lazily-memoized: unlike
+-- bindings/autocmds' eager module-load-time `n`, this is only built the
+-- first time a route actually notifies); graceful fallback if lib.nvim
+-- absent. See `sessions.util.notify.create_titled` for the toast/title
+-- behaviour this delegates to.
 local _n
 ---@internal
 ---@return table
 local function n()
-  if _n then
-    return _n
-  end
-  local cfg = require("sessions.config").cfg
-  local notify_opts = (cfg.notify_title ~= false) and { title = "Sessions" } or nil
-
-  local ok, lib = pcall(require, "lib.nvim.notify")
-  if ok then
-    -- `popup = true`: a non-focus-stealing, level-coloured `ui.kit.toast`
-    -- (top-right, auto-dismissing per level -- ~4s for info) instead of the
-    -- plain `vim.notify` a bare Neovim UI renders as an `:echomsg` that never
-    -- clears on its own. That bare echo used to sit at the very bottom of the
-    -- screen indefinitely, right where a bottom-left `chip` (see
-    -- sessions.chip) also lives -- reading as one confusing, half-duplicated
-    -- blob instead of two distinct things. Falls back to the exact old
-    -- behaviour when `ui.kit` isn't installed (see `lib.nvim.notify.popup`).
-    local base = lib.create("[sessions]", { popup = true, source = "sessions" })
-    _n = {
-      info = function(msg)
-        base.info(msg, notify_opts)
-      end,
-      warn = function(msg)
-        base.warn(msg, notify_opts)
-      end,
-      error = function(msg)
-        base.error(msg, notify_opts)
-      end,
-    }
-  else
-    _n = {
-      info = function(msg)
-        vim.notify("[sessions] " .. msg, vim.log.levels.INFO, notify_opts)
-      end,
-      warn = function(msg)
-        vim.notify("[sessions] " .. msg, vim.log.levels.WARN, notify_opts)
-      end,
-      error = function(msg)
-        vim.notify("[sessions] " .. msg, vim.log.levels.ERROR, notify_opts)
-      end,
-    }
+  if not _n then
+    _n = require("sessions.util.notify").create_titled("[sessions]")
   end
   return _n
 end

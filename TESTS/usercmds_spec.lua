@@ -176,19 +176,18 @@ return function(H)
   H.eq(core.current(), "renamed", "which is the one that was saved most recently")
 
   -- ---------------------------------------------------------- :SessionLoad
+  -- sessions.picker now goes through the same lib.nvim.notify-or-fallback
+  -- notifier as every other route in this plugin (it used to call plain
+  -- `vim.notify` directly), so this asserts through the shared `said`
+  -- recorder like everything else in this file, not a `vim.notify` monkeypatch.
 
   do
     local no_snacks = H.stub("snacks", false)
     local no_telescope = H.stub("telescope", false)
-    local notified = {}
-    local real_notify = vim.notify
-    vim.notify = function(msg)
-      notified[#notified + 1] = msg
-    end
+    local before = #said
     vim.cmd("SessionLoad")
-    vim.notify = real_notify
-    H.eq(#notified, 1, ":SessionLoad goes to the picker")
-    H.contains(notified[1], "requires snacks.nvim", "which says what it needs")
+    H.eq(#said - before, 1, ":SessionLoad goes to the picker")
+    H.contains(last(), "requires snacks.nvim", "which says what it needs")
     no_snacks()
     no_telescope()
   end

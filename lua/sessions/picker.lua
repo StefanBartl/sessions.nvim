@@ -9,6 +9,14 @@
 ---@class SessionsPicker
 local M = {}
 
+---@internal
+---Graceful fallback if lib.nvim's notify is absent -- see `sessions.util.notify`
+---for the shared "create, or fall back" logic.
+---@return table
+local function notify()
+  return require("sessions.util.notify").create("[sessions]")
+end
+
 ---@class Sessions.PickerItem
 ---@field name string
 ---@field path string
@@ -72,16 +80,7 @@ end
 ---@see sessions.core
 local function do_delete(names)
   local core = require("sessions.core")
-  local ok_n, notify = pcall(require, "lib.nvim.notify")
-  local n = ok_n and notify.create("[sessions]")
-    or {
-      info = function(msg)
-        vim.notify("[sessions] " .. msg, vim.log.levels.INFO)
-      end,
-      warn = function(msg)
-        vim.notify("[sessions] " .. msg, vim.log.levels.WARN)
-      end,
-    }
+  local n = notify()
   local deleted, failed = {}, {}
   for _, name in ipairs(names) do
     local ok, err = core.delete(name)
@@ -275,7 +274,7 @@ end
 ---<CR> loads the selected session; <C-d> deletes the (multi-)selection.
 function M.pick()
   if #require("sessions.core").list() == 0 then
-    vim.notify("[sessions] no sessions saved yet", vim.log.levels.INFO)
+    notify().info("no sessions saved yet")
     return
   end
   if pick_snacks() then
@@ -284,10 +283,7 @@ function M.pick()
   if pick_telescope() then
     return
   end
-  vim.notify(
-    "[sessions] :SessionLoad requires snacks.nvim (with picker) or telescope.nvim",
-    vim.log.levels.ERROR
-  )
+  notify().error(":SessionLoad requires snacks.nvim (with picker) or telescope.nvim")
 end
 
 return M

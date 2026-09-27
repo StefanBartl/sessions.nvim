@@ -63,24 +63,11 @@ local UNMAPPABLE = {
 ---Resolve a notifier; graceful fallback if lib.nvim's notify is absent,
 ---matching the convention used in bindings/usercmds and marks (lib.nvim.notify
 ---is soft-guarded per docs/installation.md -- unlike lib.nvim.bindings.keymap
----just below, which has no such fallback and is documented separately).
+---just below, which has no such fallback and is documented separately). See
+---`sessions.util.notify` for the shared "create, or fall back" logic.
 ---@return table
 local function notifier()
-  local ok, lib = pcall(require, "lib.nvim.notify")
-  if ok then
-    return lib.create("[sessions.keymaps]")
-  end
-  return {
-    info = function(msg)
-      vim.notify("[sessions.keymaps] " .. msg, vim.log.levels.INFO)
-    end,
-    warn = function(msg)
-      vim.notify("[sessions.keymaps] " .. msg, vim.log.levels.WARN)
-    end,
-    error = function(msg)
-      vim.notify("[sessions.keymaps] " .. msg, vim.log.levels.ERROR)
-    end,
-  }
+  return require("sessions.util.notify").create("[sessions.keymaps]")
 end
 
 ---@internal

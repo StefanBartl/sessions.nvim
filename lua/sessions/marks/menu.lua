@@ -31,23 +31,11 @@ local NS = vim.api.nvim_create_namespace("sessions_marks_menu")
 local HL = "SessionsMarksPin"
 
 ---@internal
+---Graceful fallback if lib.nvim's notify is absent -- see `sessions.util.notify`
+---for the shared "create, or fall back" logic.
 ---@return table
 local function notify()
-  local ok, lib = pcall(require, "lib.nvim.notify")
-  if ok then
-    return lib.create("[sessions.marks]")
-  end
-  return {
-    info = function(msg)
-      vim.notify("[sessions.marks] " .. msg, vim.log.levels.INFO)
-    end,
-    warn = function(msg)
-      vim.notify("[sessions.marks] " .. msg, vim.log.levels.WARN)
-    end,
-    error = function(msg)
-      vim.notify("[sessions.marks] " .. msg, vim.log.levels.ERROR)
-    end,
-  }
+  return require("sessions.util.notify").create("[sessions.marks]")
 end
 
 ---@internal
