@@ -86,6 +86,15 @@ its steady text, then auto-hides itself again after `cfg.chip.timeout_ms` (3
 seconds by default) — a brief status flash, like a toast, rather than a
 standing indicator. Set `timeout_ms = false` to go back to always-on instead.
 
+By default it also sits flush against the statusline row rather than
+floating in a separate box above it — `shape = "dock_left"` (rounded
+everywhere except the screen-edge-facing left side) paired with
+`dock = true` (row/col land directly on the statusline row, no gap).
+Both degrade safely without a real statusline row to dock against
+(`laststatus = 0`, or no statusline plugin at all): the chip just floats
+above the cmdline like the old default did, same as setting `dock = false`
+outright.
+
 Only one session-status indicator is ever shown at a time: while the chip is
 actually active (`cfg.chip.enable = true` and `ui.kit` installed), the
 save/load/autoload notify is skipped entirely — the chip's own text plus its
@@ -97,8 +106,10 @@ require("sessions").setup({
   chip = {
     enable = true,                        -- the default; set false to go back to notify-only
     anchor = "bottom-left",               -- the default; or bottom-right / top-left / top-right
-    shape = "rounded_chip",                -- rounded_chip (bordered capsule, the default) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
-    color = "DiagnosticInfo",             -- a highlight group, or { fg = "#...", bg = "#..." }
+    shape = "dock_left",                  -- the default: rounded except the screen-edge-facing left side; rounded_chip (bordered capsule) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
+    dock = true,                          -- the default: flush on the statusline row, no gap; degrades safely without a real statusline row
+    color = "DiagnosticInfo",             -- a highlight group, { fg = "#...", bg = "#..." }, or a zero-arg function returning either
+    track_mode = false,                   -- the default; refresh on every mode change -- only useful paired with a `color` function that tracks it
     timeout_ms = 3000,                    -- the default (ms); false (or <= 0) keeps it on screen permanently
     pulse = true,                         -- flash on save/load/autoload
   },
@@ -109,9 +120,11 @@ Soft dependency: without `ui.kit` installed, `chip.enable = true` does
 nothing (no error) — same as `autoload = "ask"`'s confirm prompt, which
 falls back to a hand-rolled float instead. Every field above is yours to
 mix and match from `setup()` — preset the look with `shape`, pin it anywhere
-with `anchor`, pick a fixed colour or leave it theme-linked, and dial
-`timeout_ms` to taste (a few hundred ms for a quick flash, `false` for the
-old always-on indicator). See
+with `anchor`, dock it or not, pick a fixed colour or a function that tracks
+something live (e.g. your own statusline's current mode colour — pair with
+`track_mode = true` so it actually repaints when the mode changes, not just
+on the next incidental save/load), and dial `timeout_ms` to taste (a few
+hundred ms for a quick flash, `false` for the old always-on indicator). See
 [ui.kit's own README](https://github.com/StefanBartl/ui.nvim/blob/main/lua/ui/kit/README.md#chip-persistent-corner-status)
 for the primitive itself (any plugin can mount its own chip, not just this one).
 
