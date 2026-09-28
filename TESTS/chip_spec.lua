@@ -149,6 +149,24 @@ return function(H)
   end
 
   do
+    -- Regression, found by a second round of adversarial review: an invalid
+    -- anchor string (config validation accepts any string unchecked, so a
+    -- typo reaches here) used to fall back to "rounded_chip" too eagerly --
+    -- ui.kit.chip.mount() itself resolves an unrecognized anchor to
+    -- "bottom-left", where "dock_left" is actually correct.
+    setup({ chip = { enable = true, anchor = "typo-left" } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    chip.ensure_mounted()
+    H.eq(
+      calls[1][2].shape,
+      "dock_left",
+      "an invalid anchor resolves like kit.chip's own bottom-left fallback, not a forced rounded_chip"
+    )
+    restore()
+  end
+
+  do
     setup({ chip = { enable = true, anchor = "bottom-right", shape = "classic" } })
     local chip = load_module()
     local calls, restore = stub_recording_kit()
