@@ -190,65 +190,88 @@ return function(H)
   fake_branch()
 
   -- ----------------------------------------------------------- branch_exists
-  -- Stubbed the same way the "via lib.nvim" blocks above are -- this function
-  -- always goes through lib.nvim.git (a hard dependency for sessions.nvim
-  -- overall, unlike current_branch/project_root's own hand-rolled fallback,
-  -- which exists to avoid spawning git on the hot "every session name
-  -- resolution" path; branch_exists only runs on a rare, deliberate
-  -- :Session stale/delete-stale, so that tradeoff does not apply here).
+  -- Purely filesystem-based -- real, hand-written .git directories, same
+  -- fixture style current_branch()'s own fallback tests above already use.
+  -- Deliberately NOT stubbed through lib.nvim.git: an earlier version of
+  -- this went through lib.nvim.git.in_git_repo()/.refs(), on the theory
+  -- that a raised Lua error meant "the lookup itself failed" -- but the
+  -- real lib.nvim.git swallows every subprocess failure into a plain
+  -- nil/{} and never raises, so that branch was never actually reachable,
+  -- and a transient git failure on a healthy session read as confirmed-
+  -- stale. Rewritten around find_gitdir()'s own filesystem read instead,
+  -- which has no external binary to be missing, refuse, or hang.
 
-  H.falsy(
-    git.branch_exists(dir .. "/does-not-exist-at-all", "main"),
-    "a missing directory is confidently NOT stale-ambiguous -- false, not nil"
-  )
-  H.eq(git.branch_exists(dir .. "/does-not-exist-at-all", "main"), false, "...specifically false")
-
-  local not_a_repo = dir .. "/not-a-repo"
-  vim.fn.mkdir(not_a_repo, "p")
-  local undo_not_repo = H.stub("lib.nvim.git", {
-    in_git_repo = function()
-      return false
-    end,
-  })
   H.eq(
-    git.branch_exists(not_a_repo, "main"),
+    git.branch_exists(dir .. "/does-not-exist-at-all", "main"),
     false,
-    "a directory that exists but isn't a repo: false"
+    "a missing directory: false"
   )
-  undo_not_repo()
+
+  -- A real, empty `.git` right at this exact directory (a fresh `git init`
+  -- with zero commits) -- deliberately NOT "a directory with no .git
+  -- anywhere upward at all": every fixture here lives inside TESTS/, itself
+  -- inside this repo's own checkout, so an upward search from ANY fixture
+  -- subdirectory legitimately finds THIS repo's own .git (exactly the
+  -- behaviour current_branch()'s own fallback test above already covers
+  -- and relies on -- a session saved from a subdirectory must still
+  -- resolve the enclosing project). Nothing above `dir` is faked away here.
+  local empty_repo = dir .. "/empty-repo"
+  vim.fn.mkdir(empty_repo .. "/.git", "p")
+  H.eq(git.branch_exists(empty_repo, "main"), false, "a real repo with zero refs at all: false")
 
   local repo_dir = dir .. "/branch-exists-repo"
-  vim.fn.mkdir(repo_dir, "p")
+  vim.fn.mkdir(repo_dir .. "/.git/refs/heads", "p")
+  vim.fn.writefile({ "ref: refs/heads/main" }, repo_dir .. "/.git/HEAD")
+  vim.fn.writefile({ "" }, repo_dir .. "/.git/refs/heads/main") -- a loose ref: the file existing is what matters
 
-  local undo_has_branch = H.stub("lib.nvim.git", {
-    in_git_repo = function()
-      return true
-    end,
-    refs = function()
-      return { "main", "feature/login" }
-    end,
-  })
-  H.eq(git.branch_exists(repo_dir, "main"), true, "a branch actually in the ref listing: true")
-  H.eq(git.branch_exists(repo_dir, "long-gone"), false, "one that isn't there: confidently false")
-  undo_has_branch()
-
-  local undo_refs_fail = H.stub("lib.nvim.git", {
-    in_git_repo = function()
-      return true
-    end,
-    refs = function()
-      error("boom: git for-each-ref failed")
-    end,
-  })
+  H.eq(git.branch_exists(repo_dir, "main"), true, "a branch with a loose ref file: true")
   H.eq(
-    git.branch_exists(repo_dir, "main"),
-    nil,
-    "a real repo whose ref listing itself fails: nil, not false -- ambiguous is not confirmed-gone"
+    git.branch_exists(repo_dir, "long-gone"),
+    false,
+    "one with no ref at all, loose or packed: false"
   )
-  undo_refs_fail()
 
-  H.eq(git.branch_exists("", "main"), nil, "an empty cwd is refused rather than guessed at")
-  H.eq(git.branch_exists(repo_dir, ""), nil, "so is an empty branch name")
+  -- git periodically folds loose refs into packed-refs (e.g. after
+  -- `git gc`) -- a branch can be real and only live there.
+  vim.fn.writefile({
+    "# pack-refs with: peeled fully-sorted sorted",
+    "9f6c4b1d0e2a3b5c7d8e9f0a1b2c3d4e5f607182 refs/heads/feature/login",
+    "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d refs/tags/v1.0.0",
+    "^9f6c4b1d0e2a3b5c7d8e9f0a1b2c3d4e5f607182", -- a peeled annotated-tag marker, not a ref of its own
+  }, repo_dir .. "/.git/packed-refs")
+  H.eq(
+    git.branch_exists(repo_dir, "feature/login"),
+    true,
+    "a branch only in packed-refs: still true"
+  )
+  H.eq(
+    git.branch_exists(repo_dir, "v1.0.0"),
+    false,
+    "a TAG in packed-refs is not a branch, even with the same name shape"
+  )
+  os.remove(repo_dir .. "/.git/packed-refs")
+
+  -- A worktree/submodule: .git is a FILE pointing elsewhere -- find_gitdir()
+  -- (shared with current_branch()'s own fallback, already covered above)
+  -- follows it the same way.
+  local be_wt = dir .. "/branch-exists-worktree"
+  vim.fn.mkdir(be_wt, "p")
+  vim.fn.mkdir(repo_dir .. "/.git/refs/heads", "p")
+  vim.fn.writefile({ "gitdir: " .. repo_dir .. "/.git" }, be_wt .. "/.git")
+  H.eq(
+    git.branch_exists(be_wt, "main"),
+    true,
+    "a worktree's .git FILE is followed to the real gitdir"
+  )
+
+  -- A session saved from a SUBDIRECTORY of the repo still resolves --
+  -- find_gitdir() walks upward, same as current_branch()'s own fallback.
+  local be_deep = repo_dir .. "/deep/nested/dir"
+  vim.fn.mkdir(be_deep, "p")
+  H.eq(git.branch_exists(be_deep, "main"), true, "the upward walk finds the enclosing repository")
+
+  H.eq(git.branch_exists("", "main"), false, "an empty cwd is refused rather than guessed at")
+  H.eq(git.branch_exists(repo_dir, ""), false, "so is an empty branch name")
 
   cd(start_cwd)
   cleanup()
