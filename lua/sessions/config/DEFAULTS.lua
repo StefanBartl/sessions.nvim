@@ -37,6 +37,12 @@ return {
   -- lost on load. No-op (and no sidecar written) when no tabline maintains
   -- such a list.
   restore_buffer_order = true,
+  -- Persist per-tabpage tab-pin state (`ui.nvim`'s tabline pinned-buffer
+  -- list, `vim.t.ui_pinned`) -- that module explicitly does not persist it
+  -- itself. Same no-op-without-the-tabline shape as `restore_buffer_order`
+  -- above, and restored after it: pin restore needs buforder's final,
+  -- stable bufnr mapping for the tab, not the one `:mksession` alone gives.
+  restore_pinned_buffers = true,
   -- Attach `opts.title = "Sessions"` to `:Session`/autoload notify calls --
   -- picked up by any rich `vim.notify` backend (ui.nvim's `ui.notify`,
   -- nvim-notify, noice, snacks) that renders a title/colour from it.

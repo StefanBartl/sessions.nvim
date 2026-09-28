@@ -154,6 +154,23 @@ list, so a non-tabufline setup pays nothing.
 - **Module:** `lua/sessions/buforder.lua`
 - **Config:** `opts.restore_buffer_order` (default `true`)
 
+## Tab-pin persistence (`vim.t.ui_pinned`)
+
+`ui.nvim`'s tabline lets a buffer be pinned per tab (`vim.t.ui_pinned`), but
+that module explicitly does not persist the pin state itself — a restart
+loses every pin.
+
+sessions.nvim captures each tabpage's pinned-buffer paths (via `ui.nvim`'s
+`ui.bindings.keymaps.tabufline.state.pinned_bufs_for_tab`) into a hidden
+`.{name}.pins.json` sidecar on save and reapplies it right after `:source`,
+same shape as the buffer-order sidecar above — a saved path with no live
+buffer in that tab is dropped. Restored right after buffer order, since pin
+restore needs that restore's final, stable bufnr mapping for the tab. A
+complete no-op — and writes no sidecar — without `ui.nvim` installed.
+
+- **Module:** `lua/sessions/pins.lua`
+- **Config:** `opts.restore_pinned_buffers` (default `true`)
+
 ## Autoload / autosave
 
 Loads the contextual session automatically on a plain `nvim` start (no
