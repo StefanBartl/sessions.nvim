@@ -122,6 +122,89 @@ return function(H)
   vim.cmd("Session delete no-such-session")
   H.contains(last(), "error: delete failed: ", "deleting what is not there is an error")
 
+  -- ---------------------------------------------------- stale / delete-stale
+
+  do
+    -- find_stale() only considers a session that recorded a branch at save
+    -- time, which needs branch_aware on -- scoped to this block, restored
+    -- after, so it does not change what the rest of this file sees.
+    -- sessions.git is stubbed rather than backed by a real repo: this file
+    -- is about the usercmd-level list/delete behaviour, not
+    -- branch_exists()'s own git-command logic.
+    local current_branch_value = "live-branch"
+    local git_stub = H.stub("sessions.git", {
+      resolve_name = function()
+        return "n-a"
+      end,
+      current_branch = function()
+        return current_branch_value
+      end,
+      branch_exists = function(_cwd, branch)
+        if branch == "gone-branch" then
+          return false
+        end
+        if branch == "live-branch" then
+          return true
+        end
+        return nil
+      end,
+    })
+    config.setup({
+      root = root,
+      branch_aware = true,
+      project_aware = false,
+      metadata = true,
+      restore_buffer_order = false,
+    })
+
+    vim.cmd("Session save has-a-live-branch")
+    current_branch_value = "gone-branch"
+    vim.cmd("Session save has-a-gone-branch")
+
+    vim.cmd("Session stale")
+    H.contains(last(), "has-a-gone-branch", "stale lists the orphaned session")
+    H.excludes(last(), "has-a-live-branch", "...but not the live one")
+
+    -- Declining the confirm changes nothing.
+    local real_confirm = vim.fn.confirm
+    vim.fn.confirm = function()
+      return 2 -- "No"
+    end
+    vim.cmd("Session delete-stale")
+    H.eq(
+      vim.fn.filereadable(root .. "/has-a-gone-branch.vim"),
+      1,
+      "declining the confirm deletes nothing"
+    )
+
+    -- Accepting deletes exactly the stale one.
+    vim.fn.confirm = function()
+      return 1 -- "Yes"
+    end
+    vim.cmd("Session delete-stale")
+    H.contains(last(), "info: deleted: has-a-gone-branch", "delete-stale reports what it removed")
+    H.eq(
+      vim.fn.filereadable(root .. "/has-a-gone-branch.vim"),
+      0,
+      "the stale session's .vim file is gone"
+    )
+    H.eq(vim.fn.filereadable(root .. "/.has-a-gone-branch.json"), 0, "...and its metadata sidecar")
+    H.eq(vim.fn.filereadable(root .. "/has-a-live-branch.vim"), 1, "the live session is untouched")
+
+    vim.cmd("Session stale")
+    H.contains(last(), "No stale sessions.", "nothing left to report")
+
+    vim.fn.confirm = real_confirm
+    git_stub()
+    config.setup({
+      root = root,
+      branch_aware = false,
+      project_aware = false,
+      metadata = true,
+      restore_buffer_order = false,
+    })
+  end
+
   vim.cmd("Session rename alpha renamed")
   H.contains(last(), "info: renamed ", "renaming reports both names")
   H.eq(vim.fn.filereadable(root .. "/renamed.vim"), 1, "and the file moved")

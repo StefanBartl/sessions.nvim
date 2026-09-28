@@ -78,6 +78,43 @@ function M.project_root(markers)
   return nil
 end
 
+--- Whether `branch` still exists as a local branch in the repo recorded at
+--- `cwd`. Used to detect a stale session (`:Session stale`/`delete-stale`):
+--- its own recorded `cwd`/`branch` no longer add up to a real, checkoutable
+--- branch, most often because the worktree that `cwd` pointed at was
+--- removed after its branch got merged.
+---
+--- `false` when this is *confidently* answerable -- `cwd` itself is gone,
+--- or it exists but is no longer a git repo, or it is a git repo without
+--- that branch; `nil` when it genuinely cannot be told either way (the
+--- directory and the repo both check out, but the actual ref listing
+--- itself failed for some other reason). A caller must never collapse
+--- those two into the same "stale" verdict -- ambiguous is not the same as
+--- confirmed-gone.
+---@param cwd string
+---@param branch string
+---@return boolean|nil
+function M.branch_exists(cwd, branch)
+  if type(cwd) ~= "string" or cwd == "" or type(branch) ~= "string" or branch == "" then
+    return nil
+  end
+  if vim.fn.isdirectory(cwd) == 0 then
+    return false -- the directory itself is gone -- confidently stale
+  end
+  local ok_git, git = pcall(require, "lib.nvim.git")
+  if not ok_git then
+    return nil -- no way to ask at all -- ambiguous, not confirmed-gone
+  end
+  if not git.in_git_repo({ dir = cwd }) then
+    return false -- exists, but no repo there anymore -- confidently stale
+  end
+  local ok_refs, refs = pcall(git.refs, cwd, { branches = true, remotes = false, tags = false })
+  if not ok_refs or type(refs) ~= "table" then
+    return nil -- a real repo, but the ref listing itself failed -- ambiguous
+  end
+  return vim.tbl_contains(refs, branch)
+end
+
 --- Sanitize a string into a filesystem-safe session name segment: whitelist
 --- word chars, dash and underscore; everything else becomes a dash.
 ---@param s string|nil  nil or empty -> ""
