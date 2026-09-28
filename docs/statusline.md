@@ -97,7 +97,7 @@ require("sessions").setup({
   chip = {
     enable = true,                        -- the default; set false to go back to notify-only
     anchor = "bottom-left",               -- the default; or bottom-right / top-left / top-right
-    shape = "rounded",                    -- rounded (bordered capsule, the default) | rect (flat, borderless block -- the "normal" shape) | text (no box at all)
+    shape = "rounded_chip",                -- rounded_chip (bordered capsule, the default) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
     color = "DiagnosticInfo",             -- a highlight group, or { fg = "#...", bg = "#..." }
     timeout_ms = 3000,                    -- the default (ms); false (or <= 0) keeps it on screen permanently
     pulse = true,                         -- flash on save/load/autoload

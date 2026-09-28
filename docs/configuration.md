@@ -121,7 +121,7 @@ require("sessions").setup({
   chip = {
     enable = true,
     anchor = "bottom-left",      -- bottom-right | top-left | top-right
-    shape = "rounded",           -- rounded (bordered capsule) | rect (flat, borderless block -- "normal") | text (no box at all)
+    shape = "rounded_chip",       -- rounded_chip (bordered capsule) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
     color = nil,                 -- a highlight-group name, or { fg = "#...", bg = "#..." }
     timeout_ms = 3000,           -- ms before it auto-hides; false (or <= 0) = stay up permanently
     pulse = true,                -- flash the chip's colour on save/load/autoload

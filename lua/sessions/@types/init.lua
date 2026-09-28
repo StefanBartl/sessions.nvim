@@ -87,10 +87,15 @@
 ---or an explicit fixed pair.
 ---@alias Sessions.Chip.Color string|{ fg: string|integer, bg?: (string|integer)? }
 
+--- The three canonical ui.kit.presets names, plus the old ones they replace
+--- ("rounded"->"rounded_chip", "rect"->"chip", "text"->"classic") -- ui.kit.chip
+--- normalizes either spelling, so both keep working.
+---@alias Sessions.Chip.Shape "classic"|"chip"|"rounded_chip"|"rounded"|"rect"|"text"
+
 ---@class Sessions.Chip.Config
 ---@field enable boolean
 ---@field anchor "bottom-left"|"bottom-right"|"top-left"|"top-right"
----@field shape "rounded"|"rect"|"text"
+---@field shape Sessions.Chip.Shape
 ---@field color Sessions.Chip.Color|nil
 ---@field timeout_ms integer|false        Auto-hide after this long (ms); false/<=0 = stay up permanently
 ---@field pulse boolean                  Flash the chip's colour on save/load/autoload
@@ -140,7 +145,7 @@
 ---@class Sessions.Chip.Opts
 ---@field enable?            boolean
 ---@field anchor?            "bottom-left"|"bottom-right"|"top-left"|"top-right"
----@field shape?             "rounded"|"rect"|"text"
+---@field shape?             Sessions.Chip.Shape
 ---@field color?             Sessions.Chip.Color|nil
 ---@field timeout_ms?        integer|false
 ---@field pulse?             boolean
