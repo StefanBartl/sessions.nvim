@@ -127,8 +127,26 @@ return {
   chip = {
     enable = true,
     anchor = "bottom-left", -- "bottom-left" | "bottom-right" | "top-left" | "top-right"
-    shape = "rounded_chip", -- "rounded_chip" (bordered capsule, the default) | "chip" (flat, borderless block) | "classic" (no box at all); old names ("rounded"/"rect"/"text") still work, see ui.kit.presets
-    color = nil, -- a highlight-group name, or { fg = "#...", bg = "#..." }; nil = kit's own default
+    -- "dock_left" (the default): rounded everywhere except the left edge,
+    -- meant to sit flush against the screen's left edge and (with `dock`
+    -- below) a real statusline row, fused with it rather than floating
+    -- free. "rounded_chip" (bordered capsule) | "chip" (flat, borderless
+    -- block) | "classic" (no box at all); old names ("rounded"/"rect"/
+    -- "text") still work, see ui.kit.presets.
+    shape = "dock_left",
+    color = nil, -- a highlight-group name, { fg = "#...", bg = "#..." }, or a zero-arg function returning either; nil = kit's own default
+    -- Sit flush on the statusline row (no gap) instead of floating just
+    -- above it -- degrades to the ordinary placement when there is no real
+    -- statusline row to dock against (`laststatus = 0`, or no statusline
+    -- plugin active at all), so this stays safe as a default either way.
+    -- Independent of `shape` (pairs naturally with "dock_left", but either
+    -- can be set without the other).
+    dock = true,
+    -- Refresh the chip on every ModeChanged -- only useful paired with a
+    -- `color` function that itself tracks the mode (see `color` above); off
+    -- by default, since a plain colour has nothing to gain from it and this
+    -- adds one more autocmd per chip that enables it.
+    track_mode = false,
     -- How long the chip stays visible after it appears (startup, save,
     -- load), in ms. A number auto-hides it after that long; `false` (or
     -- any number <= 0) keeps it up permanently instead, the old always-on

@@ -85,19 +85,27 @@
 ---@field chip Sessions.Chip.Config      Persistent ui.kit.chip indicator (replaces the save/load/autoload notify while active); on by default
 
 ---A colour accepted by `ui.kit.chip`: a highlight-group name (theme-linked),
----or an explicit fixed pair.
----@alias Sessions.Chip.Color string|{ fg: string|integer, bg?: (string|integer)? }
+---an explicit fixed pair, or a zero-arg function returning either -- for a
+---colour with no single stable source, e.g. a statusline that switches
+---*which* highlight group it references as the mode changes (pair with
+---`track_mode = true` below so the chip actually repaints when it does).
+---@alias Sessions.Chip.Color string|{ fg: string|integer, bg?: (string|integer)? }|fun():(string|{ fg: string|integer, bg?: (string|integer)? }|nil)
 
---- The three canonical ui.kit.presets names, plus the old ones they replace
---- ("rounded"->"rounded_chip", "rect"->"chip", "text"->"classic") -- ui.kit.chip
---- normalizes either spelling, so both keep working.
----@alias Sessions.Chip.Shape "classic"|"chip"|"rounded_chip"|"rounded"|"rect"|"text"
+--- The four `ui.kit.presets` shape names this chip accepts, plus the old
+--- ones they replace ("rounded"->"rounded_chip", "rect"->"chip",
+--- "text"->"classic") -- ui.kit.chip normalizes either spelling, so both
+--- keep working. `"dock_left"` is `ui.kit.chip`'s own extra shape, not part
+--- of the three-value shared vocabulary the others come from -- see
+--- `dock` below, meant to pair with it.
+---@alias Sessions.Chip.Shape "classic"|"chip"|"rounded_chip"|"dock_left"|"rounded"|"rect"|"text"
 
 ---@class Sessions.Chip.Config
 ---@field enable boolean
 ---@field anchor "bottom-left"|"bottom-right"|"top-left"|"top-right"
 ---@field shape Sessions.Chip.Shape
 ---@field color Sessions.Chip.Color|nil
+---@field dock boolean                    Sit flush on the statusline row (no gap) instead of floating just above it; degrades to the ordinary placement without a real statusline row to dock against, so this stays safe even without `ui.nvim`'s own statusline
+---@field track_mode boolean              Refresh the chip on every `ModeChanged` -- only useful paired with a `color` function that itself tracks the mode; off by default, since most `color` values have nothing to gain from it
 ---@field timeout_ms integer|false        Auto-hide after this long (ms); false/<=0 = stay up permanently
 ---@field pulse boolean                  Flash the chip's colour on save/load/autoload
 ---@field pulse_color Sessions.Chip.Color|nil

@@ -94,12 +94,16 @@ return function(H)
 
   do
     -- The chip is meant to be a brief startup/save/load flash, bottom-left,
-    -- rounded -- not the old permanent top-right indicator. Asserted directly
-    -- against the resolved config rather than through the mount plumbing.
+    -- docked flush against the statusline -- not the old permanent
+    -- top-right indicator, nor a box floating free above the statusline
+    -- with a gap. Asserted directly against the resolved config rather than
+    -- through the mount plumbing.
     config.setup({})
     local c = config.cfg.chip
     H.eq(c.anchor, "bottom-left", "default anchor is bottom-left")
-    H.eq(c.shape, "rounded_chip", "default shape is rounded_chip")
+    H.eq(c.shape, "dock_left", "default shape is dock_left")
+    H.ok(c.dock, "default dock is true")
+    H.falsy(c.track_mode, "default track_mode is false (opt-in)")
     H.eq(c.timeout_ms, 3000, "default timeout_ms is 3000 (3s)")
   end
 
@@ -112,6 +116,8 @@ return function(H)
         anchor = "top-right",
         shape = "rect",
         color = "DiagnosticInfo",
+        dock = false,
+        track_mode = true,
         timeout_ms = false, -- persistent for this block: it tests call-forwarding, not the auto-hide timer
         pulse = true,
         pulse_color = "DiagnosticError",
@@ -129,6 +135,8 @@ return function(H)
     H.eq(calls[1][2].anchor, "top-right", "cfg.chip.anchor is forwarded")
     H.eq(calls[1][2].shape, "rect", "cfg.chip.shape is forwarded")
     H.eq(calls[1][2].color, "DiagnosticInfo", "cfg.chip.color is forwarded")
+    H.falsy(calls[1][2].dock, "cfg.chip.dock is forwarded")
+    H.ok(calls[1][2].track_mode, "cfg.chip.track_mode is forwarded")
     H.eq(type(calls[1][2].text), "function", "text is a provider function, not a snapshot")
 
     local restore_statusline = H.stub("sessions.statusline", {

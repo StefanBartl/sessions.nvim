@@ -129,8 +129,10 @@ require("sessions").setup({
   chip = {
     enable = true,
     anchor = "bottom-left",      -- bottom-right | top-left | top-right
-    shape = "rounded_chip",       -- rounded_chip (bordered capsule) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
-    color = nil,                 -- a highlight-group name, or { fg = "#...", bg = "#..." }
+    shape = "dock_left",         -- dock_left (rounded except the left edge, pairs with dock below) | rounded_chip (bordered capsule) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
+    color = nil,                 -- a highlight-group name, { fg = "#...", bg = "#..." }, or a zero-arg function returning either
+    dock = true,                 -- sit flush on the statusline row (no gap) instead of floating just above it; degrades to the ordinary placement without a real statusline row, safe either way
+    track_mode = false,          -- refresh the chip on every mode change -- only useful paired with a `color` function that itself tracks the mode
     timeout_ms = 3000,           -- ms before it auto-hides; false (or <= 0) = stay up permanently
     pulse = true,                -- flash the chip's colour on save/load/autoload
     pulse_color = nil,           -- nil = kit.chip.pulse's own default ("DiagnosticWarn")

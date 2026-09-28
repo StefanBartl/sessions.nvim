@@ -107,6 +107,8 @@ function M.ensure_mounted()
     anchor = c.anchor,
     shape = c.shape,
     color = c.color,
+    dock = c.dock,
+    track_mode = c.track_mode,
   })
   mounted = true
   schedule_hide()
