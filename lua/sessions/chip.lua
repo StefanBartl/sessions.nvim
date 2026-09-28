@@ -57,6 +57,30 @@ local function cfg()
 end
 
 ---@internal
+---`"dock_left"` (the default shape) blanks its own left border/corners on
+---the assumption the chip sits flush against the screen's *left* edge --
+---exactly what `anchor = "bottom-left"`/`"top-left"` (the default) puts it
+---at, but backwards for `"bottom-right"`/`"top-right"`: the blank edge would
+---then face into the middle of the screen and the rounded one would touch
+---nothing, a visibly broken-looking box rather than a stylistic quirk.
+---There is no mirrored `"dock_right"` preset (Issue 4 -- and this default --
+---were only ever about the left corner), so a right-side anchor falls back
+---to the plain, symmetric `"rounded_chip"` instead of forwarding a shape
+---that would render wrong there. Only steps in for the shape ACTUALLY
+---backing the dock look -- an explicit non-"dock_left" `shape` (e.g. a user
+---who wants `"chip"`/`"classic"` at a right anchor) passes through
+---untouched.
+---@param anchor string
+---@param shape string
+---@return string
+local function effective_shape(anchor, shape)
+  if shape == "dock_left" and anchor ~= "bottom-left" and anchor ~= "top-left" then
+    return "rounded_chip"
+  end
+  return shape
+end
+
+---@internal
 ---(Re)schedule hiding the chip after `cfg.chip.timeout_ms` ms, cancelling
 ---any previously scheduled hide first (the generation check below). A
 ---non-positive or non-number `timeout_ms` (`false` is the documented way to
@@ -105,7 +129,7 @@ function M.ensure_mounted()
       return visible
     end,
     anchor = c.anchor,
-    shape = c.shape,
+    shape = effective_shape(c.anchor, c.shape),
     color = c.color,
     dock = c.dock,
     track_mode = c.track_mode,

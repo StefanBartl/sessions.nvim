@@ -105,8 +105,8 @@ what it always was.
 require("sessions").setup({
   chip = {
     enable = true,                        -- the default; set false to go back to notify-only
-    anchor = "bottom-left",               -- the default; or bottom-right / top-left / top-right
-    shape = "dock_left",                  -- the default: rounded except the screen-edge-facing left side; rounded_chip (bordered capsule) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
+    anchor = "bottom-left",               -- the default; or bottom-right / top-left / top-right -- switching to a right-side anchor auto-falls back shape "dock_left" -> "rounded_chip" so it never renders backwards (only kicks in for that one shape; an explicit "chip"/"classic" passes through untouched)
+    shape = "dock_left",                  -- the default: rounded except the LEFT edge, only correct paired with a left anchor; rounded_chip (bordered capsule) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
     dock = true,                          -- the default: flush on the statusline row, no gap; degrades safely without a real statusline row
     color = "DiagnosticInfo",             -- a highlight group, { fg = "#...", bg = "#..." }, or a zero-arg function returning either
     track_mode = false,                   -- the default; refresh on every mode change -- only useful paired with a `color` function that tracks it
