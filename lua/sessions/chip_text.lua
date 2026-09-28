@@ -63,11 +63,18 @@ end
 ---shape, and safer than raising out of a `text` provider `ui.kit.chip`
 ---itself already pcalls, but which this module's own tests should still
 ---be able to assert against directly.
+---
+---The key pattern (`[%w%._]`) deliberately also accepts `_`, even though
+---no real key uses one: without it, a plausible-looking but wrong typo
+---like `{icon_folder}` (an underscore instead of the real `.`) would not
+---match `{...}` as a placeholder AT ALL -- Lua's `%w` does not include
+---`_` -- and render completely literally in the chip's text instead of
+---the documented "renders as empty" for an unrecognized key.
 ---@param template string
 ---@param values table<string, string>
 ---@return string
 local function render_template(template, values)
-  return (template:gsub("{([%w%.]+)}", function(key)
+  return (template:gsub("{([%w%._]+)}", function(key)
     return values[key] or ""
   end))
 end
@@ -94,7 +101,16 @@ local function live_parts()
 
   local branch = nil
   if cfg.branch_aware then
-    local b = git.current_branch()
+    -- `current_branch_no_spawn()`, not `current_branch()`: this runs on
+    -- every ui.kit.chip refresh (an editing-rate event -- BufAdd/
+    -- BufDelete/WinNew/WinClosed/TabNewEntered/TabClosed), and
+    -- current_branch() prefers a real `git` subprocess whenever
+    -- lib.nvim.git is installed (which it always is here -- a hard
+    -- dependency for this plugin). That is the right choice for
+    -- current_branch()'s own, much rarer caller (session-name
+    -- resolution), but a real, measurable cost on this one -- see
+    -- current_branch_no_spawn()'s own doc comment.
+    local b = git.current_branch_no_spawn()
     branch = (b and b ~= "") and b or nil
   end
 
