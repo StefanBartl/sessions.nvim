@@ -70,11 +70,30 @@ end
 ---backing the dock look -- an explicit non-"dock_left" `shape` (e.g. a user
 ---who wants `"chip"`/`"classic"` at a right anchor) passes through
 ---untouched.
+---An invalid/unrecognized `anchor` (config validation accepts any string
+---unchecked -- there is no enum check) is resolved the same way
+---`ui.kit.chip.mount()` itself resolves one: falls back to `"bottom-left"`,
+---not treated as "not a left anchor". Without this, a typo'd anchor made
+---this fall back to `"rounded_chip"` even though the chip actually ends up
+---anchored bottom-left -- where `"dock_left"` would have been correct.
+---@type table<string, true>
+local VALID_ANCHORS = {
+  ["bottom-left"] = true,
+  ["bottom-right"] = true,
+  ["top-left"] = true,
+  ["top-right"] = true,
+}
+
 ---@param anchor string
 ---@param shape string
 ---@return string
 local function effective_shape(anchor, shape)
-  if shape == "dock_left" and anchor ~= "bottom-left" and anchor ~= "top-left" then
+  local resolved_anchor = VALID_ANCHORS[anchor] and anchor or "bottom-left"
+  if
+    shape == "dock_left"
+    and resolved_anchor ~= "bottom-left"
+    and resolved_anchor ~= "top-left"
+  then
     return "rounded_chip"
   end
   return shape
