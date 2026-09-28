@@ -133,6 +133,7 @@ require("sessions").setup({
     color = nil,                 -- a highlight-group name, { fg = "#...", bg = "#..." }, or a zero-arg function returning either
     dock = true,                 -- sit flush on the statusline row (no gap) instead of floating just above it; degrades to the ordinary placement without a real statusline row, safe either way
     track_mode = false,          -- refresh the chip on every mode change -- only useful paired with a `color` function that itself tracks the mode
+    text = "modern",             -- "modern" (icon + folder, then icon + branch, live -- not a parse of the resolved name) | "classic_text" (today's plain resolved name) | a table for full control -- see "Chip text" in docs/statusline.md
     timeout_ms = 3000,           -- ms before it auto-hides; false (or <= 0) = stay up permanently
     pulse = true,                -- flash the chip's colour on save/load/autoload
     pulse_color = nil,           -- nil = kit.chip.pulse's own default ("DiagnosticWarn")

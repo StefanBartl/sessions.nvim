@@ -141,6 +141,12 @@ local KNOWN = {
     color = true,
     dock = true,
     track_mode = true,
+    -- A bare preset string or a table ({preset=, icons=, template=}) --
+    -- accepted as a leaf like `color` above, not validated field-by-field:
+    -- `icons` in particular only ever needs the keys the caller wants to
+    -- override (see sessions.chip_text), which a fixed nested schema here
+    -- would fight rather than help.
+    text = true,
     timeout_ms = true,
     pulse = true,
     pulse_color = true,

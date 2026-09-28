@@ -99,6 +99,25 @@
 --- `dock` below, meant to pair with it.
 ---@alias Sessions.Chip.Shape "classic"|"chip"|"rounded_chip"|"dock_left"|"rounded"|"rect"|"text"
 
+--- `"classic_text"` -- today's exact one-line output (delegates straight to
+--- `sessions.statusline.component()`). `"modern"` -- one line per part that
+--- actually resolved live (`sessions.git.project_root()`/`current_branch()`,
+--- never a parse of the resolved session name -- see `sessions.chip_text`'s
+--- own doc comment for why), each prefixed by its own icon; falls back to
+--- `"classic_text"`'s output when neither resolves at all.
+---@alias Sessions.Chip.TextPreset "classic_text"|"modern"
+
+---@class Sessions.Chip.TextIcons
+---@field folder? string  Default: neo-tree's own built-in `folder_closed` glyph (U+E5FF)
+---@field branch? string  Default: the same glyph `ui.nvim`'s own statusline uses for a git branch
+
+--- Full control over the chip's text. A bare `Sessions.Chip.TextPreset`
+--- string is shorthand for `{ preset = that }`.
+---@class Sessions.Chip.TextConfig
+---@field preset? Sessions.Chip.TextPreset          Default "modern"
+---@field icons? Sessions.Chip.TextIcons             Only the ones you want to override -- unset ones keep their own default
+---@field template? string  `"modern"`'s own per-part-line shape overridden wholesale: `folder`/`branch`/`icon.folder`/`icon.branch` placeholders in `{curly}` braces, `\n` for a line break. Rendered even when a part is empty (unlike the built-in "modern" shape, which omits that whole line instead) -- an explicit template is the caller's own layout, honoured literally.
+
 ---@class Sessions.Chip.Config
 ---@field enable boolean
 ---@field anchor "bottom-left"|"bottom-right"|"top-left"|"top-right"
@@ -106,6 +125,7 @@
 ---@field color Sessions.Chip.Color|nil
 ---@field dock boolean                    Sit flush on the statusline row (no gap) instead of floating just above it; degrades to the ordinary placement without a real statusline row to dock against, so this stays safe even without `ui.nvim`'s own statusline
 ---@field track_mode boolean              Refresh the chip on every `ModeChanged` -- only useful paired with a `color` function that itself tracks the mode; off by default, since most `color` values have nothing to gain from it
+---@field text Sessions.Chip.TextConfig|Sessions.Chip.TextPreset  What the chip actually shows -- see `sessions.chip_text`; default "modern"
 ---@field timeout_ms integer|false        Auto-hide after this long (ms); false/<=0 = stay up permanently
 ---@field pulse boolean                  Flash the chip's colour on save/load/autoload
 ---@field pulse_color Sessions.Chip.Color|nil
