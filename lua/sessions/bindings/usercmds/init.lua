@@ -150,6 +150,37 @@ local function do_load(name)
   end
 end
 
+---@class Sessions.StaleEntry
+---@field name string
+---@field path string
+---@field meta Sessions.Meta
+
+---@internal
+---Every saved session whose own recorded `cwd`/`branch` (written at save
+---time by `core.save()`, whenever `branch_aware`/`project_aware` were on)
+---no longer add up to a real, checkoutable branch -- see
+---`sessions.git.branch_exists()`'s own doc comment for exactly what counts
+---as confidently stale versus merely ambiguous (skipped, never listed).
+---A session with no recorded `branch`/`cwd` at all (custom name, or saved
+---with both `*_aware` options off) is never a candidate -- there is nothing
+---to re-check it against.
+---@return Sessions.StaleEntry[]
+local function find_stale()
+  local core = require("sessions.core")
+  local git = require("sessions.git")
+  local out = {}
+  for _, path in ipairs(core.list()) do
+    local name = vim.fn.fnamemodify(path, ":t:r")
+    local meta = core.metadata(name)
+    if meta and meta.branch and meta.cwd then
+      if git.branch_exists(meta.cwd, meta.branch) == false then
+        out[#out + 1] = { name = name, path = path, meta = meta }
+      end
+    end
+  end
+  return out
+end
+
 ---Register the `:Session <subcommand>` verb, `:LastSession`, and
 ---`:SessionLoad` user commands.
 ---@return nil
@@ -195,6 +226,66 @@ function M.enable()
             require("sessions.chip").refresh()
           else
             n().error("delete failed: " .. (res or "?"))
+          end
+        end,
+      },
+
+      {
+        path = { "stale" },
+        desc = "List saved sessions whose recorded branch no longer exists",
+        run = function()
+          local stale = find_stale()
+          if #stale == 0 then
+            n().info("No stale sessions.")
+            return
+          end
+          local lines = {}
+          for _, s in ipairs(stale) do
+            lines[#lines + 1] = s.name .. "  [" .. s.meta.branch .. "]  " .. s.meta.cwd
+          end
+          n().info(table.concat(lines, "\n"))
+        end,
+      },
+
+      {
+        path = { "delete-stale" },
+        desc = "Delete every stale session (see :Session stale), one confirm for the whole batch",
+        run = function()
+          local stale = find_stale()
+          if #stale == 0 then
+            n().info("No stale sessions.")
+            return
+          end
+          -- Ask once for the whole batch, not once per session -- same
+          -- pattern ui.tabline's close_all_bufs/close_bufs use for "discard
+          -- changes in N modified buffers?".
+          local names = {}
+          for _, s in ipairs(stale) do
+            names[#names + 1] = s.name
+          end
+          local choice = vim.fn.confirm(
+            ("Delete %d stale session(s)?\n\n%s"):format(#stale, table.concat(names, "\n")),
+            "&Yes\n&No",
+            2
+          )
+          if choice ~= 1 then
+            return
+          end
+          local deleted, failed = {}, {}
+          for _, s in ipairs(stale) do
+            local ok = require("sessions.core").delete(s.name)
+            if ok then
+              deleted[#deleted + 1] = s.name
+            else
+              failed[#failed + 1] = s.name
+            end
+          end
+          if #deleted > 0 then
+            n().info("deleted: " .. table.concat(deleted, ", "))
+            require("sessions.chip").refresh()
+          end
+          if #failed > 0 then
+            n().error("failed to delete: " .. table.concat(failed, ", "))
           end
         end,
       },

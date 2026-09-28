@@ -189,6 +189,67 @@ return function(H)
   root_root()
   fake_branch()
 
+  -- ----------------------------------------------------------- branch_exists
+  -- Stubbed the same way the "via lib.nvim" blocks above are -- this function
+  -- always goes through lib.nvim.git (a hard dependency for sessions.nvim
+  -- overall, unlike current_branch/project_root's own hand-rolled fallback,
+  -- which exists to avoid spawning git on the hot "every session name
+  -- resolution" path; branch_exists only runs on a rare, deliberate
+  -- :Session stale/delete-stale, so that tradeoff does not apply here).
+
+  H.falsy(
+    git.branch_exists(dir .. "/does-not-exist-at-all", "main"),
+    "a missing directory is confidently NOT stale-ambiguous -- false, not nil"
+  )
+  H.eq(git.branch_exists(dir .. "/does-not-exist-at-all", "main"), false, "...specifically false")
+
+  local not_a_repo = dir .. "/not-a-repo"
+  vim.fn.mkdir(not_a_repo, "p")
+  local undo_not_repo = H.stub("lib.nvim.git", {
+    in_git_repo = function()
+      return false
+    end,
+  })
+  H.eq(
+    git.branch_exists(not_a_repo, "main"),
+    false,
+    "a directory that exists but isn't a repo: false"
+  )
+  undo_not_repo()
+
+  local repo_dir = dir .. "/branch-exists-repo"
+  vim.fn.mkdir(repo_dir, "p")
+
+  local undo_has_branch = H.stub("lib.nvim.git", {
+    in_git_repo = function()
+      return true
+    end,
+    refs = function()
+      return { "main", "feature/login" }
+    end,
+  })
+  H.eq(git.branch_exists(repo_dir, "main"), true, "a branch actually in the ref listing: true")
+  H.eq(git.branch_exists(repo_dir, "long-gone"), false, "one that isn't there: confidently false")
+  undo_has_branch()
+
+  local undo_refs_fail = H.stub("lib.nvim.git", {
+    in_git_repo = function()
+      return true
+    end,
+    refs = function()
+      error("boom: git for-each-ref failed")
+    end,
+  })
+  H.eq(
+    git.branch_exists(repo_dir, "main"),
+    nil,
+    "a real repo whose ref listing itself fails: nil, not false -- ambiguous is not confirmed-gone"
+  )
+  undo_refs_fail()
+
+  H.eq(git.branch_exists("", "main"), nil, "an empty cwd is refused rather than guessed at")
+  H.eq(git.branch_exists(repo_dir, ""), nil, "so is an empty branch name")
+
   cd(start_cwd)
   cleanup()
 end
