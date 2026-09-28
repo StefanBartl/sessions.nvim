@@ -112,17 +112,18 @@ require("sessions").setup({
     preview_key = false,           -- e.g. "<M-%d>":     <M-1>..9 preview entry N
   },
 
-  -- A persistent editor-corner indicator (ui.kit.chip) mirroring the same
-  -- text as sessions.statusline.component(). On by default; soft dependency
-  -- on ui.kit -- does nothing when it isn't installed, so this default is a
-  -- no-op without it. While it is actually mounted, it REPLACES the notify
+  -- An editor-corner indicator (ui.kit.chip) mirroring the same text as
+  -- sessions.statusline.component(). On by default; soft dependency on
+  -- ui.kit -- does nothing when it isn't installed, so this default is a
+  -- no-op without it. While it is actually shown, it REPLACES the notify
   -- above instead of showing alongside it -- only one session-status
   -- indicator at a time. See docs/statusline.md.
   chip = {
     enable = true,
-    anchor = "top-right",       -- bottom-left | bottom-right | top-left | top-right
-    shape = "rounded",          -- rounded (bordered capsule) | rect (borderless block) | text (no box at all)
-    color = nil,                -- a highlight-group name, or { fg = "#...", bg = "#..." }
+    anchor = "bottom-left",      -- bottom-right | top-left | top-right
+    shape = "rounded",           -- rounded (bordered capsule) | rect (flat, borderless block -- "normal") | text (no box at all)
+    color = nil,                 -- a highlight-group name, or { fg = "#...", bg = "#..." }
+    timeout_ms = 3000,           -- ms before it auto-hides; false (or <= 0) = stay up permanently
     pulse = true,                -- flash the chip's colour on save/load/autoload
     pulse_color = nil,           -- nil = kit.chip.pulse's own default ("DiagnosticWarn")
     pulse_duration_ms = nil,     -- nil = kit.chip.pulse's own default (300)

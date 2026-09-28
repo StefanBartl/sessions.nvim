@@ -92,6 +92,7 @@
 ---@field anchor "bottom-left"|"bottom-right"|"top-left"|"top-right"
 ---@field shape "rounded"|"rect"|"text"
 ---@field color Sessions.Chip.Color|nil
+---@field timeout_ms integer|false        Auto-hide after this long (ms); false/<=0 = stay up permanently
 ---@field pulse boolean                  Flash the chip's colour on save/load/autoload
 ---@field pulse_color Sessions.Chip.Color|nil
 ---@field pulse_duration_ms integer|nil
@@ -141,6 +142,7 @@
 ---@field anchor?            "bottom-left"|"bottom-right"|"top-left"|"top-right"
 ---@field shape?             "rounded"|"rect"|"text"
 ---@field color?             Sessions.Chip.Color|nil
+---@field timeout_ms?        integer|false
 ---@field pulse?             boolean
 ---@field pulse_color?       Sessions.Chip.Color|nil
 ---@field pulse_duration_ms? integer|nil
