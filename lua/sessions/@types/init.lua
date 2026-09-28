@@ -125,6 +125,8 @@
 ---@field color Sessions.Chip.Color|nil
 ---@field dock boolean                    Sit flush on the statusline row (no gap) instead of floating just above it; degrades to the ordinary placement without a real statusline row to dock against, so this stays safe even without `ui.nvim`'s own statusline
 ---@field track_mode boolean              Refresh the chip on every `ModeChanged` -- only useful paired with a `color` function that itself tracks the mode; off by default, since most `color` values have nothing to gain from it
+---@field row_offset integer|nil          Added to `ui.kit.chip`'s own computed row after anchor/dock placement -- a plain per-user/per-setup nudge, not resolved specially here; unset/0 = no change. Cannot reach past what Neovim's own grid renders into (a host terminal's own OUTER padding sits outside that grid entirely and no offset can compensate for it -- see `ui.kit.chip`'s own docs for `row_offset`/`col_offset`)
+---@field col_offset integer|nil          Same as `row_offset`, applied to the column
 ---@field text Sessions.Chip.TextConfig|Sessions.Chip.TextPreset  What the chip actually shows -- see `sessions.chip_text`; default "modern"
 ---@field timeout_ms integer|false        Auto-hide after this long (ms); false/<=0 = stay up permanently
 ---@field pulse boolean                  Flash the chip's colour on save/load/autoload

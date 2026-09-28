@@ -147,6 +147,15 @@ return {
     -- by default, since a plain colour has nothing to gain from it and this
     -- adds one more autocmd per chip that enables it.
     track_mode = false,
+    -- A plain per-user/per-setup nudge on top of the computed placement --
+    -- unset/0 by default, no behaviour change for anyone who doesn't set
+    -- one. Forwarded straight to ui.kit.chip.mount()'s own row_offset/
+    -- col_offset; see that field's own doc for what it can and can't
+    -- reach (a host terminal's own outer padding, e.g. WezTerm's
+    -- window_padding, sits outside anything Neovim draws into -- no
+    -- offset compensates for that).
+    row_offset = nil,
+    col_offset = nil,
     -- What the chip actually shows -- see sessions/chip_text.lua. "modern"
     -- (the default): one icon-prefixed line per part that live-resolves
     -- (folder from project_aware, branch from branch_aware), falling back
