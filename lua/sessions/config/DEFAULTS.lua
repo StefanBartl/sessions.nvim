@@ -111,20 +111,25 @@ return {
     preview_key = false,
   },
 
-  -- A persistent editor-corner indicator (ui.kit.chip). On by default: soft
-  -- dependency on ui.kit -- does nothing when it isn't installed, same as
-  -- the `autoload = "ask"` confirm float's own fallback, so this default
-  -- is a no-op for anyone without ui.kit. While it is actually mounted, it
-  -- REPLACES the plain save/load/autoload notify (see bindings/usercmds.lua,
+  -- An editor-corner indicator (ui.kit.chip). On by default: soft dependency
+  -- on ui.kit -- does nothing when it isn't installed, same as the
+  -- `autoload = "ask"` confirm float's own fallback, so this default is a
+  -- no-op for anyone without ui.kit. While it is actually shown, it REPLACES
+  -- the plain save/load/autoload notify (see bindings/usercmds.lua,
   -- bindings/autocmds.lua) rather than showing alongside it -- only one
   -- session-status indicator at a time. See docs/statusline.md.
   chip = {
     enable = true,
-    anchor = "top-right", -- "bottom-left" | "bottom-right" | "top-left" | "top-right"
-    shape = "rounded", -- "rounded" (bordered capsule) | "rect" (borderless block) | "text" (no box at all)
+    anchor = "bottom-left", -- "bottom-left" | "bottom-right" | "top-left" | "top-right"
+    shape = "rounded", -- "rounded" (bordered capsule, the default) | "rect" (flat, borderless block -- the "normal" shape) | "text" (no box at all)
     color = nil, -- a highlight-group name, or { fg = "#...", bg = "#..." }; nil = kit's own default
+    -- How long the chip stays visible after it appears (startup, save,
+    -- load), in ms. A number auto-hides it after that long; `false` (or
+    -- any number <= 0) keeps it up permanently instead, the old always-on
+    -- behavior.
+    timeout_ms = 3000,
     -- Flash the chip's colour on save/load/autoload, on top of the
-    -- persistent state. `false` keeps the chip's colour steady.
+    -- current state. `false` keeps the chip's colour steady.
     pulse = true,
     pulse_color = nil, -- nil = kit.chip.pulse's own default ("DiagnosticWarn")
     pulse_duration_ms = nil, -- nil = kit.chip.pulse's own default (300)

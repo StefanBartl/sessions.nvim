@@ -90,6 +90,19 @@ return function(H)
     restore()
   end
 
+  -- ---------------------------------------------------------- config defaults
+
+  do
+    -- The chip is meant to be a brief startup/save/load flash, bottom-left,
+    -- rounded -- not the old permanent top-right indicator. Asserted directly
+    -- against the resolved config rather than through the mount plumbing.
+    config.setup({})
+    local c = config.cfg.chip
+    H.eq(c.anchor, "bottom-left", "default anchor is bottom-left")
+    H.eq(c.shape, "rounded", "default shape is rounded")
+    H.eq(c.timeout_ms, 3000, "default timeout_ms is 3000 (3s)")
+  end
+
   -- ------------------------------------------------- enabled, ui.kit present
 
   do
@@ -99,6 +112,7 @@ return function(H)
         anchor = "top-right",
         shape = "rect",
         color = "DiagnosticInfo",
+        timeout_ms = false, -- persistent for this block: it tests call-forwarding, not the auto-hide timer
         pulse = true,
         pulse_color = "DiagnosticError",
         pulse_duration_ms = 42,
@@ -146,13 +160,52 @@ return function(H)
   -- ------------------------------------------------------------ pulse = false
 
   do
-    setup({ chip = { enable = true, pulse = false } })
+    setup({ chip = { enable = true, pulse = false, timeout_ms = false } })
     local chip = load_module()
     local calls, restore = stub_recording_kit()
 
     chip.ensure_mounted()
     chip.pulse()
+    -- Already visible from ensure_mounted, so the reveal is a no-op too.
     H.eq(#calls, 1, "pulse = false: only the mount call, no pulse")
+
+    restore()
+  end
+
+  -- --------------------------------------------- timeout_ms auto-hide + pulse reveal
+
+  do
+    -- A short real timeout so the test observes the actual auto-hide behind
+    -- `vim.defer_fn`, then confirms `pulse()` revives a chip that already
+    -- faded out and re-arms a fresh countdown.
+    setup({ chip = { enable = true, timeout_ms = 20 } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+
+    chip.ensure_mounted()
+    H.eq(#calls, 1, "ensure_mounted mounts once")
+    H.eq(calls[1][1], "mount")
+
+    H.ok(
+      vim.wait(500, function()
+        return #calls >= 2
+      end, 10),
+      "the chip auto-hides (a second call) within timeout_ms"
+    )
+    H.eq(calls[2][1], "refresh", "auto-hide re-syncs through refresh, not a new mount")
+
+    chip.pulse()
+    H.eq(#calls, 4, "pulse on a hidden chip: one refresh to reveal it, one pulse to flash it")
+    H.eq(calls[3][1], "refresh", "pulse reveals the faded-out chip first")
+    H.eq(calls[4][1], "pulse")
+
+    H.ok(
+      vim.wait(500, function()
+        return #calls >= 5
+      end, 10),
+      "pulse re-armed the countdown: the chip auto-hides again"
+    )
+    H.eq(calls[5][1], "refresh")
 
     restore()
   end

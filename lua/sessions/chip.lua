@@ -1,15 +1,23 @@
 ---@module 'sessions.chip'
----@brief Wires sessions.statusline's component into a persistent
----`ui.kit.chip` corner indicator -- opt-in via `cfg.chip.enable`, soft
----dependency on `ui.kit`: silently does nothing without it installed, same
----as `bindings.autocmds`' own `kit.confirm` fallback.
+---@brief Wires sessions.statusline's component into a `ui.kit.chip` corner
+---indicator -- opt-in via `cfg.chip.enable`, soft dependency on `ui.kit`:
+---silently does nothing without it installed, same as `bindings.autocmds`'
+---own `kit.confirm` fallback.
 ---@description
 ---Only one session-status indicator is ever shown at a time: while the chip
----is actually mounted (`is_active()`), `bindings.usercmds`/`bindings.autocmds`
----skip the plain save/load/autoload notify entirely instead of showing it
----alongside the chip -- the chip's own persistent text plus its `pulse()`
----already say the same thing. Without the chip (off, or `ui.kit` missing),
----the notify is exactly what it always was.
+---is actually visible, `bindings.usercmds`/`bindings.autocmds` skip the plain
+---save/load/autoload notify entirely instead of showing it alongside the
+---chip -- the chip's own text plus its `pulse()` already say the same thing.
+---Without the chip (off, or `ui.kit` missing), the notify is exactly what it
+---always was.
+---
+---The chip is not permanently on screen: `ensure_mounted()` (at startup) and
+---`pulse()` (on every save/load/autoload) reveal it and schedule it to
+---auto-hide again after `cfg.chip.timeout_ms` -- a brief status flash rather
+---than a standing corner indicator, unless `timeout_ms` is `false` (or <= 0),
+---which keeps the old always-on behaviour. `M.refresh()` (wired into the
+---dirty-tracking structural autocmds) only updates the text/asterisk of an
+---already-visible chip; it never reveals a hidden one by itself.
 
 require("sessions.@types")
 
@@ -20,6 +28,15 @@ local CHIP_ID = "sessions"
 
 ---@type boolean
 local mounted = false
+
+---@type boolean
+local visible = false
+
+---Bumped on every `schedule_hide()` call so a stale deferred hide (from an
+---earlier show) can recognize it has been superseded and no-op instead of
+---hiding a chip a later show/pulse just revealed again.
+---@type integer
+local hide_generation = 0
 
 ---@internal
 ---@return table|nil kit  the `ui.kit` module, when both it and its `chip` submodule are present
@@ -39,9 +56,35 @@ local function cfg()
   return c
 end
 
+---@internal
+---(Re)schedule hiding the chip after `cfg.chip.timeout_ms` ms, cancelling
+---any previously scheduled hide first (the generation check below). A
+---non-positive or non-number `timeout_ms` (`false` is the documented way to
+---ask for this) means "persistent": no timer is scheduled at all, so the
+---chip stays up once shown -- the pre-timeout default behaviour.
+local function schedule_hide()
+  hide_generation = hide_generation + 1
+  local my_generation = hide_generation
+  local timeout = cfg().timeout_ms
+  if type(timeout) ~= "number" or timeout <= 0 then
+    return
+  end
+  vim.defer_fn(function()
+    if hide_generation ~= my_generation or not mounted then
+      return
+    end
+    visible = false
+    local kit_mod = kit()
+    if kit_mod then
+      kit_mod.chip.refresh(CHIP_ID)
+    end
+  end, timeout)
+end
+
 ---Mount the chip once, if `cfg.chip.enable` and `ui.kit` is installed. Safe
 ---to call more than once (e.g. from `setup()` and again from a lazy
 ---`VimEnter`) -- only the first call after a config change actually mounts.
+---Also starts the initial show/auto-hide cycle (see the module doc comment).
 ---@return nil
 function M.ensure_mounted()
   if mounted or not cfg().enable then
@@ -52,16 +95,21 @@ function M.ensure_mounted()
     return
   end
   local c = cfg()
+  visible = true
   kit_mod.chip.mount({
     id = CHIP_ID,
     text = function()
       return require("sessions.statusline").component()
+    end,
+    visible = function()
+      return visible
     end,
     anchor = c.anchor,
     shape = c.shape,
     color = c.color,
   })
   mounted = true
+  schedule_hide()
 end
 
 ---Re-read the session state into the chip (its `text` provider is
@@ -78,22 +126,32 @@ function M.refresh()
   end
 end
 
----Flash the chip's colour once (save/load/autoload), unless `cfg.chip.pulse`
----is `false`. A no-op while the chip is off, not installed, or not mounted
------ there is nothing to flash before the first `ensure_mounted`/`refresh`.
+---Reveal the chip (even if a previous `timeout_ms` already hid it) and
+---restart its auto-hide countdown, then flash its colour once, unless
+---`cfg.chip.pulse` is `false` -- that only turns off the colour flash, the
+---reveal/restart still happens. Called on every save/load/autoload. A no-op
+---while the chip is off, not installed, or not mounted -- there is nothing
+---to show before the first `ensure_mounted`.
 ---@return nil
 function M.pulse()
   if not mounted then
     return
   end
+  local kit_mod = kit()
+  if not kit_mod then
+    return
+  end
+  if not visible then
+    visible = true
+    kit_mod.chip.refresh(CHIP_ID)
+  end
+  schedule_hide()
+
   local c = cfg()
   if c.pulse == false then
     return
   end
-  local kit_mod = kit()
-  if kit_mod then
-    kit_mod.chip.pulse(CHIP_ID, { color = c.pulse_color, duration_ms = c.pulse_duration_ms })
-  end
+  kit_mod.chip.pulse(CHIP_ID, { color = c.pulse_color, duration_ms = c.pulse_duration_ms })
 end
 
 ---Whether the chip is actually mounted (`cfg.chip.enable` was true and

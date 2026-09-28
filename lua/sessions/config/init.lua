@@ -138,6 +138,7 @@ local KNOWN = {
     anchor = true,
     shape = true,
     color = true,
+    timeout_ms = true,
     pulse = true,
     pulse_color = true,
     pulse_duration_ms = true,
