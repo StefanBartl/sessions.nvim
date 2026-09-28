@@ -110,6 +110,7 @@ require("sessions").setup({
     dock = true,                          -- the default: flush on the statusline row, no gap; degrades safely without a real statusline row
     color = "DiagnosticInfo",             -- a highlight group, { fg = "#...", bg = "#..." }, or a zero-arg function returning either
     track_mode = false,                   -- the default; refresh on every mode change -- only useful paired with a `color` function that tracks it
+    text = "modern",                      -- the default -- see "Chip text" below
     timeout_ms = 3000,                    -- the default (ms); false (or <= 0) keeps it on screen permanently
     pulse = true,                         -- flash on save/load/autoload
   },
@@ -127,6 +128,56 @@ on the next incidental save/load), and dial `timeout_ms` to taste (a few
 hundred ms for a quick flash, `false` for the old always-on indicator). See
 [ui.kit's own README](https://github.com/StefanBartl/ui.nvim/blob/main/lua/ui/kit/README.md#chip-persistent-corner-status)
 for the primitive itself (any plugin can mount its own chip, not just this one).
+
+### Chip text
+
+What the chip actually *shows* is its own, separate concern from `color`/
+`anchor`/`shape` above — driven by `chip.text` (`sessions/chip_text.lua`),
+not `component()`. Two named presets, plus full custom control:
+
+- `"classic_text"` — today's exact one-line output: delegates straight to
+  `component()` above, verbatim. Pick this to keep the old look.
+- `"modern"` (**the default**) — one icon-prefixed line per part that
+  actually resolves *live* (`sessions.git.project_root()`/`current_branch()`
+  — never a parse of the resolved session *name* back apart, which is
+  ambiguous: a name like `nvim-config_claude-some-branch` has underscores on
+  both sides of the real split, so there is no reliable way to
+  un-concatenate it):
+  ```
+   my-project
+    feature/login
+  ```
+  Only a part that actually resolves gets a line — `branch_aware = false`
+  (or a detached HEAD) means just the folder line, not an icon next to
+  nothing. When **neither** resolves at all (both `*_aware` off, or the
+  session has a custom name unrelated to the live folder/branch),
+  `"modern"` falls back to `"classic_text"`'s output instead.
+
+```lua
+chip = {
+  text = {
+    preset = "modern",              -- or "classic_text"
+    icons = {
+      folder = "",                 -- override one, both, or neither --
+      branch = "",                 -- unset ones keep their own default
+    },
+    -- A template overrides "modern"'s own per-part-line shape wholesale.
+    -- Placeholders: {folder} {branch} {icon.folder} {icon.branch}; `\n` for
+    -- a line break. Rendered even with one part empty (unlike "modern"'s
+    -- own shape, which omits that whole line) -- your layout, honoured
+    -- literally. Still falls back to classic_text when NEITHER part
+    -- resolves at all.
+    template = "{icon.folder} {folder}\n{icon.branch} {branch}", -- "modern"'s own default, spelled out
+  },
+}
+```
+
+A bare string (`text = "classic_text"`) is shorthand for
+`{ preset = "classic_text" }`. The default icons match glyphs this
+ecosystem already uses elsewhere for the same things (a closed-folder and a
+git-branch glyph) — override either in `icons` without needing
+`nvim-web-devicons`/`mini.icons` installed; any literal string works,
+nerd-font icon or plain text.
 
 ## Beyond the component
 

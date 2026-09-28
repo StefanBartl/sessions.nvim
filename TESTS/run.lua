@@ -69,6 +69,7 @@ local specs = {
   "usercmds_spec.lua",
   "autocmds_spec.lua",
   "chip_spec.lua",
+  "chip_text_spec.lua",
   "init_spec.lua",
 }
 

@@ -141,8 +141,12 @@ function M.ensure_mounted()
   visible = true
   kit_mod.chip.mount({
     id = CHIP_ID,
+    -- Not `sessions.statusline.component()` (that stays a single-line
+    -- string for the plain statusline segment, which genuinely cannot go
+    -- multi-line) -- `cfg.chip.text`'s own formatter, re-read fresh here
+    -- like every other field on this call.
     text = function()
-      return require("sessions.statusline").component()
+      return require("sessions.chip_text").render(cfg().text)
     end,
     visible = function()
       return visible

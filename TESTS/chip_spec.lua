@@ -104,6 +104,7 @@ return function(H)
     H.eq(c.shape, "dock_left", "default shape is dock_left")
     H.ok(c.dock, "default dock is true")
     H.falsy(c.track_mode, "default track_mode is false (opt-in)")
+    H.eq(c.text, "modern", "default text is modern")
     H.eq(c.timeout_ms, 3000, "default timeout_ms is 3000 (3s)")
   end
 
@@ -186,6 +187,7 @@ return function(H)
         color = "DiagnosticInfo",
         dock = false,
         track_mode = true,
+        text = "classic_text", -- pins text() to a deterministic delegate below; "modern"'s own live behaviour is chip_text_spec.lua's job
         timeout_ms = false, -- persistent for this block: it tests call-forwarding, not the auto-hide timer
         pulse = true,
         pulse_color = "DiagnosticError",

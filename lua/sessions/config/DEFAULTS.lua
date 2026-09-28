@@ -147,6 +147,13 @@ return {
     -- by default, since a plain colour has nothing to gain from it and this
     -- adds one more autocmd per chip that enables it.
     track_mode = false,
+    -- What the chip actually shows -- see sessions/chip_text.lua. "modern"
+    -- (the default): one icon-prefixed line per part that live-resolves
+    -- (folder from project_aware, branch from branch_aware), falling back
+    -- to "classic_text"'s single-line raw session name when neither
+    -- resolves. A table (`{ preset = "modern", icons = {...}, template =
+    -- "..." }`) gives full control -- see docs/configuration.md.
+    text = "modern",
     -- How long the chip stays visible after it appears (startup, save,
     -- load), in ms. A number auto-hides it after that long; `false` (or
     -- any number <= 0) keeps it up permanently instead, the old always-on
