@@ -156,6 +156,8 @@ function M.ensure_mounted()
     color = c.color,
     dock = c.dock,
     track_mode = c.track_mode,
+    row_offset = c.row_offset,
+    col_offset = c.col_offset,
   })
   mounted = true
   schedule_hide()

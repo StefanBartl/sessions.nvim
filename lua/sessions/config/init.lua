@@ -141,6 +141,8 @@ local KNOWN = {
     color = true,
     dock = true,
     track_mode = true,
+    row_offset = true,
+    col_offset = true,
     -- A bare preset string or a table ({preset=, icons=, template=}) --
     -- accepted as a leaf like `color` above, not validated field-by-field:
     -- `icons` in particular only ever needs the keys the caller wants to
