@@ -279,6 +279,40 @@ return function(H)
   H.ok(pkey:match("^[%w%._%-]+$"), "...safe as a file name: " .. pkey)
   H.contains(marks.store_path(), "/marks/" .. pkey .. ".json", "...and its own store")
 
+  -- project scope, branch-aware -------------------------------------------------------
+  -- Regression, found by adversarial review: scope_key() used to call
+  -- sessions.git.current_branch() (which prefers a real `git` subprocess
+  -- when lib.nvim.git is installed) from a debounced-but-frequent
+  -- BufLeave path -- the same hot-path hazard sessions.chip_text's own
+  -- "modern" text was found to have reintroduced on a different call.
+
+  do
+    local git_stub = H.stub("sessions.git", {
+      current_branch = function()
+        error("must not be called: scope_key() must use the no-spawn variant")
+      end,
+      current_branch_no_spawn = function()
+        return "feature/login"
+      end,
+      sanitize = function(s)
+        return (s:gsub("/", "-"))
+      end,
+    })
+    config.setup({
+      root = dir .. "/sroot4b",
+      branch_aware = true,
+      project_aware = false,
+      marks = { enable = true, scope = "project", import_harpoon = false },
+    })
+    marks = H.fresh("sessions.marks")
+    H.contains(
+      marks.scope_key(),
+      "feature-login",
+      "branch_aware pulls the branch in through the no-spawn lookup"
+    )
+    git_stub()
+  end
+
   -- the edit menu -------------------------------------------------------------------
 
   config.setup({

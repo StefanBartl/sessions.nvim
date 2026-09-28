@@ -146,7 +146,14 @@ function M.scope_key()
   end
   local key = name .. "-" .. vim.fn.sha256(root):sub(1, 8)
   if cfg.branch_aware then
-    local branch = require("sessions.git").current_branch()
+    -- `current_branch_no_spawn()`, not `current_branch()`: this runs off a
+    -- debounced BufLeave (bindings/autocmds' flush_context(), roughly
+    -- every `context_debounce_ms` while switching buffers), and
+    -- current_branch() prefers a real `git` subprocess whenever
+    -- lib.nvim.git is installed (which it always is here) -- the same
+    -- hot-path cost sessions.chip_text's own "modern" text was found to
+    -- have reintroduced on a different call, and fixed the same way.
+    local branch = require("sessions.git").current_branch_no_spawn()
     if branch and branch ~= "" then
       key = key .. "-" .. require("sessions.git").sanitize(branch)
     end
