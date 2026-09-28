@@ -160,10 +160,10 @@ end
 ---time by `core.save()`, whenever `branch_aware`/`project_aware` were on)
 ---no longer add up to a real, checkoutable branch -- see
 ---`sessions.git.branch_exists()`'s own doc comment for exactly what counts
----as confidently stale versus merely ambiguous (skipped, never listed).
----A session with no recorded `branch`/`cwd` at all (custom name, or saved
----with both `*_aware` options off) is never a candidate -- there is nothing
----to re-check it against.
+---as confidently gone (filesystem-only: no external `git` process to fail
+---ambiguously). A session with no recorded `branch`/`cwd` at all (custom
+---name, or saved with both `*_aware` options off) is never a candidate --
+---there is nothing to re-check it against.
 ---@return Sessions.StaleEntry[]
 local function find_stale()
   local core = require("sessions.core")
@@ -173,7 +173,7 @@ local function find_stale()
     local name = vim.fn.fnamemodify(path, ":t:r")
     local meta = core.metadata(name)
     if meta and meta.branch and meta.cwd then
-      if git.branch_exists(meta.cwd, meta.branch) == false then
+      if not git.branch_exists(meta.cwd, meta.branch) then
         out[#out + 1] = { name = name, path = path, meta = meta }
       end
     end

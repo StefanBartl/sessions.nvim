@@ -6,22 +6,20 @@
 ---@class SessionsGit
 local M = {}
 
----@return string|nil
-function M.current_branch()
-  local ok, git = pcall(require, "lib.nvim.git")
-  if ok then
-    local branch = git.current_branch()
-    -- Guard against lib.nvim returning error-like strings
-    return (branch and branch ~= "" and not branch:lower():find("error")) and branch or nil
-  end
-  -- Fallback without spawning a process.
-  --
-  -- `git symbolic-ref --short HEAD` (via vim.system():wait() or
-  -- vim.fn.system()) blocked the UI thread for a full process spawn, and this
-  -- runs on every session name resolution. .git/HEAD carries the same
-  -- information: "ref: refs/heads/<branch>" on a branch, a raw SHA when
-  -- detached (in which case there is no branch name and nil is correct).
-  local found = vim.fs.find(".git", { path = vim.fn.getcwd(), upward = true, limit = 1 })
+---@internal
+---Find the `.git` entry for `start_path` (searching upward), resolving a
+---worktree/submodule's `.git` FILE ("gitdir: <path>") down to the real git
+---directory. Purely filesystem-based -- no process spawn, so nothing here
+---can fail because the `git` *binary* itself is unavailable, refused
+---(`safe.directory`), or slow (a stale network mount): those failure modes
+---are exactly what made a `git`-spawning version of this check unable to
+---tell "genuinely no repo here" apart from "the command itself failed" --
+---see `M.branch_exists()`'s own doc comment for why that distinction
+---matters enough to have rewritten it around this instead of `lib.nvim.git`.
+---@param start_path string
+---@return string|nil  # the real git directory, or nil if none was found/resolvable
+local function find_gitdir(start_path)
+  local found = vim.fs.find(".git", { path = start_path, upward = true, limit = 1 })
   if not (found and found[1]) then
     return nil
   end
@@ -44,6 +42,29 @@ function M.current_branch()
       gitdir = vim.fs.dirname(dotgit) .. "/" .. gitdir
     end
     dotgit = gitdir
+  end
+
+  return dotgit
+end
+
+---@return string|nil
+function M.current_branch()
+  local ok, git = pcall(require, "lib.nvim.git")
+  if ok then
+    local branch = git.current_branch()
+    -- Guard against lib.nvim returning error-like strings
+    return (branch and branch ~= "" and not branch:lower():find("error")) and branch or nil
+  end
+  -- Fallback without spawning a process.
+  --
+  -- `git symbolic-ref --short HEAD` (via vim.system():wait() or
+  -- vim.fn.system()) blocked the UI thread for a full process spawn, and this
+  -- runs on every session name resolution. .git/HEAD carries the same
+  -- information: "ref: refs/heads/<branch>" on a branch, a raw SHA when
+  -- detached (in which case there is no branch name and nil is correct).
+  local dotgit = find_gitdir(vim.fn.getcwd())
+  if not dotgit then
+    return nil
   end
 
   local ok_head, head = pcall(vim.fn.readfile, dotgit .. "/HEAD", "", 1)
@@ -84,35 +105,63 @@ end
 --- branch, most often because the worktree that `cwd` pointed at was
 --- removed after its branch got merged.
 ---
---- `false` when this is *confidently* answerable -- `cwd` itself is gone,
---- or it exists but is no longer a git repo, or it is a git repo without
---- that branch; `nil` when it genuinely cannot be told either way (the
---- directory and the repo both check out, but the actual ref listing
---- itself failed for some other reason). A caller must never collapse
---- those two into the same "stale" verdict -- ambiguous is not the same as
---- confirmed-gone.
+--- Deliberately filesystem-only (`find_gitdir()` + a loose/packed ref read),
+--- never `lib.nvim.git`/a `git` subprocess -- an earlier version of this
+--- went through `lib.nvim.git.in_git_repo()`/`.refs()`, on the theory that a
+--- raised Lua error from those would signal "the lookup itself failed" so it
+--- could be told apart from "confirmed gone". That theory did not hold:
+--- `lib.nvim.git`'s own `git_system()` swallows *every* subprocess failure
+--- (missing binary, a `safe.directory` refusal, a stale/disconnected network
+--- mount the worktree lived on, ...) into a plain `nil`/`{}` -- it never
+--- raises -- so the "ambiguous" branch was never actually reachable, and a
+--- transient git failure on a perfectly healthy, still-checked-out session
+--- silently read as confirmed-stale. Reading the ref straight off disk (the
+--- same approach `current_branch()`'s own fallback above already uses, for
+--- an unrelated reason -- avoiding a process spawn on the session-naming hot
+--- path) sidesteps the whole class of failure: there is no external binary
+--- to be missing, refuse, or hang.
+---
+--- Still returns `false` (not `nil`) rather than raising for input that
+--- fails outright: an empty `cwd`/`branch`, or `cwd` not existing at all
+--- (the same `false` git would eventually have answered anyway, and Issue
+--- 5's own worked example is exactly "a removed worktree directory").
 ---@param cwd string
 ---@param branch string
----@return boolean|nil
+---@return boolean
 function M.branch_exists(cwd, branch)
   if type(cwd) ~= "string" or cwd == "" or type(branch) ~= "string" or branch == "" then
-    return nil
+    return false
   end
   if vim.fn.isdirectory(cwd) == 0 then
-    return false -- the directory itself is gone -- confidently stale
+    return false -- the directory itself is gone
   end
-  local ok_git, git = pcall(require, "lib.nvim.git")
-  if not ok_git then
-    return nil -- no way to ask at all -- ambiguous, not confirmed-gone
+  local dotgit = find_gitdir(cwd)
+  if not dotgit then
+    return false -- no repo (anywhere upward from cwd) anymore
   end
-  if not git.in_git_repo({ dir = cwd }) then
-    return false -- exists, but no repo there anymore -- confidently stale
+
+  -- The common case: a loose ref file for a recently-active branch.
+  local uv = vim.uv or vim.loop
+  if uv.fs_stat(dotgit .. "/refs/heads/" .. branch) then
+    return true
   end
-  local ok_refs, refs = pcall(git.refs, cwd, { branches = true, remotes = false, tags = false })
-  if not ok_refs or type(refs) ~= "table" then
-    return nil -- a real repo, but the ref listing itself failed -- ambiguous
+
+  -- git periodically folds loose refs into a single `packed-refs` file
+  -- (e.g. after `git gc`), so an older or less-active branch can be real
+  -- and only live there: "<sha> refs/heads/<branch>" per line, plus
+  -- comment lines (leading "#") and an optional "^{}" peeled-tag suffix on
+  -- unrelated tag entries -- neither of which a plain trailing-match sees.
+  local ok_lines, lines = pcall(vim.fn.readfile, dotgit .. "/packed-refs")
+  if ok_lines and lines then
+    local needle = "refs/heads/" .. branch
+    for _, line in ipairs(lines) do
+      if line:sub(1, 1) ~= "#" and line:sub(-#needle) == needle then
+        return true
+      end
+    end
   end
-  return vim.tbl_contains(refs, branch)
+
+  return false -- a real repo, but this branch genuinely isn't in it
 end
 
 --- Sanitize a string into a filesystem-safe session name segment: whitelist
