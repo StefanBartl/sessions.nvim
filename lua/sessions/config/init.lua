@@ -74,6 +74,7 @@ local KNOWN = {
   autosave_name = true,
   metadata = true,
   restore_buffer_order = true,
+  restore_pinned_buffers = true,
   notify_title = true,
   hooks = {
     on_save = true,

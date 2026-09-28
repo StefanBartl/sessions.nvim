@@ -458,6 +458,10 @@ function M.save(name)
     require("sessions.buforder").save(si.path)
   end
 
+  if cfg.restore_pinned_buffers then
+    require("sessions.pins").save(si.path)
+  end
+
   if cfg.hooks.on_save then
     pcall(cfg.hooks.on_save, si.name, si.path)
   end
@@ -559,6 +563,13 @@ function M.load(name)
 
   if cfg.restore_buffer_order then
     require("sessions.buforder").restore(si.path)
+  end
+
+  -- After buforder: pin restore needs the final, stable bufnr<->path
+  -- mapping buforder.restore() just settled for each tab, not the one
+  -- :source alone left vim.t.bufs as.
+  if cfg.restore_pinned_buffers then
+    require("sessions.pins").restore(si.path)
   end
 
   if cfg.hooks.on_load then
@@ -671,6 +682,7 @@ function M.delete(name)
   end
   require("sessions.meta").delete(path)
   require("sessions.buforder").delete(path)
+  require("sessions.pins").delete(path)
   if _current == name then
     _current = nil
   end
@@ -699,6 +711,7 @@ function M.rename(old_name, new_name)
   end
   require("sessions.meta").rename(old_path, new_path)
   require("sessions.buforder").rename(old_path, new_path)
+  require("sessions.pins").rename(old_path, new_path)
   if _current == old_name then
     _current = new_name
   end

@@ -60,6 +60,14 @@ require("sessions").setup({
   -- sidecar; a no-op that writes nothing when no such tabline is in use.
   restore_buffer_order = true,
 
+  -- Persist per-tabpage tab-pin state (ui.nvim's tabline pinned-buffer
+  -- list, `vim.t.ui_pinned`) -- that module does not persist it itself.
+  -- Same shape as restore_buffer_order above (`.{name}.pins.json` sidecar,
+  -- no-op without ui.nvim), and restored right after it: pin restore
+  -- needs the buffer-order restore's final, stable bufnr mapping for the
+  -- tab, not the one :mksession alone left behind.
+  restore_pinned_buffers = true,
+
   -- Attach opts.title = "Sessions" to :Session/autoload notify calls. A
   -- rich vim.notify backend (ui.nvim's ui.notify, nvim-notify, noice,
   -- snacks) can render a title/colour from it; the plain :messages echo

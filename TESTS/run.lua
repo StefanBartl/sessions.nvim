@@ -57,6 +57,7 @@ local specs = {
   "state_spec.lua",
   "meta_spec.lua",
   "buforder_spec.lua",
+  "pins_spec.lua",
   "portable_spec.lua",
   "layout_spec.lua",
   "statusline_spec.lua",
