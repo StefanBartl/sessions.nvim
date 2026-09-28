@@ -47,22 +47,16 @@ local function find_gitdir(start_path)
   return dotgit
 end
 
+---@internal
+---`.git/HEAD` carries the same information a `git symbolic-ref --short
+---HEAD` subprocess would: "ref: refs/heads/<branch>" on a branch, a raw
+---SHA when detached (in which case there is no branch name and nil is
+---correct). Shared by `M.current_branch()`'s own no-`lib.nvim.git`
+---fallback and `M.current_branch_no_spawn()` below.
+---@param start_path string
 ---@return string|nil
-function M.current_branch()
-  local ok, git = pcall(require, "lib.nvim.git")
-  if ok then
-    local branch = git.current_branch()
-    -- Guard against lib.nvim returning error-like strings
-    return (branch and branch ~= "" and not branch:lower():find("error")) and branch or nil
-  end
-  -- Fallback without spawning a process.
-  --
-  -- `git symbolic-ref --short HEAD` (via vim.system():wait() or
-  -- vim.fn.system()) blocked the UI thread for a full process spawn, and this
-  -- runs on every session name resolution. .git/HEAD carries the same
-  -- information: "ref: refs/heads/<branch>" on a branch, a raw SHA when
-  -- detached (in which case there is no branch name and nil is correct).
-  local dotgit = find_gitdir(vim.fn.getcwd())
+local function read_branch_from_head(start_path)
+  local dotgit = find_gitdir(start_path)
   if not dotgit then
     return nil
   end
@@ -74,6 +68,39 @@ function M.current_branch()
 
   local branch = head[1]:match("^ref:%s*refs/heads/(.+)$")
   return (branch and branch ~= "") and vim.trim(branch) or nil
+end
+
+---@return string|nil
+function M.current_branch()
+  local ok, git = pcall(require, "lib.nvim.git")
+  if ok then
+    local branch = git.current_branch()
+    -- Guard against lib.nvim returning error-like strings
+    return (branch and branch ~= "" and not branch:lower():find("error")) and branch or nil
+  end
+  -- Fallback without spawning a process -- `lib.nvim.git` isn't installed,
+  -- so this is the only way to answer at all. Runs on every session name
+  -- resolution, which is the whole reason a process spawn had to go.
+  return read_branch_from_head(vim.fn.getcwd())
+end
+
+--- Same question as `M.current_branch()`, but NEVER through
+--- `lib.nvim.git` -- always the direct `.git/HEAD` read, even when
+--- `lib.nvim.git` is installed and `current_branch()` above would prefer
+--- it. For a caller on a much higher-frequency path than session-name
+--- resolution (`sessions.chip_text`'s "modern" text, re-read on every
+--- `ui.kit.chip` refresh -- an editing-rate event, BufAdd/BufDelete/
+--- WinNew/WinClosed/TabNewEntered/TabClosed), where `current_branch()`'s
+--- own default of *preferring* a real `git` subprocess would be a real,
+--- measurable cost: `lib.nvim`'s own docs call that runner "by a wide
+--- margin, the biggest source of UI freezes" across the plugins built on
+--- it. The direct file read is the same mechanism `current_branch()`'s
+--- own fallback already trusts as correct whenever `lib.nvim.git` isn't
+--- around at all -- just used unconditionally here instead of only when
+--- there is no other option.
+---@return string|nil
+function M.current_branch_no_spawn()
+  return read_branch_from_head(vim.fn.getcwd())
 end
 
 ---@param markers string[]
@@ -148,12 +175,20 @@ function M.branch_exists(cwd, branch)
 
   -- git periodically folds loose refs into a single `packed-refs` file
   -- (e.g. after `git gc`), so an older or less-active branch can be real
-  -- and only live there: "<sha> refs/heads/<branch>" per line, plus
-  -- comment lines (leading "#") and an optional "^{}" peeled-tag suffix on
-  -- unrelated tag entries -- neither of which a plain trailing-match sees.
+  -- and only live there: "<sha> refs/heads/<branch>" per line, a space
+  -- between the two, plus comment lines (leading "#") and, on the line
+  -- right *after* an annotated tag's own entry, a separate "^<sha>" peeled
+  -- line -- neither format a plain trailing-string match on its own would
+  -- reliably tell apart from a false match.
+  --
+  -- The space is required, not just a trailing match on "refs/heads/
+  -- <branch>" alone: a branch whose own name happens to embed the literal
+  -- substring "refs/heads/" as a path component (legal, if unusual --
+  -- e.g. "sub/refs/heads/login") would otherwise satisfy a bare suffix
+  -- check for an unrelated, shorter, nonexistent branch name too.
   local ok_lines, lines = pcall(vim.fn.readfile, dotgit .. "/packed-refs")
   if ok_lines and lines then
-    local needle = "refs/heads/" .. branch
+    local needle = " refs/heads/" .. branch
     for _, line in ipairs(lines) do
       if line:sub(1, 1) ~= "#" and line:sub(-#needle) == needle then
         return true

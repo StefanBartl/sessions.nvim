@@ -49,7 +49,7 @@ return function(H)
       project_root = function()
         return "/home/me/my-project"
       end,
-      current_branch = function()
+      current_branch_no_spawn = function()
         return "feature/login"
       end,
     })
@@ -69,7 +69,7 @@ return function(H)
       project_root = function()
         return "/home/me/my-project"
       end,
-      current_branch = function()
+      current_branch_no_spawn = function()
         error("must not be called: branch_aware is off")
       end,
     })
@@ -88,7 +88,7 @@ return function(H)
       project_root = function()
         error("must not be called: project_aware is off")
       end,
-      current_branch = function()
+      current_branch_no_spawn = function()
         return "feature/login"
       end,
     })
@@ -107,7 +107,7 @@ return function(H)
       project_root = function()
         error("must not be called: project_aware is off")
       end,
-      current_branch = function()
+      current_branch_no_spawn = function()
         error("must not be called: branch_aware is off")
       end,
     })
@@ -134,7 +134,7 @@ return function(H)
       project_root = function()
         return nil
       end,
-      current_branch = function()
+      current_branch_no_spawn = function()
         return nil
       end,
     })
@@ -160,7 +160,7 @@ return function(H)
       project_root = function()
         return "/x/my-project"
       end,
-      current_branch = function()
+      current_branch_no_spawn = function()
         return "main"
       end,
     })
@@ -183,7 +183,7 @@ return function(H)
       project_root = function()
         return "/x/my-project"
       end,
-      current_branch = function()
+      current_branch_no_spawn = function()
         error("must not be called: branch_aware is off")
       end,
     })
@@ -213,6 +213,30 @@ return function(H)
     restore_stl()
   end
 
+  do
+    -- Regression, found by adversarial review: the placeholder pattern
+    -- used to be [%w%.]+ -- Lua's %w does not include "_", so a
+    -- plausible-looking typo like {icon_folder} (underscore instead of
+    -- the real ".") did not match "{...}" as a placeholder AT ALL and
+    -- rendered completely literally, instead of the documented "an
+    -- unrecognized placeholder renders as empty".
+    setup({ branch_aware = true, project_aware = true })
+    local restore = H.stub("sessions.git", {
+      project_root = function()
+        return "/x/my-project"
+      end,
+      current_branch_no_spawn = function()
+        return "main"
+      end,
+    })
+    H.eq(
+      chip_text().render({ template = "[{icon_folder}] {folder}" }),
+      "[] my-project",
+      "an underscore typo is still recognized as a placeholder and renders empty"
+    )
+    restore()
+  end
+
   -- ----------------------------------------------------------------- icons
 
   do
@@ -221,7 +245,7 @@ return function(H)
       project_root = function()
         return "/x/my-project"
       end,
-      current_branch = function()
+      current_branch_no_spawn = function()
         return "main"
       end,
     })

@@ -104,6 +104,41 @@ return function(H)
 
   no_lib()
 
+  -- ------------------------------------------------ current_branch_no_spawn
+  -- Same question as current_branch(), but must NEVER prefer lib.nvim.git
+  -- even when it IS installed -- always the direct .git/HEAD read, for a
+  -- caller on a much higher-frequency path (sessions.chip_text's "modern"
+  -- text, re-read on every ui.kit.chip refresh) where current_branch()'s
+  -- own subprocess-preferring default would be a real, measurable cost.
+
+  local ns_repo = dir .. "/no-spawn-repo"
+  vim.fn.mkdir(ns_repo .. "/.git", "p")
+  vim.fn.writefile({ "ref: refs/heads/no-spawn-branch" }, ns_repo .. "/.git/HEAD")
+  cd(ns_repo)
+
+  -- lib.nvim.git IS installed here (no `no_lib()` stub active) and would
+  -- answer something completely different -- current_branch() itself
+  -- would prefer it (confirmed first, for contrast); current_branch_no_spawn()
+  -- must ignore it regardless and read .git/HEAD directly instead.
+  local lib_says_something_else = H.stub("lib.nvim.git", {
+    current_branch = function()
+      return "SPAWNED-VIA-LIB-NVIM-GIT"
+    end,
+  })
+  H.eq(
+    git.current_branch(),
+    "SPAWNED-VIA-LIB-NVIM-GIT",
+    "current_branch() itself does prefer lib.nvim.git when installed"
+  )
+  H.eq(
+    git.current_branch_no_spawn(),
+    "no-spawn-branch",
+    "...but current_branch_no_spawn() never does, even then"
+  )
+  lib_says_something_else()
+
+  cd(start_cwd)
+
   -- ------------------------------------------------------------ project_root
 
   local undo_root = H.stub("lib.nvim.fs.find_upward_dir", function()
@@ -249,6 +284,27 @@ return function(H)
     false,
     "a TAG in packed-refs is not a branch, even with the same name shape"
   )
+
+  -- Regression, found by a second review round: a branch whose OWN name
+  -- happens to embed "refs/heads/" as a path component (legal, if
+  -- unusual) must not satisfy a bare suffix match for an unrelated,
+  -- shorter, nonexistent branch name -- the match needs the packed-refs
+  -- field boundary (a space right before it), not just a trailing
+  -- substring.
+  vim.fn.writefile({
+    "9f6c4b1d0e2a3b5c7d8e9f0a1b2c3d4e5f607182 refs/heads/sub/refs/heads/login",
+  }, repo_dir .. "/.git/packed-refs")
+  H.eq(
+    git.branch_exists(repo_dir, "login"),
+    false,
+    "a branch embedding refs/heads/ in its own name doesn't false-match a shorter one"
+  )
+  H.eq(
+    git.branch_exists(repo_dir, "sub/refs/heads/login"),
+    true,
+    "...but the real, full branch name still matches"
+  )
+
   os.remove(repo_dir .. "/.git/packed-refs")
 
   -- A worktree/submodule: .git is a FILE pointing elsewhere -- find_gitdir()
