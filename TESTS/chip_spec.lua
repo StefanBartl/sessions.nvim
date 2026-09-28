@@ -99,7 +99,7 @@ return function(H)
     config.setup({})
     local c = config.cfg.chip
     H.eq(c.anchor, "bottom-left", "default anchor is bottom-left")
-    H.eq(c.shape, "rounded", "default shape is rounded")
+    H.eq(c.shape, "rounded_chip", "default shape is rounded_chip")
     H.eq(c.timeout_ms, 3000, "default timeout_ms is 3000 (3s)")
   end
 

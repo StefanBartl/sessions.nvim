@@ -121,7 +121,7 @@ return {
   chip = {
     enable = true,
     anchor = "bottom-left", -- "bottom-left" | "bottom-right" | "top-left" | "top-right"
-    shape = "rounded", -- "rounded" (bordered capsule, the default) | "rect" (flat, borderless block -- the "normal" shape) | "text" (no box at all)
+    shape = "rounded_chip", -- "rounded_chip" (bordered capsule, the default) | "chip" (flat, borderless block) | "classic" (no box at all); old names ("rounded"/"rect"/"text") still work, see ui.kit.presets
     color = nil, -- a highlight-group name, or { fg = "#...", bg = "#..." }; nil = kit's own default
     -- How long the chip stays visible after it appears (startup, save,
     -- load), in ms. A number auto-hides it after that long; `false` (or
