@@ -107,6 +107,56 @@ return function(H)
     H.eq(c.timeout_ms, 3000, "default timeout_ms is 3000 (3s)")
   end
 
+  -- ----------------------------- dock_left default + a right-side anchor
+
+  do
+    -- Regression, found by adversarial review of the new "dock_left"
+    -- default: it blanks its own left border/corners on the assumption the
+    -- chip sits flush against the screen's LEFT edge -- exactly backwards
+    -- for a right-side anchor (the blank edge would face into the screen,
+    -- the rounded one would touch nothing). anchor and shape are validated
+    -- independently (config/init.lua's KNOWN table), so nothing catches
+    -- this combination before it reaches kit.chip.mount() -- ensure_mounted()
+    -- itself has to correct for it.
+    setup({ chip = { enable = true, anchor = "bottom-right" } }) -- shape left at its "dock_left" default
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+
+    chip.ensure_mounted()
+    H.eq(
+      calls[1][2].shape,
+      "rounded_chip",
+      "dock_left + a right-side anchor falls back to the symmetric shape"
+    )
+
+    restore()
+  end
+
+  do
+    -- The same fallback must NOT kick in for the left anchors dock_left is
+    -- actually meant for, nor for an explicit shape override that has
+    -- nothing to do with the dock look.
+    setup({ chip = { enable = true, anchor = "top-left" } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    chip.ensure_mounted()
+    H.eq(
+      calls[1][2].shape,
+      "dock_left",
+      "dock_left stays dock_left at a left anchor (top-left too)"
+    )
+    restore()
+  end
+
+  do
+    setup({ chip = { enable = true, anchor = "bottom-right", shape = "classic" } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    chip.ensure_mounted()
+    H.eq(calls[1][2].shape, "classic", "an explicit non-dock_left shape passes through untouched")
+    restore()
+  end
+
   -- ------------------------------------------------- enabled, ui.kit present
 
   do

@@ -128,8 +128,8 @@ require("sessions").setup({
   -- indicator at a time. See docs/statusline.md.
   chip = {
     enable = true,
-    anchor = "bottom-left",      -- bottom-right | top-left | top-right
-    shape = "dock_left",         -- dock_left (rounded except the left edge, pairs with dock below) | rounded_chip (bordered capsule) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
+    anchor = "bottom-left",      -- bottom-right | top-left | top-right -- switching to a right-side anchor auto-falls-back shape from "dock_left" to "rounded_chip" (see shape below), so it never renders backwards
+    shape = "dock_left",         -- dock_left (rounded except the LEFT edge -- only correct at a left anchor, pairs with dock below) | rounded_chip (bordered capsule) | chip (flat, borderless block) | classic (no box at all); old names (rounded/rect/text) still work
     color = nil,                 -- a highlight-group name, { fg = "#...", bg = "#..." }, or a zero-arg function returning either
     dock = true,                 -- sit flush on the statusline row (no gap) instead of floating just above it; degrades to the ordinary placement without a real statusline row, safe either way
     track_mode = false,          -- refresh the chip on every mode change -- only useful paired with a `color` function that itself tracks the mode
