@@ -177,8 +177,15 @@ targets that one instead of re-deriving from the naming table. Load
 `nvim_main`, then explicitly save a second copy as `nvim_main_2`, then a
 bare `:Session save` afterwards updates `nvim_main_2` — not `nvim_main` and
 not a fresh auto-resolved name — because `nvim_main_2` is what you're
-actually in. `:Session current` shows which one that is. A bare
-`:Session load` (no name) and autoload instead resolve in this order:
+actually in. `:Session current` shows which one that is. This tracking is
+forgotten on `:cd`/`:tcd`/`:lcd` (a `DirChanged` autocmd) — switching to an
+unrelated project without loading/saving a session there first means the
+next bare `:Session save` re-derives fresh from that project's own
+name/branch, rather than silently overwriting whatever session was current
+before you left. `:Session save-tab [name]` never consults this at all
+(a tab snapshot is always named from project/branch, independent of
+whichever full session, if any, is current). A bare `:Session load` (no
+name) and autoload instead resolve in this order:
 
 1. **The auto-resolved name for the project/branch you're in right now** —
    the same result the naming table above gives a save — but only when that

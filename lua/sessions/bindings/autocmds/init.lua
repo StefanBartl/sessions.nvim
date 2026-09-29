@@ -118,6 +118,21 @@ function M.enable()
   local aug = autocmd_ok and autocmd.group("SessionsNvim", true)
     or api.nvim_create_augroup("SessionsNvim", { clear = true })
 
+  -- Unconditional (not gated on autoload/autosave): `core.resolve()`'s
+  -- save path prefers `_current` over re-deriving from project/branch, and
+  -- `_current` is process-global -- without this, saving in project A, then
+  -- `:cd`-ing to an unrelated project B and running a bare `:Session save`
+  -- there (with no load/save of B's own session first) silently overwrote
+  -- A's session file with B's layout. `:cd` within the same project is
+  -- harmless to clear against: auto-resolve re-derives the identical name
+  -- from the new cwd.
+  create_autocmd("DirChanged", function()
+    require("sessions.core").forget_current_on_dir_change()
+  end, {
+    group = aug,
+    desc = "sessions.nvim: forget the tracked current session on :cd",
+  })
+
   if cfg.autoload then
     create_autocmd("VimEnter", function()
       -- Only autoload when Neovim starts without explicit file arguments.

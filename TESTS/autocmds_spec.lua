@@ -58,7 +58,21 @@ return function(H)
 
   setup()
   load_module().enable()
-  H.eq(#registered(), 0, "with autoload and autosave off, nothing is registered")
+  -- DirChanged (forgetting _current on :cd) is unconditional -- unlike
+  -- autoload/autosave, it is not a feature toggle; it protects a bare
+  -- `:Session save`'s own name resolution, which explicit save/load
+  -- commands can trigger regardless of either setting.
+  H.eq(#registered(), 1, "with autoload and autosave off, only DirChanged is registered")
+  H.eq(count("DirChanged"), 1, "...specifically DirChanged")
+
+  -- Firing it actually forgets the tracked session (the wiring, not just
+  -- the registration) -- see core_spec.lua for the full save/:cd/save
+  -- scenario this protects.
+  H.ok(core.save("dirchangetest"), "a session to be current")
+  H.eq(core.current(), "dirchangetest", "current before :cd")
+  vim.api.nvim_exec_autocmds("DirChanged", {})
+  H.falsy(core.current(), "DirChanged forgets it")
+  core.delete("dirchangetest")
 
   -- ----------------------------------------------------------------- autosave
 
