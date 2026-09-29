@@ -221,6 +221,7 @@ function M.ensure_mounted()
     track_mode = c.track_mode,
     row_offset = c.row_offset,
     col_offset = c.col_offset,
+    min_width = c.min_width,
   })
   mounted = true
   schedule_hide()

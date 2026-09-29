@@ -156,6 +156,11 @@ return {
     -- offset compensates for that).
     row_offset = nil,
     col_offset = nil,
+    -- A floor under the chip's own content-derived width (longest rendered
+    -- line + 2) -- nil/0 by default, no behaviour change for anyone who
+    -- doesn't set one. Forwarded straight to ui.kit.chip.mount()'s own
+    -- min_width; content wider than it still grows the box past it.
+    min_width = nil,
     -- What the chip actually shows -- see sessions/chip_text.lua. "modern"
     -- (the default): one icon-prefixed line per part that live-resolves
     -- (folder from project_aware, branch from branch_aware), falling back
