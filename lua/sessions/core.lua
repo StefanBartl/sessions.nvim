@@ -118,10 +118,18 @@ local function resolve(name, use_auto_resolve)
   if type(name) == "string" and name ~= "" then
     n = name
   elseif use_auto_resolve then
-    -- Save: auto-resolve project/branch name when configured. sessions.git
-    -- is only required here, so it never loads (and never shells out)
-    -- unless branch_aware or project_aware actually asks for it.
-    n = git_aware(cfg) and require("sessions.git").resolve_name(cfg) or cfg.default_name
+    -- Save with no explicit name: prefer the session we are ACTUALLY in
+    -- (_current, set by the last load/save this process did) over
+    -- re-deriving from project+branch. Without this, saving into a
+    -- second named session (e.g. `nvim_main_2`, loaded on top of
+    -- `nvim_main`) and then running a bare `:Session save` silently
+    -- overwrote the FIRST one again, since auto-resolve always recomputes
+    -- from project/branch and never looks at what is currently loaded.
+    -- _current is nil only when nothing has been loaded/saved yet this
+    -- process (fresh start, autoload off/no match) -- auto-resolve from
+    -- project/branch remains the right fallback for that case.
+    n = _current
+      or (git_aware(cfg) and require("sessions.git").resolve_name(cfg) or cfg.default_name)
   else
     -- Load with no explicit name (bare `:Session load`, autoload). Two
     -- candidates, in priority order:

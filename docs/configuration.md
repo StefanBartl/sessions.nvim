@@ -168,9 +168,16 @@ When no explicit name is given, the name is resolved from context:
 Unsafe filename characters (`/`, `\`, spaces) are replaced with `-` or `_`.
 `feature/login` → `feature-login`.
 
-The naming table above governs `:Session save [name]` (no name given), and
-`:Session load [name]` when a name *is* given. A bare `:Session load` (no
-name) and autoload instead resolve in this order:
+The naming table above governs `:Session load [name]` when a name *is*
+given, and `:Session save [name]` (no name given) *only while nothing is
+currently loaded/saved this session* — as soon as you've loaded or saved
+any session (explicitly named or auto-resolved), a bare `:Session save`
+targets that one instead of re-deriving from the naming table. Load
+`nvim_main`, then explicitly save a second copy as `nvim_main_2`, then a
+bare `:Session save` afterwards updates `nvim_main_2` — not `nvim_main` and
+not a fresh auto-resolved name — because `nvim_main_2` is what you're
+actually in. `:Session current` shows which one that is. A bare
+`:Session load` (no name) and autoload instead resolve in this order:
 
 1. **The auto-resolved name for the project/branch you're in right now** —
    the same result the naming table above gives a save — but only when that
