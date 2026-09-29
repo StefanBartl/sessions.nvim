@@ -267,6 +267,51 @@ return function(H)
     restore()
   end
 
+  -- ------------------------------- dock_left default + a non-numeric col_offset
+
+  do
+    -- Regression, found by adversarial review, HIGH severity, live-
+    -- reproduced: `cfg.chip.col_offset` is an UNVALIDATED config leaf
+    -- (config/init.lua's KNOWN.chip.col_offset = true accepts any type).
+    -- Before this fix, math.floor(col_offset) threw on a non-number --
+    -- uncaught anywhere in the call chain up through setup() itself,
+    -- since effective_shape() is called unconditionally, inline, while
+    -- ensure_mounted() builds the table for kit_mod.chip.mount(). That
+    -- aborted setup() ENTIRELY (keymaps never attach, autoload/autosave/
+    -- dirty-tracking autocmds never register) -- and because
+    -- sessions.init's _setup_done flag is set BEFORE this point, a retry
+    -- silently no-ops forever; the only recovery was a config fix plus a
+    -- Neovim restart. A single typo (e.g. col_offset = true, plausible
+    -- next to the boolean-shaped dock/track_mode options a few lines
+    -- away) must never be able to take down the whole plugin.
+    setup({ chip = { enable = true, col_offset = true } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    local ok, err = pcall(chip.ensure_mounted)
+    H.ok(ok, "ensure_mounted() must not throw on a non-numeric col_offset: " .. tostring(err))
+    H.eq(
+      calls[1][2].shape,
+      "dock_left",
+      "a non-numeric col_offset is not a real displacement -- no crash, no fallback"
+    )
+    restore()
+  end
+
+  do
+    -- Same finding, the NaN/Infinity half: both satisfy Lua's
+    -- `type(v) == \"number\"`, so a bare type() check alone would not have
+    -- caught them, and `math.floor()` of either is itself, never 0 --
+    -- which would misreport an unbounded/undefined offset as "a real
+    -- displacement" instead of erroring outright.
+    setup({ chip = { enable = true, col_offset = 0 / 0 } }) -- NaN
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    local ok, err = pcall(chip.ensure_mounted)
+    H.ok(ok, "ensure_mounted() must not throw on col_offset = NaN: " .. tostring(err))
+    H.eq(calls[1][2].shape, "dock_left", "col_offset = NaN is not a real displacement")
+    restore()
+  end
+
   -- ------------------------------------------------- enabled, ui.kit present
 
   do
