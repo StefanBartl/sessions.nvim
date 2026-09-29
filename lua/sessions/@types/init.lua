@@ -26,6 +26,7 @@
 ---@field save_ts? string|string[]|false       `:Session save-timestamp`
 ---@field list? string|string[]|false          `:Session list`
 ---@field current? string|string[]|false       `:Session current`
+---@field chip_toggle? string|string[]|false   `:Session chip-toggle`
 ---@field picker? string|string[]|false        `:SessionLoad` (picker with preview)
 ---@field toggle_track? string|string[]|false  `:Session toggle-track`
 ---@field save_tab? string|string[]|false      `:Session save-tab`
@@ -199,6 +200,7 @@
 ---@field save_ts?      string|string[]|false       `:Session save-timestamp`
 ---@field list?         string|string[]|false          `:Session list`
 ---@field current?      string|string[]|false       `:Session current`
+---@field chip_toggle?  string|string[]|false   `:Session chip-toggle`
 ---@field picker?       string|string[]|false        `:SessionLoad` (picker with preview)
 ---@field toggle_track? string|string[]|false  `:Session toggle-track`
 ---@field save_tab?     string|string[]|false      `:Session save-tab`

@@ -337,6 +337,14 @@ function M.enable()
         end,
       },
 
+      {
+        path = { "chip-toggle" },
+        desc = "Show/hide the corner chip on demand",
+        run = function()
+          require("sessions.chip").toggle()
+        end,
+      },
+
       -- Toggle git skip-worktree on a session file so it can live in a config
       -- repo but be excluded from commits on machines where the paths don't exist.
       {

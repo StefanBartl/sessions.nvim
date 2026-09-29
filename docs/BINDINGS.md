@@ -15,6 +15,7 @@ shows up in which-key (if installed) and `:map` without further work. A
 | n    | `save_ts`       | `<leader>sst`    | `:Session save-timestamp` (`sess-YYYYMMDD-HHMMSS`) |
 | n    | `list`          | `<leader>sli`    | `:Session list` |
 | n    | `current`       | `<leader>scu`    | `:Session current` |
+| n    | `chip_toggle`   | `<leader>sct`    | `:Session chip-toggle` — show/hide the corner chip on demand |
 | n    | `picker`        | `<leader>spi`    | `:SessionLoad` — picker with live preview |
 | n    | `toggle_track`  | `<leader>stg`    | `:Session toggle-track` |
 | n    | `save_tab`      | `<leader>sta`    | `:Session save-tab` |
@@ -83,6 +84,7 @@ One command, `:Session <subcommand>` (built via
 | `:Session rename <old> <new>` | Rename a session |
 | `:Session list`            | List all saved sessions |
 | `:Session current`         | Print the active session name |
+| `:Session chip-toggle`     | Show/hide the corner chip on demand |
 | `:Session toggle-track [name]` | Toggle git `skip-worktree` on a session file, so named sessions can live in a config repo without being committed on machines where the paths don't exist |
 | `:Session save-tab [name]` | Save only the current tab's window layout, stored separately under `root/.tabs/` (see [Session Scoping](session-scoping.md)) |
 | `:Session load-tab <name>` | Load a tab session into a new tab, leaving other tabs untouched |

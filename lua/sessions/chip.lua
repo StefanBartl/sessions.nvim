@@ -277,4 +277,31 @@ function M.is_active()
   return mounted
 end
 
+---Show the chip on demand (restarting its auto-hide countdown, same as a
+---`pulse()`) if hidden, or hide it immediately if it is currently visible --
+---a manual on/off switch for "which session am I in right now", independent
+---of the save/load/autoload flashes `pulse()` handles. No colour pulse here:
+---this is a deliberate look-up, not a status change worth flagging. A no-op
+---while the chip is off, not installed, or not mounted.
+---@return nil
+function M.toggle()
+  if not mounted then
+    return
+  end
+  local kit_mod = kit()
+  if not kit_mod then
+    return
+  end
+  if visible then
+    visible = false
+    -- Cancel any pending scheduled hide so it does not fire later and
+    -- toggle an unrelated, subsequent show back off again.
+    hide_generation = hide_generation + 1
+  else
+    visible = true
+    schedule_hide()
+  end
+  kit_mod.chip.refresh(CHIP_ID)
+end
+
 return M
