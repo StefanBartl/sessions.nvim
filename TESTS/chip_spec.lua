@@ -325,6 +325,7 @@ return function(H)
         track_mode = true,
         row_offset = 1,
         col_offset = -2,
+        min_width = 12,
         text = "classic_text", -- pins text() to a deterministic delegate below; "modern"'s own live behaviour is chip_text_spec.lua's job
         timeout_ms = false, -- persistent for this block: it tests call-forwarding, not the auto-hide timer
         pulse = true,
@@ -347,6 +348,7 @@ return function(H)
     H.ok(calls[1][2].track_mode, "cfg.chip.track_mode is forwarded")
     H.eq(calls[1][2].row_offset, 1, "cfg.chip.row_offset is forwarded")
     H.eq(calls[1][2].col_offset, -2, "cfg.chip.col_offset is forwarded")
+    H.eq(calls[1][2].min_width, 12, "cfg.chip.min_width is forwarded")
     H.eq(type(calls[1][2].text), "function", "text is a provider function, not a snapshot")
 
     local restore_statusline = H.stub("sessions.statusline", {
