@@ -176,6 +176,42 @@ return function(H)
     restore()
   end
 
+  -- --------------------------------- dock_left default + a nonzero col_offset
+
+  do
+    -- Regression, found live: a user trying col_offset to nudge the chip
+    -- got a box with its right/top/bottom border intact but no left edge
+    -- at all -- exactly dock_left's own blank-left-border array, now
+    -- visible away from the flush-left position that design assumes. Same
+    -- fallback as the right-anchor case above, triggered by col_offset
+    -- instead of anchor.
+    setup({ chip = { enable = true, col_offset = 20 } }) -- anchor/shape left at their left/dock_left defaults
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    chip.ensure_mounted()
+    H.eq(
+      calls[1][2].shape,
+      "rounded_chip",
+      "dock_left + a nonzero col_offset falls back to the symmetric shape"
+    )
+    restore()
+  end
+
+  do
+    -- col_offset = 0 (the default -- "no offset") must NOT trigger the
+    -- fallback; only an actual nonzero displacement does.
+    setup({ chip = { enable = true, col_offset = 0 } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    chip.ensure_mounted()
+    H.eq(
+      calls[1][2].shape,
+      "dock_left",
+      "col_offset = 0 keeps dock_left, it isn't a real displacement"
+    )
+    restore()
+  end
+
   -- ------------------------------------------------- enabled, ui.kit present
 
   do
