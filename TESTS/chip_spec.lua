@@ -398,7 +398,9 @@ return function(H)
     -- A short real timeout so the test observes the actual auto-hide behind
     -- `vim.defer_fn`, then confirms `pulse()` revives a chip that already
     -- faded out and re-arms a fresh countdown.
-    setup({ chip = { enable = true, timeout_ms = 20 } })
+    -- pulse defaults to false since 2026-09-29 -- explicit here because
+    -- this block specifically tests pulse()'s own reveal/re-arm behaviour.
+    setup({ chip = { enable = true, timeout_ms = 20, pulse = true } })
     local chip = load_module()
     local calls, restore = stub_recording_kit()
 

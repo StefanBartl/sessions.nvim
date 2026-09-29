@@ -24,6 +24,15 @@ return function(H)
   config.setup({})
   H.eq(config.get().default_name, default_name, "setup({}) restores the defaults")
 
+  -- Regression, 2026-09-29: chip.pulse used to default to true, flashing
+  -- ui.kit.chip.pulse's own unrelated default colour ("DiagnosticWarn") on
+  -- every save/load -- read live as an unexplained colour flash, since the
+  -- chip already persistently shows session state and nothing had
+  -- configured pulse_color to match it. Off by default now; still
+  -- opt-in-able.
+  H.falsy(config.get().chip.pulse, "chip.pulse defaults to false")
+  H.eq(DEFAULTS.chip.pulse, false, "DEFAULTS itself carries the new default")
+
   -- --------------------------------------------- DEFAULTS stays pure data (LUA-06)
 
   -- A bare `require` must not compute anything env-/FS-dependent: the

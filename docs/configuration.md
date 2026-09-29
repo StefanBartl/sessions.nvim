@@ -138,7 +138,7 @@ require("sessions").setup({
     min_width = nil,             -- integer, nil/0 = no minimum -- a floor under the chip's own content-derived width (longest rendered line + 2), for when a short line (e.g. one glyph) renders visibly cramped. Content wider than it still grows the box past it
     text = "modern",             -- "modern" (icon + folder, then icon + branch, live -- not a parse of the resolved name) | "classic_text" (today's plain resolved name) | a table for full control -- see "Chip text" in docs/statusline.md
     timeout_ms = 3000,           -- ms before it auto-hides; false (or <= 0) = stay up permanently
-    pulse = true,                -- flash the chip's colour on save/load/autoload
+    pulse = false,               -- flash the chip's colour on save/load/autoload, on top of its persistent state -- default colour ("DiagnosticWarn") is unrelated to whatever colour the chip itself uses, opt in only if you also set pulse_color
     pulse_color = nil,           -- nil = kit.chip.pulse's own default ("DiagnosticWarn")
     pulse_duration_ms = nil,     -- nil = kit.chip.pulse's own default (300)
   },

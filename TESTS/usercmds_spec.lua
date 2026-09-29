@@ -474,7 +474,9 @@ return function(H)
       root = root,
       branch_aware = false,
       project_aware = false,
-      chip = { enable = true },
+      -- pulse defaults to false since 2026-09-29 -- explicit here because
+      -- this block specifically tests that save/load DOES pulse the chip.
+      chip = { enable = true, pulse = true },
     })
     package.loaded["sessions.chip"] = nil
     local chip = require("sessions.chip")
