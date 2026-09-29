@@ -89,8 +89,9 @@ end
 ---moves the chip off the *left* edge, so `dock_left`'s left border stays
 ---correct.
 ---
----Checked via `math.floor(col_offset) ~= 0`, not a bare `col_offset ~= 0`:
----found live, a fractional `col_offset` (e.g. `0.5`) looked like it "fixed"
+---Checked via `is_real_displacement()` (floors first), not a bare
+---`col_offset ~= 0`: found live, a fractional `col_offset` (e.g. `0.5`)
+---looked like it "fixed"
 ---the missing-left-border look, which read as `col_offset` itself having a
 ---real sub-cell effect -- it does not. `:h nvim_open_win()`'s own docs are
 ---explicit that Neovim's builtin (non-multigrid) implementation "will
@@ -112,15 +113,50 @@ local VALID_ANCHORS = {
   ["top-right"] = true,
 }
 
+---@internal
+---Whether `col_offset` represents an ACTUAL displacement: a finite number
+---whose floored value isn't 0. Anything else -- `nil`, a non-number, NaN,
+---`+-math.huge` -- is treated as "no displacement" rather than handed to
+---`math.floor()`, which throws on a non-number argument.
+---
+---Found live (adversarial review, HIGH severity): `cfg.chip.col_offset`
+---is an UNVALIDATED config leaf (`config/init.lua`'s `KNOWN.chip.col_offset
+---= true` accepts any type, no check). Before this guard, a single
+---bad-typed value (e.g. `col_offset = true`, a plausible typo for the
+---boolean-shaped options a few lines away) made `math.floor()` throw --
+---uncaught anywhere in the call chain up through `sessions.setup()`
+---itself, since `effective_shape()` is called unconditionally, inline,
+---while `ensure_mounted()` builds the table it hands to
+---`kit_mod.chip.mount()`. Confirmed live: that throw aborts `setup()`
+---entirely (keymaps never attach, autoload/autosave/dirty-tracking
+---autocmds never register) -- and because `sessions.init`'s
+---`_setup_done` flag is set *before* this point in `setup()`, a retry
+---silently no-ops forever; the only recovery is fixing the config and
+---restarting Neovim. NaN/`math.huge` are rejected explicitly rather than
+---left to `math.floor()`: both satisfy `type(v) == "number"`, and floor
+---of either is itself, never `0`, which would otherwise misreport an
+---unbounded/undefined offset as "a real displacement".
+---@param col_offset any
+---@return boolean
+local function is_real_displacement(col_offset)
+  if type(col_offset) ~= "number" then
+    return false
+  end
+  -- `NaN ~= NaN` is true in IEEE 754 (and thus in Lua).
+  if col_offset ~= col_offset or col_offset == math.huge or col_offset == -math.huge then
+    return false
+  end
+  return math.floor(col_offset) ~= 0
+end
+
 ---@param anchor string
 ---@param shape string
----@param col_offset integer|nil
+---@param col_offset any
 ---@return string
 local function effective_shape(anchor, shape, col_offset)
   local resolved_anchor = VALID_ANCHORS[anchor] and anchor or "bottom-left"
   local off_left_edge = resolved_anchor ~= "bottom-left" and resolved_anchor ~= "top-left"
-  local actually_displaced = col_offset and math.floor(col_offset) ~= 0
-  if shape == "dock_left" and (off_left_edge or actually_displaced) then
+  if shape == "dock_left" and (off_left_edge or is_real_displacement(col_offset)) then
     return "rounded_chip"
   end
   return shape
