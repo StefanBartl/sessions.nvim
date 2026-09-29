@@ -88,6 +88,22 @@ end
 ---of anchor. `row_offset` is not checked: a purely vertical nudge never
 ---moves the chip off the *left* edge, so `dock_left`'s left border stays
 ---correct.
+---
+---Checked via `math.floor(col_offset) ~= 0`, not a bare `col_offset ~= 0`:
+---found live, a fractional `col_offset` (e.g. `0.5`) looked like it "fixed"
+---the missing-left-border look, which read as `col_offset` itself having a
+---real sub-cell effect -- it does not. `:h nvim_open_win()`'s own docs are
+---explicit that Neovim's builtin (non-multigrid) implementation "will
+---always round down to nearest integer" for a fractional `row`/`col` --
+---`col = 0 + 0.5` floors to the exact same `0` an unset `col_offset`
+---already resolves to, so the two are rendered pixel-identical. The
+---apparent improvement was entirely `effective_shape()`'s OWN fallback
+---firing on any nonzero value, including one that floors away to no
+---actual displacement -- swapping in `rounded_chip`'s real border at
+---col 0, which reads as fixing the gap while `col_offset` contributed
+---nothing positional. Flooring this check first makes the fallback track
+---what will actually render differently, not merely what the raw field
+---happens not to equal `0`.
 ---@type table<string, true>
 local VALID_ANCHORS = {
   ["bottom-left"] = true,
@@ -103,7 +119,8 @@ local VALID_ANCHORS = {
 local function effective_shape(anchor, shape, col_offset)
   local resolved_anchor = VALID_ANCHORS[anchor] and anchor or "bottom-left"
   local off_left_edge = resolved_anchor ~= "bottom-left" and resolved_anchor ~= "top-left"
-  if shape == "dock_left" and (off_left_edge or (col_offset and col_offset ~= 0)) then
+  local actually_displaced = col_offset and math.floor(col_offset) ~= 0
+  if shape == "dock_left" and (off_left_edge or actually_displaced) then
     return "rounded_chip"
   end
   return shape

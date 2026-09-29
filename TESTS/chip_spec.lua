@@ -212,6 +212,61 @@ return function(H)
     restore()
   end
 
+  do
+    -- Regression, found live: a fractional col_offset (0.5) looked like it
+    -- "fixed" the missing-left-border look, reading as col_offset itself
+    -- having a real sub-cell effect. It does not -- `:h nvim_open_win()`
+    -- documents Neovim's builtin (non-multigrid) row/col as always
+    -- rounding DOWN to the nearest integer, so `0 + 0.5` renders on the
+    -- exact same column `0 + 0` already does. The apparent fix was
+    -- effective_shape()'s own fallback firing on any nonzero raw value,
+    -- including one that floors away to no actual displacement at all.
+    -- floor(0.5) == 0, so this must NOT trigger the fallback.
+    setup({ chip = { enable = true, col_offset = 0.5 } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    chip.ensure_mounted()
+    H.eq(
+      calls[1][2].shape,
+      "dock_left",
+      "col_offset = 0.5 floors to 0 -- no real displacement, no fallback"
+    )
+    restore()
+  end
+
+  do
+    -- The other side of the same fix: a fractional offset that DOES floor
+    -- away from 0 (1.5 -> 1) must still trigger the fallback -- this is a
+    -- real, visible displacement, just not an integer one as typed.
+    setup({ chip = { enable = true, col_offset = 1.5 } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    chip.ensure_mounted()
+    H.eq(
+      calls[1][2].shape,
+      "rounded_chip",
+      "col_offset = 1.5 floors to 1 -- a real displacement, fallback fires"
+    )
+    restore()
+  end
+
+  do
+    -- Negative offsets floor toward negative infinity (Lua's math.floor,
+    -- matching Neovim's own documented rounding direction) -- -0.5 floors
+    -- to -1, not 0, so it IS a real displacement and must trigger the
+    -- fallback too.
+    setup({ chip = { enable = true, col_offset = -0.5 } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    chip.ensure_mounted()
+    H.eq(
+      calls[1][2].shape,
+      "rounded_chip",
+      "col_offset = -0.5 floors to -1 -- a real displacement, fallback fires"
+    )
+    restore()
+  end
+
   -- ------------------------------------------------- enabled, ui.kit present
 
   do
