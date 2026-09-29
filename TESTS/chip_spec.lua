@@ -428,6 +428,59 @@ return function(H)
     restore()
   end
 
+  -- ------------------------------------------------------------------ toggle
+
+  do
+    setup({ chip = { enable = true, timeout_ms = false } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+
+    chip.toggle()
+    H.eq(#calls, 0, "toggle before the first ensure_mounted does nothing")
+
+    chip.ensure_mounted()
+    H.eq(#calls, 1, "ensure_mounted mounts once")
+
+    -- ensure_mounted already left the chip visible.
+    chip.toggle()
+    H.eq(#calls, 2, "toggle while visible hides it")
+    H.eq(calls[2][1], "refresh")
+
+    chip.toggle()
+    H.eq(#calls, 3, "toggle while hidden shows it again")
+    H.eq(calls[3][1], "refresh")
+    H.eq(#calls, 3, "no pulse call is ever recorded for toggle -- it is a look-up, not a flash")
+
+    restore()
+  end
+
+  -- ------------------------------------------- toggle cancels a pending auto-hide
+
+  do
+    -- Regression: a manual toggle-off must supersede the auto-hide timer
+    -- `ensure_mounted()` already scheduled -- without bumping the hide
+    -- generation, that stale timer would fire later and refresh again,
+    -- redundant at best and, for a shorter timeout than the wait below,
+    -- capable of toggling a later manual show back off out from under it.
+    setup({ chip = { enable = true, timeout_ms = 20 } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+
+    chip.ensure_mounted()
+    H.eq(#calls, 1)
+
+    chip.toggle() -- manual hide, before the scheduled auto-hide fires
+    H.eq(#calls, 2)
+    H.eq(calls[2][1], "refresh")
+
+    vim.wait(80, function()
+      return false
+    end, 10)
+    H.eq(#calls, 2, "the superseded auto-hide timer does not fire a stray refresh")
+
+    restore()
+  end
+
   -- ---------------------------------------------------------- refresh before mount
 
   do

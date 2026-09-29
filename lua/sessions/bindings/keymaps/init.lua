@@ -26,6 +26,7 @@ local COMMANDS = {
   save_ts = { cmd = "Session save-timestamp", desc = "Session: save with timestamp" },
   list = { cmd = "Session list", desc = "Session: list" },
   current = { cmd = "Session current", desc = "Session: show active session" },
+  chip_toggle = { cmd = "Session chip-toggle", desc = "Session: toggle chip visibility" },
   picker = { cmd = "SessionLoad", desc = "Session: pick a session (preview)" },
   toggle_track = { cmd = "Session toggle-track", desc = "Session: toggle git skip-worktree" },
   save_tab = { cmd = "Session save-tab", desc = "Session: save this tab's layout" },

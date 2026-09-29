@@ -7,7 +7,7 @@ standalone `:LastSession` convenience command.
 
 | Command | Description |
 |---|---|
-| `:Session save [name]` | Save session (auto-named if omitted) |
+| `:Session save [name]` | Save session (auto-named if omitted; a bare save prefers whatever session is currently loaded/saved this process, see [Session Naming](configuration.md#session-naming)) |
 | `:Session save-timestamp` | Save with a `sess-YYYYMMDD-HHMMSS` suffix |
 | `:Session load [name]` | Load session (tab-completes saved names); omitted name prefers the current project/branch's own session, else the remembered last-loaded one, else `default_name` |
 | `:Session delete <name>` | Delete session + companion metadata |
@@ -16,6 +16,7 @@ standalone `:LastSession` convenience command.
 | `:Session stale` | List saved sessions whose recorded branch no longer exists (read-only) — see [Stale sessions](#stale-sessions) below |
 | `:Session delete-stale` | Delete every session `:Session stale` would list, after one confirm for the whole batch |
 | `:Session current` | Print the active session name |
+| `:Session chip-toggle` | Show/hide the corner chip on demand, to check which session is active without the auto-hide flash |
 | `:Session toggle-track [name]` | Toggle `git skip-worktree` on a session file |
 | `:Session save-tab [name]` | Save only the current tab's window layout (stored separately from full sessions) |
 | `:Session load-tab <name>` | Load a tab session into a new tab, leaving other tabs untouched |
