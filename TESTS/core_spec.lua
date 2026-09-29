@@ -83,6 +83,42 @@ return function(H)
   H.eq(vim.fn.filereadable(config.get().root .. "/.alpha.json"), 0, "metadata = false writes none")
   H.falsy(core.metadata("alpha"), "so there is nothing to read back")
 
+  -- ------------------------------------------- bare save prefers the current
+
+  do
+    local git_stub = H.stub("sessions.git", {
+      resolve_name = function()
+        return "autoname"
+      end,
+    })
+    setup({ branch_aware = true })
+
+    H.ok(core.save("first"))
+    H.eq(core.current(), "first", "an explicit name becomes current")
+
+    H.ok(core.save("second"))
+    H.eq(core.current(), "second", "saving under a second explicit name moves current to it")
+
+    -- Regression: a bare `:Session save` (no name) used to always re-derive
+    -- from project/branch, ignoring which session was actually loaded/saved
+    -- last -- so saving "second" on top of "first" and then running a bare
+    -- save silently overwrote "first" again instead of updating "second".
+    local bare_ok, bare_path = core.save(nil)
+    H.ok(bare_ok, "a bare save still succeeds")
+    H.eq(bare_path, session_file("second"), "...and targets the currently active session")
+    H.eq(core.current(), "second", "not the project/branch auto-resolved name")
+    H.eq(
+      vim.fn.filereadable(session_file("autoname")),
+      0,
+      "the auto-resolved name is never created by a bare save while a session is current"
+    )
+
+    core.delete("first")
+    core.delete("second")
+    git_stub()
+    setup()
+  end
+
   -- ---------------------------------------------------------------- metadata
 
   do
