@@ -76,6 +76,18 @@ end
 ---not treated as "not a left anchor". Without this, a typo'd anchor made
 ---this fall back to `"rounded_chip"` even though the chip actually ends up
 ---anchored bottom-left -- where `"dock_left"` would have been correct.
+---
+---Same reasoning applies to a nonzero `col_offset` (found live: a user
+---trying `col_offset = 20` to nudge the chip got a box with its right/top/
+---bottom border intact but no left edge at all, floating mid-screen --
+---exactly `dock_left`'s own blank-left-border array, now visible in a
+---position that design never assumed). `col_offset` moves the chip away
+---from col 0 (or the docked statusline row, itself pinned to col 0) by
+---definition, the same way a right-side anchor points the blank edge away
+---from the screen border -- so it gets the identical fallback, regardless
+---of anchor. `row_offset` is not checked: a purely vertical nudge never
+---moves the chip off the *left* edge, so `dock_left`'s left border stays
+---correct.
 ---@type table<string, true>
 local VALID_ANCHORS = {
   ["bottom-left"] = true,
@@ -86,14 +98,12 @@ local VALID_ANCHORS = {
 
 ---@param anchor string
 ---@param shape string
+---@param col_offset integer|nil
 ---@return string
-local function effective_shape(anchor, shape)
+local function effective_shape(anchor, shape, col_offset)
   local resolved_anchor = VALID_ANCHORS[anchor] and anchor or "bottom-left"
-  if
-    shape == "dock_left"
-    and resolved_anchor ~= "bottom-left"
-    and resolved_anchor ~= "top-left"
-  then
+  local off_left_edge = resolved_anchor ~= "bottom-left" and resolved_anchor ~= "top-left"
+  if shape == "dock_left" and (off_left_edge or (col_offset and col_offset ~= 0)) then
     return "rounded_chip"
   end
   return shape
@@ -152,7 +162,7 @@ function M.ensure_mounted()
       return visible
     end,
     anchor = c.anchor,
-    shape = effective_shape(c.anchor, c.shape),
+    shape = effective_shape(c.anchor, c.shape, c.col_offset),
     color = c.color,
     dock = c.dock,
     track_mode = c.track_mode,
