@@ -119,6 +119,89 @@ return function(H)
     setup()
   end
 
+  -- ------------------------------------- forget_current_on_dir_change (:cd)
+
+  do
+    -- Regression, found live (adversarial review, high severity): preferring
+    -- `_current` on a bare save is only correct while it still reflects
+    -- what the user is actually in. Without this reset, saving in project A
+    -- (_current = "projA"), then `:cd`-ing to an unrelated project B
+    -- without ever loading/saving a session there, and then running a bare
+    -- `:Session save` in B, silently overwrote root/projA.vim with B's
+    -- layout -- `_current` stayed "projA" forever, since nothing but an
+    -- explicit save/load/delete/rename ever touched it before this.
+    -- bindings.autocmds wires this to the real `DirChanged` event; this
+    -- exercises the underlying function directly, the same split core_spec
+    -- already keeps between "the logic" (here) and "the wiring"
+    -- (autocmds_spec.lua).
+    local git_stub = H.stub("sessions.git", {
+      resolve_name = function()
+        return "autoname"
+      end,
+    })
+    setup({ branch_aware = true })
+
+    H.ok(core.save("projA"))
+    H.eq(core.current(), "projA", "current after an explicit save")
+
+    core.forget_current_on_dir_change()
+    H.falsy(core.current(), "cleared by the :cd hook")
+
+    local bare_ok, bare_path = core.save(nil)
+    H.ok(bare_ok, "a bare save after :cd still succeeds")
+    H.eq(
+      bare_path,
+      session_file("autoname"),
+      "...and re-derives from project/branch, not the stale projA"
+    )
+    H.eq(core.current(), "autoname", "current now tracks the freshly-derived name")
+
+    core.delete("projA")
+    core.delete("autoname")
+    git_stub()
+    setup()
+  end
+
+  -- ------------------------------- save_tab does not prefer _current either
+
+  do
+    -- Regression, found live (adversarial review, medium severity):
+    -- save_tab(nil) routes through the same shared resolve() helper as
+    -- save(nil) -- the _current-preferring fix for the latter silently
+    -- changed the former's auto-naming too, even though save_tab's own doc
+    -- comment says it "does not touch _current/_dirty/metadata" (about not
+    -- MUTATING those, but resolve() reading _current is a different thing
+    -- entirely, and nothing here was checking that). A full session loaded
+    -- (_current set) must not redirect a bare `:Session save-tab` onto the
+    -- full session's own name -- tab snapshots are their own namespace.
+    local git_stub = H.stub("sessions.git", {
+      resolve_name = function()
+        return "autotab"
+      end,
+    })
+    setup({ branch_aware = true })
+
+    H.ok(core.save("fullsession"))
+    H.eq(core.current(), "fullsession", "a full session is current")
+
+    local tab_ok, tab_path = core.save_tab(nil)
+    H.ok(tab_ok, "a bare save-tab still succeeds")
+    H.eq(
+      tab_path,
+      config.get().root .. "/.tabs/autotab.vim",
+      "...and still auto-resolves from project/branch, not the current full session's name"
+    )
+    H.eq(core.current(), "fullsession", "save_tab never touches _current")
+
+    core.delete("fullsession")
+    -- No M.delete_tab() exists; remove the tab snapshot file directly --
+    -- left behind otherwise, which throws off the exact list_tabs() counts
+    -- the "t1"/"sibling-check" tab tests further down assert.
+    os.remove(tab_path)
+    git_stub()
+    setup()
+  end
+
   -- ---------------------------------------------------------------- metadata
 
   do

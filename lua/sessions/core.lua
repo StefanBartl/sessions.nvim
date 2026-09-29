@@ -35,6 +35,25 @@ function M.mark_dirty()
   end
 end
 
+---Forget `_current` on a `DirChanged` (registered in `bindings.autocmds`,
+---not here -- this module has no UI side-effects of its own).
+---
+---Found live (adversarial review): `_current` is process-global and, before
+---this, never reset by anything short of an explicit save/load/delete/
+---rename. A user who `:Session save`s in project A (`_current = "projA"`),
+---then `:cd`s to an unrelated project B without ever loading/saving a
+---session there, and then runs a bare `:Session save` in B, had it silently
+---overwrite `root/projA.vim` with B's layout -- `resolve()`'s save path
+---prefers `_current` unconditionally, and nothing told it the project
+---actually changed underneath it. A `:cd` within the SAME project (a
+---subdirectory, a build-tool-driven cd) is harmless to clear against: the
+---next auto-resolve just re-derives the identical project/branch name from
+---the new cwd, same as it always could.
+---@return nil
+function M.forget_current_on_dir_change()
+  _current = nil
+end
+
 -- =========================================================
 -- Internal helpers
 -- =========================================================
@@ -110,9 +129,10 @@ end
 ---@internal
 ---@param name string|nil
 ---@param use_auto_resolve boolean|nil
+---@param prefer_current boolean|nil  Save only: consult `_current` before re-deriving from project/branch. Default true; `M.save_tab` passes `false` -- tab snapshots are a separate namespace from the full-session `_current` tracks (see that function's own doc comment).
 ---@return Sessions.Info
 ---@see sessions.git, sessions.state
-local function resolve(name, use_auto_resolve)
+local function resolve(name, use_auto_resolve, prefer_current)
   local cfg = require("sessions.config").cfg
   local n
   if type(name) == "string" and name ~= "" then
@@ -126,9 +146,10 @@ local function resolve(name, use_auto_resolve)
     -- overwrote the FIRST one again, since auto-resolve always recomputes
     -- from project/branch and never looks at what is currently loaded.
     -- _current is nil only when nothing has been loaded/saved yet this
-    -- process (fresh start, autoload off/no match) -- auto-resolve from
-    -- project/branch remains the right fallback for that case.
-    n = _current
+    -- process (fresh start, autoload off/no match), or after a `DirChanged`
+    -- (see `M.forget_current_on_dir_change` below) -- auto-resolve from
+    -- project/branch remains the right fallback for both.
+    n = (prefer_current ~= false and _current)
       or (git_aware(cfg) and require("sessions.git").resolve_name(cfg) or cfg.default_name)
   else
     -- Load with no explicit name (bare `:Session load`, autoload). Two
@@ -493,7 +514,10 @@ function M.save_tab(name)
   wipe_blacklisted()
   wipe_stale()
 
-  local si = resolve(name, true)
+  -- prefer_current = false: tab snapshots are their own namespace, resolved
+  -- straight from project/branch same as before `_current`-preference
+  -- shipped for M.save -- see this function's own doc comment.
+  local si = resolve(name, true, false)
   local path = cfg.root .. "/.tabs/" .. si.name .. ".vim"
   local save_cwd = fn.getcwd()
 
