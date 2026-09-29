@@ -335,7 +335,9 @@ return function(H)
       },
     })
 
-    setup({ autoload = true, autosave = false })
+    -- pulse defaults to false since 2026-09-29 -- explicit here because
+    -- this block specifically asserts that autoload DOES pulse the chip.
+    setup({ autoload = true, autosave = false, chip = { pulse = true } })
     H.ok(core.save("chipcheck"))
     require("sessions.state").set_last_loaded(config.get(), "chipcheck")
     vim.cmd("silent! %bwipeout!")

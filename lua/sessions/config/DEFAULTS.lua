@@ -174,8 +174,15 @@ return {
     -- behavior.
     timeout_ms = 3000,
     -- Flash the chip's colour on save/load/autoload, on top of the
-    -- current state. `false` keeps the chip's colour steady.
-    pulse = true,
+    -- current state. `false` (the default) keeps the chip's colour steady
+    -- -- the chip already persistently shows session state, so a save/load
+    -- flash is an extra on top of that, not a substitute for it; its own
+    -- default colour (`pulse_color = nil` -> ui.kit.chip.pulse's own
+    -- "DiagnosticWarn") is unrelated to whatever colour scheme a caller
+    -- configured for the chip itself, so left on by default it read live
+    -- as an unexplained colour flash rather than a deliberate confirmation
+    -- (found live, 2026-09-29). Opt in explicitly if a flash is wanted.
+    pulse = false,
     pulse_color = nil, -- nil = kit.chip.pulse's own default ("DiagnosticWarn")
     pulse_duration_ms = nil, -- nil = kit.chip.pulse's own default (300)
   },
