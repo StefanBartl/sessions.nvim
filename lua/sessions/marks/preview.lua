@@ -93,15 +93,29 @@ local function ensure_window()
   end
   local w = math.max(40, math.floor(vim.o.columns * 0.7))
   local h = math.max(8, math.floor(vim.o.lines * 0.7))
+
+  -- Border/colors from the active `ui.kit.theme` preset when ui.nvim is
+  -- installed (soft dependency, see docs/installation.md), same "rounded"
+  -- default otherwise -- resolve+apply directly rather than going through
+  -- `ui.kit.surface.open()` (which always creates its own fresh buffer):
+  -- this window's whole point is being REUSED across repeated
+  -- `M.open_path()` calls (cycling marks while the preview stays open), a
+  -- buffer `ensure_window()` manages itself above.
+  local ok_theme, kit_theme = pcall(require, "ui.kit.theme")
+  local resolved = ok_theme and kit_theme.resolve() or nil
+
   STATE.win = vim.api.nvim_open_win(STATE.buf, true, {
     relative = "editor",
     style = "minimal",
-    border = "rounded",
+    border = resolved and resolved.border or "rounded",
     width = w,
     height = h,
     row = math.floor((vim.o.lines - h) / 2),
     col = math.floor((vim.o.columns - w) / 2),
   })
+  if resolved then
+    kit_theme.apply(STATE.win, resolved)
+  end
   vim.wo[STATE.win].wrap = true
   vim.wo[STATE.win].cursorline = true
   vim.wo[STATE.win].number = true
