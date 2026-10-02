@@ -160,10 +160,14 @@ return function(H)
     vim.cmd("Session save has-a-live-branch")
     current_branch_value = "gone-branch"
     vim.cmd("Session save has-a-gone-branch")
+    -- The exit snapshot also records the (now gone) branch, but it is a copy of
+    -- wherever you quit and is rewritten on every exit: never "stale".
+    vim.cmd("Session save last")
 
     vim.cmd("Session stale")
     H.contains(last(), "has-a-gone-branch", "stale lists the orphaned session")
     H.excludes(last(), "has-a-live-branch", "...but not the live one")
+    H.excludes(last(), "last  [", "...and not the exit snapshot")
 
     -- Declining the confirm changes nothing.
     local real_confirm = vim.fn.confirm
@@ -190,6 +194,8 @@ return function(H)
     )
     H.eq(vim.fn.filereadable(root .. "/.has-a-gone-branch.json"), 0, "...and its metadata sidecar")
     H.eq(vim.fn.filereadable(root .. "/has-a-live-branch.vim"), 1, "the live session is untouched")
+    H.eq(vim.fn.filereadable(root .. "/last.vim"), 1, "and so is the exit snapshot")
+    core.delete("last")
 
     vim.cmd("Session stale")
     H.contains(last(), "No stale sessions.", "nothing left to report")

@@ -149,7 +149,15 @@ local function resolve(name, use_auto_resolve, prefer_current)
     -- process (fresh start, autoload off/no match), or after a `DirChanged`
     -- (see `M.forget_current_on_dir_change` below) -- auto-resolve from
     -- project/branch remains the right fallback for both.
-    n = (prefer_current ~= false and _current)
+    -- Not when `_current` is the exit-snapshot slot ("last", loaded by
+    -- `:LastSession`) in a project/branch-aware setup: that is a copy, not the
+    -- workspace -- following it made the autosave on exit write only "last"
+    -- and leave the project's own session stale forever.
+    local current = _current
+    if current and git_aware(cfg) and M.is_snapshot_slot(current) then
+      current = nil
+    end
+    n = (prefer_current ~= false and current)
       or (git_aware(cfg) and require("sessions.git").resolve_name(cfg) or cfg.default_name)
   else
     -- Load with no explicit name (bare `:Session load`, autoload). Two
@@ -533,9 +541,12 @@ end
 ---*workspace* session goes, this is the "where did I leave off" slot. A
 ---snapshot never becomes the current session and never moves the remembered
 ---last-loaded pointer (see `M.save`'s `snapshot`), and is skipped when
----`cfg.save_last` is off, when no real file buffer is open (an empty `nvim`
----or a lone commit message must not erase the last real session), or when
----the regular autosave just wrote this very name.
+---`cfg.save_last` is off, or when no real file buffer is open (an empty `nvim`
+---or a lone commit message must not erase the last real session). When the
+---regular autosave just wrote this very name the file is simply written a
+---second time: nothing here can know the layout did not change since (the
+---dirty flag only runs with `autosave` on), and skipping on a guess would
+---leave `last` stale after a `:LastSession` with `autosave = false`.
 ---@return boolean ok
 ---@return string|nil path_or_err
 function M.save_last()
@@ -543,10 +554,16 @@ function M.save_last()
   if not cfg.save_last then
     return false, "disabled"
   end
-  if _current == cfg.default_name and not _dirty then
-    return false, "already saved"
-  end
   return M.save(cfg.default_name, { snapshot = true })
+end
+
+---Whether `name` is the exit-snapshot slot (`default_name` while `save_last`
+---is on): a copy of "wherever you quit", not a workspace of its own.
+---@param name string
+---@return boolean
+function M.is_snapshot_slot(name)
+  local cfg = require("sessions.config").cfg
+  return cfg.save_last and name == cfg.default_name or false
 end
 
 --- Tab-scoped save: only the current tab's window layout, stored separately

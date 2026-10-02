@@ -179,9 +179,51 @@ return function(H)
     load_module().enable()
     vim.api.nvim_exec_autocmds("VimLeavePre", {})
     H.eq(vim.fn.filereadable(last_file()), 1, "autosave_name = 'last' still yields the file")
-    H.falsy(select(1, core.save_last()), "and save_last reports it as already saved")
+    H.ok(select(1, core.save_last()), "and save_last may simply write it again")
     core.delete("last")
     core.forget_current_on_dir_change()
+
+    -- :LastSession must not turn "last" into the workspace: after loading it, a
+    -- bare save (and so the autosave on exit) still goes to the project/branch
+    -- session instead of overwriting only "last".
+    do
+      local snap_git_stub = H.stub("sessions.git", {
+        resolve_name = function()
+          return "proj_main"
+        end,
+        current_branch = function()
+          return nil
+        end,
+      })
+      setup({ autosave = false, save_last = true, branch_aware = true })
+      H.ok(core.save_last(), "a snapshot to load")
+      H.ok(core.load("last"), "loaded like :LastSession does")
+      H.eq(core.current(), "last", "it is shown as the active session")
+      H.ok(core.save(nil), "a bare save")
+      H.eq(
+        vim.fn.filereadable(root() .. "/proj_main.vim"),
+        1,
+        "goes to the project session, not back into 'last'"
+      )
+      core.delete("proj_main")
+      core.delete("last")
+      core.forget_current_on_dir_change()
+      snap_git_stub()
+
+      -- ...and with autosave off, exiting after that load still refreshes "last".
+      setup({ autosave = false, save_last = true })
+      H.ok(core.save_last(), "write last")
+      H.ok(core.load("last"), "load it (current = last)")
+      vim.fn.delete(last_file())
+      vim.api.nvim_exec_autocmds("VimLeavePre", {})
+      H.eq(
+        vim.fn.filereadable(last_file()),
+        0 + 1,
+        "exit rewrites 'last' even when it is the current session"
+      )
+      core.delete("last")
+      core.forget_current_on_dir_change()
+    end
 
     -- Off means off.
     setup({ autosave = false, save_last = false })

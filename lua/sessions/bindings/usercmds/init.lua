@@ -172,7 +172,10 @@ local function find_stale()
   for _, path in ipairs(core.list()) do
     local name = vim.fn.fnamemodify(path, ":t:r")
     local meta = core.metadata(name)
-    if meta and meta.branch and meta.cwd then
+    -- The exit snapshot is rewritten on every exit and is not tied to one
+    -- branch: never a candidate, or `delete-stale` would take `:LastSession`'s
+    -- target with it as soon as the branch it was last written on is gone.
+    if meta and meta.branch and meta.cwd and not core.is_snapshot_slot(name) then
       if not git.branch_exists(meta.cwd, meta.branch) then
         out[#out + 1] = { name = name, path = path, meta = meta }
       end
