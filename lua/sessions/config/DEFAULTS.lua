@@ -30,6 +30,11 @@ return {
   -- which meant leaving any project silently overwrote every other
   -- project's autosave in that one shared slot -- see docs/configuration.md.
   autosave_name = true,
+  -- On exit, always also write the session `default_name` ("last"): the
+  -- snapshot `:LastSession` loads -- the editor as you left it, whatever the
+  -- project or branch, whether or not you ever saved and independent of
+  -- `autosave`/`autosave_name`. Skipped when no real file buffer is open.
+  save_last = true,
   metadata = true,
   -- Persist the per-tabpage buffer order (`vim.t.bufs`) that NvChad's
   -- tabufline and similar bars render from — `:mksession` cannot carry a

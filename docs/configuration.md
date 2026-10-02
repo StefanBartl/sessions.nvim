@@ -50,6 +50,16 @@ require("sessions").setup({
   --   false   -- no autosave despite autosave = true.
   autosave_name = true,
 
+  -- On exit, ALWAYS also write the session `default_name` ("last"): the
+  -- snapshot `:LastSession` / `nvim +LastSession` loads -- the editor as you
+  -- quit it, any project/branch, whether or not you ever saved, and
+  -- independent of `autosave`/`autosave_name` above. It never becomes the
+  -- "current" session and does not move the remembered last-loaded pointer.
+  -- Skipped when no real file buffer is open, so an empty `nvim` (or a lone
+  -- commit message) cannot erase the last real session. false = off;
+  -- `:LastSession` then resolves like a bare `:Session load`.
+  save_last = true,
+
   -- Write a .{name}.json companion file next to each session.
   metadata = true,
 

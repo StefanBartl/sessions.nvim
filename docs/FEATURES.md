@@ -184,7 +184,10 @@ one name regardless of project.
 - **Config:** `opts.autoload` (default `false`; `"ask"` shows a floating
   y/n confirmation before loading instead of loading silently),
   `opts.autosave` (default `true`), `opts.autosave_name` (default `true`;
-  a string pins it to a fixed name, `false` disables autosave)
+  a string pins it to a fixed name, `false` disables autosave),
+  `opts.save_last` (default `true`; additionally snapshots the exiting
+  session as `default_name` — what `:LastSession` loads — even with
+  `autosave = false`)
 
 ## Remembered last-loaded session
 
@@ -290,11 +293,22 @@ available, else Telescope — neither is a hard dependency, and every other
 
 ## `:LastSession`
 
-A standalone convenience command over `:Session load last`, so
-`nvim +LastSession` works from the CLI without the quoting `:Session load`
-needs for its two-word form.
+Loads the `default_name` ("last") session, which **every exit rewrites**
+(`opts.save_last`, default `true`): the editor exactly as you quit it —
+whatever project or branch it was, whether or not you ever saved, and
+independent of `autosave`/`autosave_name` (those only decide where the
+*workspace* session goes). `nvim +LastSession` works from the CLI without
+the quoting `:Session load` needs for its two-word form.
+
+The snapshot never becomes the "current" session and leaves the remembered
+last-loaded pointer alone, so a bare `:Session save`/`:Session load` keep
+resolving by project/branch. It is skipped when no real file buffer is open
+(an empty `nvim` or a lone commit message must not erase the last real
+session). With no `last` yet — fresh install — or `save_last = false`,
+`:LastSession` resolves like a bare `:Session load`.
 
 - **Usercmds:** `:LastSession`
+- **Config:** `opts.save_last` (default `true`)
 
 ## `:checkhealth sessions`
 

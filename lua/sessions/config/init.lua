@@ -72,6 +72,7 @@ local KNOWN = {
   autoload = true,
   autosave = true,
   autosave_name = true,
+  save_last = true,
   metadata = true,
   restore_buffer_order = true,
   restore_pinned_buffers = true,

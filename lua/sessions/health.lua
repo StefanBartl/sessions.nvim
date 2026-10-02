@@ -147,6 +147,7 @@ function M.check()
   vim.health.info("project_aware: " .. tostring(cfg.project_aware))
   vim.health.info("autoload: " .. tostring(cfg.autoload))
   vim.health.info("autosave: " .. tostring(cfg.autosave))
+  vim.health.info("save_last: " .. tostring(cfg.save_last))
   vim.health.info("metadata: " .. tostring(cfg.metadata))
   vim.health.info("restore_buffer_order: " .. tostring(cfg.restore_buffer_order))
 

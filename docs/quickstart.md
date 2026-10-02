@@ -25,8 +25,9 @@ nvim '+Session load myapp_feature-login'
 > <name>` — needs to be quoted as a single argument. `:LastSession` is a
 > plain, separate, single-word command specifically so the single most common
 > case (restore wherever you left off) doesn't need quoting — it resolves
-> exactly like a bare `:Session load` (see docs/configuration.md's "Session
-> Naming"), not a hardcoded name.
+> the `last` snapshot written on every exit (`save_last`, see
+> docs/configuration.md), not the per-project session a bare `:Session load`
+> resolves to.
 
 ## Workflow example (with autosave enabled)
 
@@ -41,8 +42,9 @@ require("sessions").setup({
 
 Then use it:
 ```bash
-nvim src/main.lua        # work, then exit (autosaved under this project/branch's name)
-nvim +LastSession        # restore the workspace
+nvim src/main.lua        # work, then exit (autosaved under this project/branch's name,
+                         # plus a `last` snapshot of exactly how you left things)
+nvim +LastSession        # restore that snapshot
 ```
 
 Switch branches and restore the right session:

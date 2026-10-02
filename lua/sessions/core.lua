@@ -401,6 +401,26 @@ local function wipe_stale(scope_tab)
 end
 
 ---@internal
+---Whether at least one listed, named, regular buffer is open -- something a
+---session would actually bring back. Judged after the blacklist/stale sweep.
+---@return boolean
+local function has_restorable_buffer()
+  local bufs = api.nvim_list_bufs()
+  for i = 1, #bufs do
+    local b = bufs[i]
+    if
+      api.nvim_buf_is_valid(b)
+      and bo[b].buflisted
+      and bo[b].buftype == ""
+      and api.nvim_buf_get_name(b) ~= ""
+    then
+      return true
+    end
+  end
+  return false
+end
+
+---@internal
 ---@return string[]
 local function modified_buffer_names()
   local out = {}
@@ -441,12 +461,14 @@ end
 -- =========================================================
 
 ---@param name string|nil  Explicit name; nil = auto-resolve
+---@param opts? { snapshot?: boolean }  `snapshot`: write the file (and its sidecars) only -- do not become the current session, do not move the remembered last-loaded pointer, do not run `hooks.on_save`, and skip when no real file buffer is open (see `M.save_last`)
 ---@return boolean ok
 ---@return string|nil path_or_err
 ---@return string[]|nil stale  Buffers dropped because their file no longer exists
 ---@see sessions.layout, sessions.portable, sessions.meta
-function M.save(name)
+function M.save(name, opts)
   local cfg = require("sessions.config").cfg
+  local snapshot = opts and opts.snapshot or false
   apply_sessionoptions()
   local dir_ok, dir_err = ensure_dir(cfg.root)
   if not dir_ok then
@@ -454,6 +476,10 @@ function M.save(name)
   end
   wipe_blacklisted()
   local stale = wipe_stale()
+
+  if snapshot and not has_restorable_buffer() then
+    return false, "no file buffer open"
+  end
 
   local si = resolve(name, true) -- save: auto-resolve a project/branch name when unnamed
   local save_cwd = fn.getcwd()
@@ -469,14 +495,16 @@ function M.save(name)
     end
   end
 
-  _current = si.name
-  _dirty = false
-  -- A save is as much "the session to resume next" as an explicit load --
-  -- withholding this left the very first save in a project (before it was
-  -- ever explicitly loaded once) unable to be found again by a bare
-  -- `:Session load`/autoload, which fell through to whatever `.state.json`
-  -- last remembered from a *different* project instead. See M.load() below.
-  require("sessions.state").set_last_loaded(cfg, si.name)
+  if not snapshot then
+    _current = si.name
+    _dirty = false
+    -- A save is as much "the session to resume next" as an explicit load --
+    -- withholding this left the very first save in a project (before it was
+    -- ever explicitly loaded once) unable to be found again by a bare
+    -- `:Session load`/autoload, which fell through to whatever `.state.json`
+    -- last remembered from a *different* project instead. See M.load() below.
+    require("sessions.state").set_last_loaded(cfg, si.name)
+  end
 
   if cfg.metadata then
     local branch = git_aware(cfg) and require("sessions.git").current_branch() or nil
@@ -491,11 +519,34 @@ function M.save(name)
     require("sessions.pins").save(si.path)
   end
 
-  if cfg.hooks.on_save then
+  if cfg.hooks.on_save and not snapshot then
     pcall(cfg.hooks.on_save, si.name, si.path)
   end
 
   return true, si.path, stale
+end
+
+---Snapshot the exiting session under `cfg.default_name` ("last"), on top of
+---whatever the regular autosave wrote -- the file `:LastSession` loads.
+---Always the most recent state of the editor, whatever project or branch it
+---was, and independent of `autosave`/`autosave_name`: those decide where the
+---*workspace* session goes, this is the "where did I leave off" slot. A
+---snapshot never becomes the current session and never moves the remembered
+---last-loaded pointer (see `M.save`'s `snapshot`), and is skipped when
+---`cfg.save_last` is off, when no real file buffer is open (an empty `nvim`
+---or a lone commit message must not erase the last real session), or when
+---the regular autosave just wrote this very name.
+---@return boolean ok
+---@return string|nil path_or_err
+function M.save_last()
+  local cfg = require("sessions.config").cfg
+  if not cfg.save_last then
+    return false, "disabled"
+  end
+  if _current == cfg.default_name and not _dirty then
+    return false, "already saved"
+  end
+  return M.save(cfg.default_name, { snapshot = true })
 end
 
 --- Tab-scoped save: only the current tab's window layout, stored separately

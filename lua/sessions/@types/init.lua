@@ -74,6 +74,7 @@
 ---@field autoload boolean|"ask"         Load the contextual session on VimEnter (no file args); "ask" prompts first
 ---@field autosave boolean               Autosave session on VimLeavePre
 ---@field autosave_name string|boolean   Autosave target: `true` = branch/project-aware auto-resolve (like a bare `:Session save`); a string pins autosave to that fixed name regardless of project; `false` disables autosave despite `autosave = true`
+---@field save_last boolean              On VimLeavePre also write the session `default_name` ("last") -- what `:LastSession` loads -- regardless of `autosave`; skipped when no file buffer is open
 ---@field metadata boolean               Write a companion .json file with save context
 ---@field restore_buffer_order boolean   Persist/restore per-tabpage `vim.t.bufs` order (NvChad tabufline etc.); no-op without such a tabline
 ---@field restore_pinned_buffers boolean Persist/restore per-tabpage tab-pin state (ui.nvim's tabline `vim.t.ui_pinned`); no-op without ui.nvim, restored after restore_buffer_order
@@ -165,6 +166,7 @@
 ---@field autoload?        boolean|"ask"         Load the contextual session on VimEnter (no file args); "ask" prompts first
 ---@field autosave?        boolean               Autosave session on VimLeavePre
 ---@field autosave_name?   string|boolean   Autosave target: `true` = branch/project-aware auto-resolve (like a bare `:Session save`); a string pins autosave to that fixed name regardless of project; `false` disables autosave despite `autosave = true`
+---@field save_last?       boolean               On VimLeavePre also write the session `default_name` ("last") -- what `:LastSession` loads -- regardless of `autosave`; skipped when no file buffer is open
 ---@field metadata?        boolean               Write a companion .json file with save context
 ---@field restore_buffer_order? boolean          Persist/restore per-tabpage `vim.t.bufs` order (NvChad tabufline etc.); no-op without such a tabline
 ---@field restore_pinned_buffers? boolean         Persist/restore per-tabpage tab-pin state (ui.nvim's tabline `vim.t.ui_pinned`); no-op without ui.nvim, restored after restore_buffer_order

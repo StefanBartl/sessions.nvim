@@ -612,21 +612,27 @@ function M.enable()
   })
 
   -- :LastSession — a plain zero-arg command (not a :Session subcommand) so it
-  -- works as `nvim +LastSession` on the CLI. Same resolution as a bare
-  -- `:Session load` (do_load(nil)): the current project/branch's own
-  -- session first, else the remembered last-loaded/saved one, else
-  -- default_name (see docs/configuration.md's "Session Naming").
+  -- works as `nvim +LastSession` on the CLI. Loads the `default_name`
+  -- ("last") session, which every exit rewrites (`save_last`, see
+  -- core.save_last): the editor as it was when you last quit, whatever
+  -- project or branch that was and whether or not you ever saved.
   --
-  -- Used to hardcode `do_load("last")` instead, on the theory that the
-  -- literal "last" was always what autosave wrote to. That stopped being
-  -- true once `autosave_name = true` (the default) started auto-resolving
-  -- autosave by branch/project like a real save -- a hardcoded "last" would
-  -- then load a stale or nonexistent file instead of what was actually just
-  -- autosaved. `do_load(nil)` tracks whatever autosave/save actually
-  -- targets, whatever `autosave_name`/`default_name` are set to.
+  -- It used to hardcode "last" on the theory that autosave wrote there, then
+  -- switched to the bare `:Session load` resolution once autosave went
+  -- per-project -- which left "last" (and so `+LastSession`) stale unless you
+  -- saved by hand. The exit snapshot makes the literal name right again. It
+  -- falls back to that same resolution when there is no "last" yet (fresh
+  -- install) or `save_last` is switched off.
   require("lib.nvim.bindings.usercmd").create("LastSession", function()
-    do_load(nil)
-  end, { desc = "Load wherever you left off (nvim +LastSession)" })
+    local cfg = require("sessions.config").cfg
+    if
+      cfg.save_last and vim.fn.filereadable(cfg.root .. "/" .. cfg.default_name .. ".vim") == 1
+    then
+      do_load(cfg.default_name)
+    else
+      do_load(nil)
+    end
+  end, { desc = "Load the session you left on exit (nvim +LastSession)" })
 
   -- :SessionLoad — session picker with live preview (Snacks.picker or
   -- telescope.nvim, whichever is installed). A plain zero-arg command, not
