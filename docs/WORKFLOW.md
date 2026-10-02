@@ -11,33 +11,34 @@ With the defaults (`autosave = true`, `autosave_name = true`,
 `branch_aware = true`, `project_aware = true`), the entire day-to-day
 workflow is: open Neovim, work, quit. `VimLeavePre` autosaves to the same
 branch/project-aware name a bare `:Session save` would use (`autosave_name
-= true` resolves it that way — see docs/configuration.md), and
-`nvim +LastSession` restores it next time — no `:Session save` needed
-unless you want a *named* session to come back to deliberately (a
-milestone, a specific investigation) rather than just "wherever I left
-off".
+= true` resolves it that way — see docs/configuration.md) **and** writes a
+`last` snapshot (`save_last = true`), which `nvim +LastSession` restores
+next time — no `:Session save` needed unless you want a *named* session to
+come back to deliberately (a milestone, a specific investigation) rather
+than just "wherever I left off".
 
-## `nvim +LastSession` and `nvim '+Session load'` are the same resolution now
+## `nvim +LastSession` vs. `nvim '+Session load'`
 
 Both need `lazy = false` (or another eager-load trigger active at startup)
 in the plugin spec, or the CLI `+cmd` flag fires before the plugin is even
-loaded and does nothing. Beyond that, pick whichever reads better in a
-shell alias — `+LastSession` needs no quoting, `'+Session load'` does — the
-two now resolve identically: the current project/branch's own session
-first (if it has been saved at least once), else the remembered
-last-loaded/saved session, else `default_name`. `:Session load <name>`
-stays the way to load something else on purpose.
+loaded and does nothing. They answer different questions:
 
-This used to be a real trap: `+LastSession` hardcoded the literal `"last"`
-autosave slot, so `+LastSession` after a `git checkout` could restore
-whatever was open when you last quit *on any branch*, not the workspace
-tied to the branch you just switched to. Both the resolution `:LastSession`
-uses and the default `autosave_name` changed together to close that gap —
-see docs/configuration.md's "Session Naming" for the exact priority order.
-If you explicitly set `autosave_name` to a fixed string (the old default),
-that trap is back by design: autosave always targets that one name again,
-so `+LastSession`/bare `:Session load` will prefer it over any
-branch-aware session that happens to exist too.
+- `+LastSession` — "put me back exactly where I quit": loads `last`, the
+  snapshot every exit rewrites, whatever project or branch that was.
+- `'+Session load'` (needs quoting) — "the workspace of *where I am now*":
+  the current project/branch's own session first (if it has been saved at
+  least once), else the remembered last-loaded/saved session, else
+  `default_name`.
+
+`:Session load <name>` stays the way to load something else on purpose.
+
+The snapshot exists because per-project autosave (`autosave_name = true`)
+leaves the literal `last` slot untouched — `+LastSession` used to go stale
+unless you saved by hand. `save_last` writes it on every exit instead,
+independent of `autosave`. It is skipped when no real file buffer is open,
+and it never becomes the "current" session, so a bare `:Session save` keeps
+resolving by project/branch. `save_last = false` brings back the old
+behaviour (`:LastSession` then resolves like a bare `:Session load`).
 
 ## Branch switches restore a different workspace — that's the point, not a bug
 

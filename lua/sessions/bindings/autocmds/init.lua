@@ -220,6 +220,18 @@ function M.enable()
     end
   end
 
+  -- Registered after the autosave handler on purpose: autocmds of one event
+  -- run in registration order, and the snapshot should see the state the
+  -- autosave left (and skip itself when that wrote the very same name).
+  if cfg.save_last then
+    create_autocmd("VimLeavePre", function()
+      pcall(require("sessions.core").save_last)
+    end, {
+      group = aug,
+      desc = "sessions.nvim: snapshot the exiting session as 'last' (what :LastSession loads)",
+    })
+  end
+
   if cfg.marks and cfg.marks.enable then
     M.enable_marks(cfg, aug)
   end

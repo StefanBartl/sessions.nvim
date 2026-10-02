@@ -4,7 +4,7 @@
 | --- | --- |
 | `:Session save` / `load` | Save or restore, auto-resolved by project and branch |
 | `:Session delete` / `rename` | The lifecycle commands most session plugins leave out |
-| `:LastSession` | Wherever you left off — project/branch-aware, remembered across restarts |
+| `:LastSession` | Wherever you left off — every exit writes a `last` snapshot, no manual save needed |
 | `:SessionLoad` | The picker: live preview, multi-select delete |
 | `:Session save-tab` / `load-tab` | Just the current tab's windows, independent of the rest |
 | `:Session save-layout` / `load-layout` | Reapply a split arrangement to whatever is open, without touching buffers |

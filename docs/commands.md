@@ -22,7 +22,7 @@ standalone `:LastSession` convenience command.
 | `:Session load-tab <name>` | Load a tab session into a new tab, leaving other tabs untouched |
 | `:Session save-layout <name>` | Save the current window-split structure only (no buffers/files) |
 | `:Session load-layout <name>` | Restore a window-split layout onto whatever buffers are currently open |
-| `:LastSession` | Load wherever you left off — same resolution as a bare `:Session load`, unquoted-CLI-friendly (`nvim +LastSession`) |
+| `:LastSession` | Load the `last` snapshot every exit writes (`save_last`) — the editor exactly as you quit it, any project/branch, no manual save needed; unquoted-CLI-friendly (`nvim +LastSession`). Falls back to a bare `:Session load` while no `last` exists yet |
 | `:SessionLoad` | Open a session picker with live preview (Snacks.picker or Telescope) — see [Picker Integration](picker.md) |
 | `:Session marks …` | The mark list — an ordered set of files jumped to by number, with pins and defaults; `add`, `remove`, `pin`, `unpin`, `defaults sync\|reset`, `select <n>`, `preview <n>`, `menu [kind]`, `list`, `debug`, `import-harpoon`. Off unless `marks.enable = true`; see [Marks](marks.md) |
 

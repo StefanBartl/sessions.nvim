@@ -25,6 +25,7 @@ return function(H)
       restore_buffer_order = false,
       autoload = false,
       autosave = false,
+      save_last = false, -- opt in per test: it adds a VimLeavePre autocmd of its own
     }, extra or {}))
   end
 
@@ -124,6 +125,72 @@ return function(H)
   vim.api.nvim_exec_autocmds("VimLeavePre", {})
   H.eq(#core.list(), before, "autosave_name = false writes nothing on exit")
   H.ok(count("BufAdd") > 0, "while the dirty tracking is still registered")
+
+  -- ---------------------------------------------------------------- save_last
+
+  do
+    local root = function()
+      return config.get().root
+    end
+    local last_file = function()
+      return root() .. "/" .. config.get().default_name .. ".vim"
+    end
+    local file = dir .. "/lastfile.lua"
+    vim.fn.writefile({ "-- x" }, file)
+
+    -- Independent of `autosave`: with it off, the exit snapshot is all there is.
+    setup({ autosave = false, save_last = true })
+    load_module().enable()
+    H.eq(count("VimLeavePre"), 1, "save_last registers its own VimLeavePre autocmd")
+
+    vim.cmd("silent! %bwipeout!")
+    vim.api.nvim_exec_autocmds("VimLeavePre", {})
+    H.eq(vim.fn.filereadable(last_file()), 0, "nothing to restore: an empty editor writes nothing")
+
+    vim.cmd.edit(vim.fn.fnameescape(file))
+    core.forget_current_on_dir_change()
+    local pointer = require("sessions.state").read(config.get()).last_loaded
+    vim.api.nvim_exec_autocmds("VimLeavePre", {})
+    H.eq(vim.fn.filereadable(last_file()), 1, "with a file open, the exit snapshot is written")
+    H.falsy(core.current(), "a snapshot never becomes the current session")
+    H.eq(
+      require("sessions.state").read(config.get()).last_loaded,
+      pointer,
+      "and leaves the remembered last-loaded pointer alone"
+    )
+
+    -- Next to a regular autosave: both are written.
+    core.delete("last")
+    setup({ autosave = true, autosave_name = "pinned", save_last = true })
+    load_module().enable()
+    vim.api.nvim_exec_autocmds("VimLeavePre", {})
+    H.eq(
+      vim.fn.filereadable(root() .. "/pinned.vim"),
+      1,
+      "the autosave still lands where it should"
+    )
+    H.eq(vim.fn.filereadable(last_file()), 1, "and 'last' is written as well")
+    core.delete("pinned")
+    core.delete("last")
+    core.forget_current_on_dir_change()
+
+    -- When the autosave itself wrote 'last', it is not rewritten a second time.
+    setup({ autosave = true, autosave_name = "last", save_last = true })
+    load_module().enable()
+    vim.api.nvim_exec_autocmds("VimLeavePre", {})
+    H.eq(vim.fn.filereadable(last_file()), 1, "autosave_name = 'last' still yields the file")
+    H.falsy(select(1, core.save_last()), "and save_last reports it as already saved")
+    core.delete("last")
+    core.forget_current_on_dir_change()
+
+    -- Off means off.
+    setup({ autosave = false, save_last = false })
+    load_module().enable()
+    H.eq(count("VimLeavePre"), 0, "save_last = false registers nothing")
+    vim.api.nvim_exec_autocmds("VimLeavePre", {})
+    H.eq(vim.fn.filereadable(last_file()), 0, "and writes nothing")
+    vim.cmd("silent! %bwipeout!")
+  end
 
   -- ----------------------------------------------------------------- autoload
 

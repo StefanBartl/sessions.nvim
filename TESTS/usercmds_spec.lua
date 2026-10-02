@@ -258,6 +258,22 @@ return function(H)
   H.contains(last(), "info: loaded: ", ":LastSession resumes the remembered session")
   H.eq(core.current(), "renamed", "which is the one that was saved most recently")
 
+  -- With the exit snapshot ("last", written by `save_last` on VimLeavePre)
+  -- present, :LastSession loads that -- not whatever was remembered.
+  do
+    local snap = dir .. "/snap.lua"
+    vim.fn.writefile({ "-- snap" }, snap)
+    vim.cmd.edit(vim.fn.fnameescape(snap))
+    H.ok(core.save_last(), "the exit snapshot is written")
+    vim.cmd("Session load renamed")
+    H.eq(core.current(), "renamed", "something else is current")
+    vim.cmd("LastSession")
+    H.eq(core.current(), "last", ":LastSession loads the 'last' snapshot")
+    core.delete("last")
+    vim.cmd("silent! %bwipeout!")
+    vim.cmd("Session load renamed") -- back to what the next checks expect
+  end
+
   -- ---------------------------------------------------------- :SessionLoad
   -- sessions.picker now goes through the same lib.nvim.notify-or-fallback
   -- notifier as every other route in this plugin (it used to call plain
