@@ -198,6 +198,23 @@ return function(H)
   end
 
   do
+    -- A NEGATIVE col_offset is a real displacement too (floor(-1) == -1 ~= 0),
+    -- so it takes the same fallback; only 0 (and a fraction flooring to 0)
+    -- keeps dock_left.
+    setup({ chip = { enable = true, col_offset = -1 } })
+    local chip = load_module()
+    local calls, restore = stub_recording_kit()
+    chip.ensure_mounted()
+    H.eq(
+      calls[1][2].shape,
+      "rounded_chip",
+      "dock_left + col_offset = -1 falls back to the symmetric shape"
+    )
+    H.eq(calls[1][2].col_offset, -1, "the offset itself is still forwarded")
+    restore()
+  end
+
+  do
     -- col_offset = 0 (the default -- "no offset") must NOT trigger the
     -- fallback; only an actual nonzero displacement does.
     setup({ chip = { enable = true, col_offset = 0 } })
