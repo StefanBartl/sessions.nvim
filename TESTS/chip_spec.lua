@@ -176,7 +176,7 @@ return function(H)
     restore()
   end
 
-  -- --------------------------------- dock_left default + a nonzero col_offset
+  -- --------------------------------- dock_left default + a positive col_offset
 
   do
     -- Regression, found live: a user trying col_offset to nudge the chip
@@ -192,23 +192,25 @@ return function(H)
     H.eq(
       calls[1][2].shape,
       "rounded_chip",
-      "dock_left + a nonzero col_offset falls back to the symmetric shape"
+      "dock_left + a positive col_offset falls back to the symmetric shape"
     )
     restore()
   end
 
   do
-    -- A NEGATIVE col_offset is a real displacement too (floor(-1) == -1 ~= 0),
-    -- so it takes the same fallback; only 0 (and a fraction flooring to 0)
-    -- keeps dock_left.
+    -- A NEGATIVE col_offset is NOT a displacement: a left-anchored chip sits at
+    -- col 0, so `col = 0 + (-1)` goes negative and Neovim clips the float back
+    -- to screen col 0 (verified on a real UI). Swapping the shape would only
+    -- trade the dock look for a rounded left border on the same cells, so
+    -- dock_left stays. The raw offset is still forwarded unchanged.
     setup({ chip = { enable = true, col_offset = -1 } })
     local chip = load_module()
     local calls, restore = stub_recording_kit()
     chip.ensure_mounted()
     H.eq(
       calls[1][2].shape,
-      "rounded_chip",
-      "dock_left + col_offset = -1 falls back to the symmetric shape"
+      "dock_left",
+      "dock_left + col_offset = -1 keeps dock_left (clipped to col 0, nothing moves)"
     )
     H.eq(calls[1][2].col_offset, -1, "the offset itself is still forwarded")
     restore()
@@ -270,16 +272,16 @@ return function(H)
   do
     -- Negative offsets floor toward negative infinity (Lua's math.floor,
     -- matching Neovim's own documented rounding direction) -- -0.5 floors
-    -- to -1, not 0, so it IS a real displacement and must trigger the
-    -- fallback too.
+    -- to -1, which is still negative: clipped to col 0, no displacement, no
+    -- fallback.
     setup({ chip = { enable = true, col_offset = -0.5 } })
     local chip = load_module()
     local calls, restore = stub_recording_kit()
     chip.ensure_mounted()
     H.eq(
       calls[1][2].shape,
-      "rounded_chip",
-      "col_offset = -0.5 floors to -1 -- a real displacement, fallback fires"
+      "dock_left",
+      "col_offset = -0.5 floors to -1 -- clipped to col 0, dock_left stays"
     )
     restore()
   end

@@ -77,15 +77,20 @@ end
 ---this fall back to `"rounded_chip"` even though the chip actually ends up
 ---anchored bottom-left -- where `"dock_left"` would have been correct.
 ---
----Same reasoning applies to a nonzero `col_offset` (found live: a user
+---Same reasoning applies to a POSITIVE `col_offset` (found live: a user
 ---trying `col_offset = 20` to nudge the chip got a box with its right/top/
 ---bottom border intact but no left edge at all, floating mid-screen --
 ---exactly `dock_left`'s own blank-left-border array, now visible in a
----position that design never assumed). `col_offset` moves the chip away
----from col 0 (or the docked statusline row, itself pinned to col 0) by
----definition, the same way a right-side anchor points the blank edge away
----from the screen border -- so it gets the identical fallback, regardless
----of anchor. `row_offset` is not checked: a purely vertical nudge never
+---position that design never assumed). A positive `col_offset` moves the
+---chip away from col 0 (or the docked statusline row, itself pinned to col
+---0), the same way a right-side anchor points the blank edge away from the
+---screen border -- so it gets the identical fallback, regardless of
+---anchor. A NEGATIVE one moves nothing: the chip starts at col 0, so
+---`col = 0 + offset` goes negative and Neovim's non-multigrid compositor
+---clips the float back to screen col 0 (`nvim_win_get_config` still reports
+---the raw value). Swapping the shape for it would only trade the dock look
+---for a rounded left border at the very same cells, so it keeps
+---`dock_left`. `row_offset` is not checked: a purely vertical nudge never
 ---moves the chip off the *left* edge, so `dock_left`'s left border stays
 ---correct.
 ---
@@ -115,7 +120,8 @@ local VALID_ANCHORS = {
 
 ---@internal
 ---Whether `col_offset` represents an ACTUAL displacement: a finite number
----whose floored value isn't 0. Anything else -- `nil`, a non-number, NaN,
+---whose floored value is > 0 (a negative value is clipped to col 0 by
+---Neovim, so it moves nothing). Anything else -- `nil`, a non-number, NaN,
 ---`+-math.huge` -- is treated as "no displacement" rather than handed to
 ---`math.floor()`, which throws on a non-number argument.
 ---
@@ -146,7 +152,7 @@ local function is_real_displacement(col_offset)
   if col_offset ~= col_offset or col_offset == math.huge or col_offset == -math.huge then
     return false
   end
-  return math.floor(col_offset) ~= 0
+  return math.floor(col_offset) > 0
 end
 
 ---@param anchor string
