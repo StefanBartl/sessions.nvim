@@ -95,7 +95,7 @@ process and makes no network call; [`TESTS/README.md`](../TESTS/README.md) has
 the seams that guarantee that, and what is deliberately left out.
 
 ```
-nvim --headless -u NONE -c "set rtp+=." -l TESTS/run.lua
+bash scripts/test.sh
 ```
 
 Exit 0 is a pass. [GitHub Actions](../.github/workflows/ci.yml) runs it plus

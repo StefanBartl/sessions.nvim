@@ -1,27 +1,36 @@
 # TESTS/
 
-Headless spec suite. No plugin manager, no picker, no real session on disk
-except the fixtures the specs write themselves.
+Headless spec suite, run by [testing.nvim](https://github.com/StefanBartl/testing.nvim).
+No plugin manager, no picker, no real session on disk except the fixtures the
+specs write themselves.
 
 ```
-nvim --headless -u NONE -c "set rtp+=." -l TESTS/run.lua
+bash scripts/test.sh                 # every spec
+bash scripts/test.sh --file config   # only spec files whose name contains "config"
+bash scripts/test.sh --json ir.json  # also write the machine-readable result
 ```
 
-Exit 0 is a pass; the runner prints one line per spec and exits non-zero on the
-first failure. CI runs exactly this command.
+Exit 0 is a pass; one line per spec file, exit 1 on a failure *or* when nvim,
+testing.nvim or lib.nvim cannot be found (the error names all four places that
+were searched). CI runs exactly this script. The configuration is
+[`.testing.lua`](../.testing.lua): dialect `h` (the specs run on
+`TESTS/harness.lua`), one nvim per spec file.
 
-## lib.nvim
+## Dependencies
 
-`sessions.portable` and several other modules require lib.nvim at module load,
-so the suite cannot run without it. `run.lua` resolves it in this order:
+testing.nvim and lib.nvim (`sessions.portable` and several other modules
+require it at module load) are resolved by `scripts/test.sh`, each in this
+order:
 
-1. `$LIB_NVIM_PATH`
-2. a sibling checkout, `../lib.nvim`
-3. the lazy.nvim-managed copy under `stdpath("data")/lazy/lib.nvim`
+1. `$TESTING_NVIM_DIR` / `$LIB_NVIM_DIR`
+2. `.deps/<name>` (what CI could check out)
+3. a sibling checkout, `../<name>`
+4. the plugin-manager copy under `stdpath("data")/lazy/<name>`
 
 A sibling wins over the plugin-manager copy on purpose: that one is often older
 than the working checkout, and testing against a stale lib.nvim gives
 misleading failures.
+
 
 ## No network, no subprocesses
 
@@ -64,17 +73,18 @@ which is all the process-free branch resolution ever reads.
 | `autocmds_spec.lua` | the VimEnter autoload, the VimLeavePre autosave and the dirty-tracking events, fired with `nvim_exec_autocmds` |
 | `init_spec.lua` | `setup()` — including that it is a one-shot — and the public API on `sessions` |
 
-Adding one: write `TESTS/<name>_spec.lua` returning `function(H) ... end`, then
-list it in `run.lua`. `H` is the harness — `eq`, `ok`, `falsy`, `contains`,
+Adding one: write `TESTS/<name>_spec.lua` returning `function(H) ... end`.
+It is discovered by its `_spec.lua` suffix. `H` is the harness — `eq`, `ok`, `falsy`, `contains`,
 `excludes`, `read` (a file back as one string), `fixture` (a scratch directory
 plus its cleanup function), `stub` (replace a module, or make it look
 uninstalled, and get a restore function back) and `fresh` (re-require a module
 so it re-resolves its soft dependencies against the stubs in place right now).
 
-The order in `run.lua` matters in two places: `statusline_spec` runs before
-`core_spec` because it asserts what the component renders with *no* session
-loaded, and `init_spec` runs last because `setup()` is a one-shot that
-registers the real commands, autocmds and keymaps.
+Every spec file runs in its own nvim (`isolated = "file"` in `.testing.lua`),
+so no order matters: `statusline_spec` asserts what the component renders with
+*no* session loaded, and `init_spec` calls `setup()`, a one-shot that registers
+the real commands, autocmds and keymaps. The old `run.lua` guaranteed that by
+file order; one process per file guarantees it without.
 
 ## A note on fixtures
 
