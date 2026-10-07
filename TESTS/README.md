@@ -70,6 +70,7 @@ which is all the process-free branch resolution ever reads.
 | `health_spec.lua` | the `:checkhealth` report, per dependency present and absent |
 | `keymaps_spec.lua` | the opt-in mappings: what is declared vs. bound, the unmappable names, and the computed which-key prefix |
 | `usercmds_spec.lua` | every `:Session` subcommand, `:LastSession`, `:SessionLoad` and the completion types — driven through real `:` commands |
+| `usercmds_help_spec.lua` | every flag of `:Session` (`marks add`, `marks pin`) has a line in lib.nvim's option float: `composer.help.undocumented("Session")` is empty |
 | `autocmds_spec.lua` | the VimEnter autoload, the VimLeavePre autosave and the dirty-tracking events, fired with `nvim_exec_autocmds` |
 | `init_spec.lua` | `setup()` — including that it is a one-shot — and the public API on `sessions` |
 
