@@ -448,8 +448,18 @@ function M.enable()
         path = { "marks", "add" },
         args = { { name = "path", type = "FILE", optional = true } },
         flags = {
-          { name = "front", short = "f", bool = true },
-          { name = "permanent", short = "p", bool = true },
+          {
+            name = "front",
+            short = "f",
+            bool = true,
+            desc = "Put the file in slot 1 instead of appending it",
+          },
+          {
+            name = "permanent",
+            short = "p",
+            bool = true,
+            desc = "Also pin the file, so `defaults reset` keeps it",
+          },
         },
         desc = "Add a file to the list (default: current buffer, appended)",
         run = function(ctx)
@@ -488,7 +498,14 @@ function M.enable()
       {
         path = { "marks", "pin" },
         args = { { name = "path", type = "FILE", optional = true } },
-        flags = { { name = "front", short = "f", bool = true } },
+        flags = {
+          {
+            name = "front",
+            short = "f",
+            bool = true,
+            desc = "Move the pinned file to slot 1 of the list",
+          },
+        },
         desc = "Pin a file: a default that survives `defaults reset`",
         run = function(ctx)
           if not marks_enabled() then
