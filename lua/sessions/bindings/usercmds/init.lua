@@ -53,6 +53,7 @@ end
 -- STRING type's `values` (a static snapshot) — a custom type looks them up
 -- fresh on every completion request.
 composer.register_type("SESSION", {
+  desc = "Name of a saved session",
   validate = function(raw)
     return true, raw, nil
   end,
@@ -62,6 +63,7 @@ composer.register_type("SESSION", {
 })
 
 composer.register_type("TAB_SESSION", {
+  desc = "Name of a saved tab session",
   validate = function(raw)
     return true, raw, nil
   end,
@@ -71,6 +73,7 @@ composer.register_type("TAB_SESSION", {
 })
 
 composer.register_type("LAYOUT", {
+  desc = "Name of a saved window layout",
   validate = function(raw)
     return true, raw, nil
   end,
@@ -80,6 +83,7 @@ composer.register_type("LAYOUT", {
 })
 
 composer.register_type("MARKS_MENU", {
+  desc = "List UI: auto|edit|kit|snacks|telescope|fzf (else marks.menu.ui)",
   validate = function(raw)
     return true, raw, nil
   end,
@@ -194,7 +198,14 @@ function M.enable()
     routes = {
       {
         path = { "save" },
-        args = { { name = "name", type = "SESSION", optional = true } },
+        args = {
+          {
+            name = "name",
+            type = "SESSION",
+            optional = true,
+            desc = "Name to save as (default: current session, else project/branch)",
+          },
+        },
         desc = "Save session [name] (tab-complete to overwrite an existing one)",
         run = function(ctx)
           do_save(ctx.args.name)
@@ -211,7 +222,14 @@ function M.enable()
 
       {
         path = { "load" },
-        args = { { name = "name", type = "SESSION", optional = true } },
+        args = {
+          {
+            name = "name",
+            type = "SESSION",
+            optional = true,
+            desc = "Session to load (default: this project's, else the last used)",
+          },
+        },
         desc = "Load session [name] (omit for the configured default_name)",
         run = function(ctx)
           do_load(ctx.args.name)
@@ -295,7 +313,10 @@ function M.enable()
 
       {
         path = { "rename" },
-        args = { { name = "old", type = "SESSION" }, { name = "new", type = "STRING" } },
+        args = {
+          { name = "old", type = "SESSION", desc = "Saved session to rename" },
+          { name = "new", type = "STRING", desc = "New name (must not exist yet)" },
+        },
         desc = "Rename a session: :Session rename <old> <new>",
         run = function(ctx)
           local ok, res = require("sessions.core").rename(ctx.args.old, ctx.args.new)
@@ -352,7 +373,14 @@ function M.enable()
       -- repo but be excluded from commits on machines where the paths don't exist.
       {
         path = { "toggle-track" },
-        args = { { name = "name", type = "SESSION", optional = true } },
+        args = {
+          {
+            name = "name",
+            type = "SESSION",
+            optional = true,
+            desc = "Session file to toggle (default: current session)",
+          },
+        },
         desc = "Toggle git skip-worktree on a session file",
         run = function(ctx)
           M.toggle_track(ctx.args.name)
@@ -363,7 +391,14 @@ function M.enable()
       -- separately from full sessions (root/.tabs/).
       {
         path = { "save-tab" },
-        args = { { name = "name", type = "TAB_SESSION", optional = true } },
+        args = {
+          {
+            name = "name",
+            type = "TAB_SESSION",
+            optional = true,
+            desc = "Name for the tab snapshot (default: project/branch name)",
+          },
+        },
         desc = "Save only the current tab's window layout [name]",
         run = function(ctx)
           local ok, res = require("sessions.core").save_tab(ctx.args.name)
@@ -377,7 +412,9 @@ function M.enable()
 
       {
         path = { "load-tab" },
-        args = { { name = "name", type = "TAB_SESSION" } },
+        args = {
+          { name = "name", type = "TAB_SESSION", desc = "Tab session to open in a new tab" },
+        },
         desc = "Load a tab session into a new tab: :Session load-tab <name>",
         run = function(ctx)
           local ok, res, stale = require("sessions.core").load_tab(ctx.args.name)
@@ -396,7 +433,7 @@ function M.enable()
       -- buffers are currently open (not tied to specific files).
       {
         path = { "save-layout" },
-        args = { { name = "name", type = "LAYOUT" } },
+        args = { { name = "name", type = "LAYOUT", desc = "Name to save the window layout under" } },
         desc = "Save the current window-split layout: :Session save-layout <name>",
         run = function(ctx)
           local ok, res = require("sessions.layout").save(ctx.args.name)
@@ -410,7 +447,9 @@ function M.enable()
 
       {
         path = { "load-layout" },
-        args = { { name = "name", type = "LAYOUT" } },
+        args = {
+          { name = "name", type = "LAYOUT", desc = "Saved layout to rebuild the windows from" },
+        },
         desc = "Restore a window-split layout: :Session load-layout <name>",
         run = function(ctx)
           local ok, res = require("sessions.layout").restore(ctx.args.name)
@@ -612,7 +651,14 @@ function M.enable()
       },
       {
         path = { "marks", "import-harpoon" },
-        args = { { name = "bucket", type = "STRING", optional = true } },
+        args = {
+          {
+            name = "bucket",
+            type = "STRING",
+            optional = true,
+            desc = "Key of the harpoon v2 list (default: stdpath('config'))",
+          },
+        },
         desc = "Take over a harpoon v2 list (bucket defaults to stdpath('config'))",
         run = function(ctx)
           if not marks_enabled() then
