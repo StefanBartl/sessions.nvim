@@ -9,5 +9,6 @@
   ],
   "diagnostics.globals": [],
   "workspace.checkThirdParty": false,
-  "workspace.useGitIgnore": true
+  "workspace.useGitIgnore": true,
+  "workspace.ignoreDir": [".claude"]
 }
