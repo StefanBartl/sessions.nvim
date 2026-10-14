@@ -110,6 +110,18 @@ tab-complete from their own separate name lists.
 
 ## Autocommands
 
+### Events this plugin fires
+
+| Event (`User`) | When | `ev.data` |
+| --- | --- | --- |
+| `SessionsSavePost` | After a session or tab snapshot was written (not for the `last` snapshot at exit), next to `hooks.on_save` | `{ name, path, tab }` |
+| `SessionsLoadPost` | After a session or tab snapshot was sourced, next to `hooks.on_load` | `{ name, path, tab }` |
+
+`tab` is `true` for `save-tab`/`load-tab`. A listener that raises does not fail the save or load.
+Any number of plugins can listen; nothing has to be registered.
+
+### Autocommands this plugin creates
+
 | Group | Events | Purpose |
 | --- | --- | --- |
 | `SessionsNvim` | `DirChanged` | Forget the tracked current session on `:cd` |
