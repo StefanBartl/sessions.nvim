@@ -690,6 +690,54 @@ return function(H)
     setup()
   end
 
+  -- ------------------------------------------------------ User events
+
+  do
+    setup()
+    local events = {}
+    local group = api.nvim_create_augroup("SessionsSpecEvents", { clear = true })
+    for _, pattern in ipairs({ "SessionsSavePost", "SessionsLoadPost" }) do
+      api.nvim_create_autocmd("User", {
+        group = group,
+        pattern = pattern,
+        callback = function(ev)
+          events[#events + 1] = pattern
+            .. "|"
+            .. ev.data.name
+            .. "|"
+            .. ev.data.path
+            .. "|"
+            .. tostring(ev.data.tab)
+        end,
+      })
+    end
+    H.ok(core.save("evented"))
+    H.eq(
+      events[#events],
+      "SessionsSavePost|evented|" .. session_file("evented") .. "|false",
+      "save announces itself"
+    )
+    H.ok(core.load("evented"))
+    H.eq(
+      events[#events],
+      "SessionsLoadPost|evented|" .. session_file("evented") .. "|false",
+      "load announces itself"
+    )
+
+    local before = #events
+    core.save("evented", { snapshot = true })
+    H.eq(#events, before, "a snapshot save (save_last) announces nothing, like hooks.on_save")
+
+    H.ok(core.save_tab("evented-tab"))
+    H.contains(events[#events], "SessionsSavePost|evented-tab|", "a tab snapshot announces itself")
+    H.contains(events[#events], "|true", "and says it is a tab")
+
+    api.nvim_del_augroup_by_name("SessionsSpecEvents")
+    os.remove(root .. "/.tabs/evented-tab.vim") -- list_tabs() counts below are exact
+    core.delete("evented")
+    setup()
+  end
+
   -- -------------------------------------------------------- relative_paths
 
   do

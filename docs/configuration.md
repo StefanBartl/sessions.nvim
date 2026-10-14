@@ -84,7 +84,9 @@ require("sessions").setup({
   -- ignores it. false calls vim.notify exactly as before.
   notify_title = true,
 
-  -- Callbacks invoked after save/load (errors are swallowed via pcall).
+  -- Callbacks invoked after save/load (errors are swallowed via pcall). They are one slot each and
+  -- yours; other plugins listen to the `User` events `SessionsSavePost` / `SessionsLoadPost`
+  -- instead (`ev.data = { name, path, tab }`; `tab` is true for `save-tab`/`load-tab`).
   hooks = {
     on_save = nil, -- fun(name: string, path: string)
     on_load = nil, -- fun(name: string, path: string)

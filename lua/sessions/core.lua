@@ -444,6 +444,24 @@ local function modified_buffer_names()
 end
 
 ---@internal
+--- Tell other plugins that a session was saved or loaded, through a `User` autocommand
+--- (`SessionsSavePost` / `SessionsLoadPost`; `data` = `{ name, path, tab }`). `hooks.on_save` and
+--- `hooks.on_load` are one slot each and belong to the user's config; this one has any number of
+--- listeners and needs no registration, so a plugin can follow sessions without touching them.
+--- A listener that raises does not fail the save or load (the session is already done by then).
+---@param event "SessionsSavePost"|"SessionsLoadPost"
+---@param name string
+---@param path string
+---@param tab boolean A tab snapshot (`save_tab`/`load_tab`), not a full session
+local function announce(event, name, path, tab)
+  pcall(api.nvim_exec_autocmds, "User", {
+    pattern = event,
+    modeline = false,
+    data = { name = name, path = path, tab = tab },
+  })
+end
+
+---@internal
 ---@return Sessions.Meta
 ---@see sessions.meta
 local function build_meta(branch)
@@ -530,6 +548,9 @@ function M.save(name, opts)
   if cfg.hooks.on_save and not snapshot then
     pcall(cfg.hooks.on_save, si.name, si.path)
   end
+  if not snapshot then
+    announce("SessionsSavePost", si.name, si.path, false)
+  end
 
   return true, si.path, stale
 end
@@ -608,6 +629,7 @@ function M.save_tab(name)
   if cfg.hooks.on_save then
     pcall(cfg.hooks.on_save, si.name, path)
   end
+  announce("SessionsSavePost", si.name, path, true)
 
   return true, path
 end
@@ -675,6 +697,7 @@ function M.load(name)
   if cfg.hooks.on_load then
     pcall(cfg.hooks.on_load, si.name, si.path)
   end
+  announce("SessionsLoadPost", si.name, si.path, false)
 
   return true, si.path, hidden, stale
 end
@@ -727,6 +750,7 @@ function M.load_tab(name)
   if cfg.hooks.on_load then
     pcall(cfg.hooks.on_load, name, path)
   end
+  announce("SessionsLoadPost", name, path, true)
 
   return true, path, stale
 end
