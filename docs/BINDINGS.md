@@ -116,9 +116,12 @@ tab-complete from their own separate name lists.
 | --- | --- | --- |
 | `SessionsSavePost` | After a session or tab snapshot was written (not for the `last` snapshot at exit), next to `hooks.on_save` | `{ name, path, tab }` |
 | `SessionsLoadPost` | After a session or tab snapshot was sourced, next to `hooks.on_load` | `{ name, path, tab }` |
+| `SessionsRenamePost` | After `:Session rename` moved the session file and this plugin's own sidecars | `{ old_name, old_path, name, path }` |
+| `SessionsDeletePost` | After `:Session delete` removed the session file and this plugin's own sidecars | `{ name, path }` |
 
 `tab` is `true` for `save-tab`/`load-tab`. A listener that raises does not fail the save or load.
-Any number of plugins can listen; nothing has to be registered.
+Any number of plugins can listen; nothing has to be registered. The rename and delete events let a plugin
+that keeps its own sidecar (`.<name>.<what>.json`) move or remove it; a failed rename or delete fires nothing.
 
 ### Autocommands this plugin creates
 

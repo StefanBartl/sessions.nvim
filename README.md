@@ -46,7 +46,7 @@ the handful of files you want one keypress away in every project.
 > you were doing in it.
 >
 > **[terminal.nvim](https://github.com/StefanBartl/terminal.nvim)** — listens to the
-> `SessionsSavePost` / `SessionsLoadPost` events and brings the project's terminals back
+> `SessionsSavePost` / `SessionsLoadPost` / `SessionsRenamePost` / `SessionsDeletePost` events and brings the project's terminals back
 > with the session (definitions only, reopened hidden; see its
 > [sessions page](https://github.com/StefanBartl/terminal.nvim/blob/main/docs/sessions.md)).
 >
