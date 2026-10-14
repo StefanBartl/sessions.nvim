@@ -108,6 +108,16 @@ line when `marks.enable` is off. Session-name arguments (`save`/`load`/`delete`/
 saved sessions; `save-tab`/`load-tab` and `save-layout`/`load-layout`
 tab-complete from their own separate name lists.
 
+## Autocommands
+
+| Group | Events | Purpose |
+| --- | --- | --- |
+| `SessionsNvim` | `DirChanged` | Forget the tracked current session on `:cd` |
+| `SessionsNvim` | `VimEnter` | Autoload the session (`autoload`), and seed the marks list once (`marks.enable`) |
+| `SessionsNvim` | `VimLeavePre` | Autosave (`autosave`), snapshot as `last` (`save_last`), flush pending mark positions (`marks.enable`) |
+| `SessionsNvim` | `BufAdd`, `BufDelete`, `WinNew`, `WinClosed`, `TabNewEntered`, `TabClosed` | Mark the session dirty for the statusline (only with `autosave`) |
+| `SessionsNvim` | `BufLeave` | Record the cursor position of a marked file (`marks.enable`) |
+
 ## Autocmds
 
 `lua/sessions/bindings/autocmds/init.lua` wires the autosave-on-exit and (if enabled)
