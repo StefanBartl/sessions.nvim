@@ -86,7 +86,8 @@ require("sessions").setup({
 
   -- Callbacks invoked after save/load (errors are swallowed via pcall). They are one slot each and
   -- yours; other plugins listen to the `User` events `SessionsSavePost` / `SessionsLoadPost`
-  -- instead (`ev.data = { name, path, tab }`; `tab` is true for `save-tab`/`load-tab`).
+  -- instead (`ev.data = { name, path, tab }`; `tab` is true for `save-tab`/`load-tab`), and
+  -- `SessionsRenamePost` / `SessionsDeletePost` to follow a rename or delete (see docs/BINDINGS.md).
   hooks = {
     on_save = nil, -- fun(name: string, path: string)
     on_load = nil, -- fun(name: string, path: string)

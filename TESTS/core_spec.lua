@@ -738,6 +738,48 @@ return function(H)
     setup()
   end
 
+  -- ------------------------------------------------- rename / delete events
+
+  do
+    setup()
+    local seen = {}
+    local group = api.nvim_create_augroup("SessionsSpecFileEvents", { clear = true })
+    for _, pattern in ipairs({ "SessionsRenamePost", "SessionsDeletePost" }) do
+      api.nvim_create_autocmd("User", {
+        group = group,
+        pattern = pattern,
+        callback = function(ev)
+          seen[#seen + 1] = { pattern = pattern, data = ev.data }
+        end,
+      })
+    end
+    H.ok(core.save("evt-old"))
+
+    local bad = core.rename("evt-old", "evt-old")
+    H.ok(not bad, "renaming onto itself fails")
+    H.eq(#seen, 0, "a failed rename announces nothing")
+
+    H.ok(core.rename("evt-old", "evt-new"))
+    H.eq(#seen, 1, "rename announces itself once")
+    H.eq(seen[1].pattern, "SessionsRenamePost")
+    H.eq(seen[1].data.old_name, "evt-old")
+    H.eq(seen[1].data.old_path, session_file("evt-old"))
+    H.eq(seen[1].data.name, "evt-new")
+    H.eq(seen[1].data.path, session_file("evt-new"))
+
+    H.ok(not core.delete("evt-missing"), "deleting an unknown session fails")
+    H.eq(#seen, 1, "a failed delete announces nothing")
+
+    H.ok(core.delete("evt-new"))
+    H.eq(#seen, 2, "delete announces itself once")
+    H.eq(seen[2].pattern, "SessionsDeletePost")
+    H.eq(seen[2].data.name, "evt-new")
+    H.eq(seen[2].data.path, session_file("evt-new"))
+
+    api.nvim_del_augroup_by_name("SessionsSpecFileEvents")
+    setup()
+  end
+
   -- -------------------------------------------------------- relative_paths
 
   do

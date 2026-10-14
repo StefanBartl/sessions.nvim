@@ -462,6 +462,17 @@ local function announce(event, name, path, tab)
 end
 
 ---@internal
+--- Same channel for the file operations: `SessionsRenamePost` (`data` = `{ old_name, old_path,
+--- name, path }`) and `SessionsDeletePost` (`data` = `{ name, path }`), fired after the session
+--- file and the sidecars of this plugin were moved or removed, so a plugin that keeps its own
+--- sidecar (`.<name>.<what>.json`) can follow.
+---@param event "SessionsRenamePost"|"SessionsDeletePost"
+---@param data table
+local function announce_file(event, data)
+  pcall(api.nvim_exec_autocmds, "User", { pattern = event, modeline = false, data = data })
+end
+
+---@internal
 ---@return Sessions.Meta
 ---@see sessions.meta
 local function build_meta(branch)
@@ -810,6 +821,7 @@ function M.delete(name)
   if _current == name then
     _current = nil
   end
+  announce_file("SessionsDeletePost", { name = name, path = path })
   return true, path
 end
 
@@ -839,6 +851,12 @@ function M.rename(old_name, new_name)
   if _current == old_name then
     _current = new_name
   end
+  announce_file("SessionsRenamePost", {
+    old_name = old_name,
+    old_path = old_path,
+    name = new_name,
+    path = new_path,
+  })
   return true, new_path
 end
 
