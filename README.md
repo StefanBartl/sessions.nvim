@@ -45,6 +45,11 @@ the handful of files you want one keypress away in every project.
 > way into a project: jump to the repository, and let this plugin restore what
 > you were doing in it.
 >
+> **[terminal.nvim](https://github.com/StefanBartl/terminal.nvim)** — listens to the
+> `SessionsSavePost` / `SessionsLoadPost` events and brings the project's terminals back
+> with the session (definitions only, reopened hidden; see its
+> [sessions page](https://github.com/StefanBartl/terminal.nvim/blob/main/docs/sessions.md)).
+>
 > **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — renders this
 > plugin's own `sessions.statusline` component in its statusline, so the
 > active session is visible without asking for it. This plugin owns the
