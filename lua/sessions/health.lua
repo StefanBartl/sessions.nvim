@@ -119,6 +119,12 @@ function M.check()
     )
   end
 
+  if pcall(require, "fzf-lua") then
+    vim.health.ok('fzf-lua found — marks.menu.ui = "fzf" available')
+  else
+    vim.health.info('fzf-lua not installed — marks.menu.ui = "fzf" is unavailable')
+  end
+
   -- configuration
   vim.health.start("sessions.nvim — configuration")
 
