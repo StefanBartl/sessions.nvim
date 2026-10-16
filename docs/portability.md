@@ -19,9 +19,12 @@ replaced with a portable placeholder. On load, the placeholder is
 re-anchored to *whatever the current `cwd` is* — so load a portable
 session from within the project directory you want it to apply to.
 
-The replacement only matches at a real path boundary: `cwd` is treated as a
-hit only where it's followed by `/`, a quote, whitespace, or end of line —
-never mid-name. A sibling directory that merely starts with the same text
+The replacement only matches at a real path boundary: `cwd` is a hit only
+where the next character cannot continue a file name (anything but letters,
+digits and `_ - . ~`), and only where it does not sit in the middle of a
+longer path (`/srv/home/me` does not contain the root `/home/me`; a root
+right behind `scheme://`, as in `oil:///home/me`, still counts) — never
+mid-name. A sibling directory that merely starts with the same text
 as `cwd` (`~/repos/ui.nvim` is a text prefix of `~/repos/ui.nvim-backup`)
 keeps its own path untouched.
 

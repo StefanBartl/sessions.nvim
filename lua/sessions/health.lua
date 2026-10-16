@@ -82,6 +82,17 @@ function M.check()
     )
   end
 
+  local lib_portable_ok = pcall(require, "lib.nvim.fs.portable")
+  if lib_portable_ok then
+    vim.health.ok("lib.nvim.fs.portable available (relative_paths)")
+  else
+    vim.health.warn(
+      "lib.nvim.fs.portable not found -- there is no fallback: "
+        .. "saving a session throws while it is missing",
+      { "Update lib.nvim to a checkout that includes lib.nvim.fs.portable" }
+    )
+  end
+
   local lib_git_ok = pcall(require, "lib.nvim.git")
   if lib_git_ok then
     vim.health.ok("lib.nvim.git available (branch detection)")

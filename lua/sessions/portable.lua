@@ -33,6 +33,9 @@ end
 ---@return string|nil err
 ---@see sessions.core
 function M.make_relative(session_path, cwd)
+  if cwd == "" then
+    return false, "empty cwd: " .. session_path
+  end
   local content, read_err = require("lib.nvim.fs.read")(session_path)
   if content == nil or content == "" then
     return false, read_err or ("empty session file: " .. session_path)
@@ -52,6 +55,9 @@ end
 ---@return boolean is_temp_copy
 ---@return string|nil err  Set when a read/write failure fell back to `session_path`
 function M.prepare_for_load(session_path, cwd, root_remap)
+  if cwd == "" then
+    return session_path, false, "empty cwd"
+  end
   return portable.resolve_file(session_path, roots(cwd), { remap = root_remap, suffix = ".vim" })
 end
 
