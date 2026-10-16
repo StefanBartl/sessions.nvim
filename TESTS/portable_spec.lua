@@ -39,6 +39,29 @@ return function(H)
   H.falsy(miss_ok, "make_relative on a missing file reports failure")
   H.ok(miss_err, "with a reason")
 
+  -- an empty session file is an error on save (the wrapper's own contract)
+  do
+    local empty = dir .. "/empty.vim"
+    vim.fn.writefile({}, empty)
+    local e_ok, e_err = portable.make_relative(empty, project)
+    H.falsy(e_ok, "make_relative on an empty file reports failure")
+    H.ok(e_err, "with a reason")
+  end
+
+  -- an empty cwd (deleted working directory) is reported, never thrown
+  do
+    local before = H.read(session)
+    local c_ok, c_res = pcall(portable.make_relative, session, "")
+    H.ok(c_ok, "make_relative with an empty cwd does not throw")
+    H.falsy(c_res, "and reports failure")
+    local r_ok, r_res, r_temp, r_err = pcall(portable.prepare_for_load, session, "")
+    H.ok(r_ok, "prepare_for_load with an empty cwd does not throw")
+    H.eq(r_res, session, "it hands the stored file back")
+    H.falsy(r_temp, "without a temporary copy")
+    H.ok(r_err, "and a reason")
+    H.eq(H.read(session), before, "the stored file is untouched")
+  end
+
   -- boundary_replace: a sibling that merely starts with the same text -------
   -- `E:/repos/ui.nvim` is a prefix of `E:/repos/ui.nvim-backup`, common in a
   -- repos folder full of similarly-named plugin checkouts. A plain `gsub` on
