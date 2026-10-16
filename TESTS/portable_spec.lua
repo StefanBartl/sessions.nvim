@@ -68,23 +68,37 @@ return function(H)
     )
   end
 
-  -- boundary_replace: an overlapping match starting mid-needle --------------
-  -- After a hit that fails the boundary check, the search must resume right
-  -- after *that hit's start* (not past its end), or a valid match beginning
-  -- one byte later inside the same run is skipped entirely. Needle "aa"
-  -- against "aaa": the first "aa" (positions 1-2) is followed by another "a"
-  -- (not a boundary) and is kept literal, but positions 2-3 is *also* "aa"
-  -- and this time is followed by nothing (a boundary), so it must still be
-  -- found and replaced.
+  -- an overlapping match starting mid-needle -------------------------------
+  -- The substitution is `lib.nvim.fs.portable`'s, which checks BOTH ends of a
+  -- path: the byte after the match must not continue a file name, and the byte
+  -- before must not be a name character or a separator either (the root
+  -- `/home/me` must not be replaced inside `/srv/home/me/x`). Needle "aa"
+  -- against "aaa": the first "aa" is followed by another "a" (rejected), and
+  -- the one starting a byte later is PRECEDED by an "a" (rejected too), so
+  -- nothing is replaced. A real path root is never glued to a longer name.
   do
     local overlap_session = dir .. "/overlap.vim"
     vim.fn.writefile({ "before aaa after" }, overlap_session)
     portable.make_relative(overlap_session, "aa")
     H.eq(
       H.read(overlap_session),
-      "before a{{SESSION_ROOT}} after",
-      "a boundary-respecting match one byte into a rejected hit is still found"
+      "before aaa after",
+      "a root that is only part of a longer name, at either end, is left alone"
     )
+  end
+
+  -- a root in the middle of another path ------------------------------------
+  do
+    local mid_session = dir .. "/mid.vim"
+    vim.fn.writefile({ "badd +1 /srv/home/me/x.lua", "badd +1 /home/me/y.lua" }, mid_session)
+    portable.make_relative(mid_session, "/home/me")
+    local mid = H.read(mid_session)
+    H.contains(
+      mid,
+      "/srv/home/me/x.lua",
+      "a path that merely contains the root in its middle is untouched"
+    )
+    H.contains(mid, "{{SESSION_ROOT}}/y.lua", "the project's own path is rewritten")
   end
 
   -- prepare_for_load ----------------------------------------------------------
