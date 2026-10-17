@@ -49,6 +49,45 @@ return function(H)
     "$NVIM_HOME expands to the config dir"
   )
   H.eq(marks.resolve_spec({ "$HOME" }) ~= "", true, "$HOME expands")
+
+  -- the leading $NAME goes through lib.nvim's named-roots registry: $REPOS_DIR
+  -- and a root another plugin registered both resolve; an unset registry root
+  -- skips the spec ("") instead of staying a literal.
+  do
+    local roots = require("lib.nvim.fs.roots")
+    local saved_repos = vim.env.REPOS_DIR
+    local unregister = roots.register("SESSIONS_SPEC_ROOT", dir)
+    H.eq(
+      marks.resolve_spec({ "$SESSIONS_SPEC_ROOT", "a.md" }),
+      a,
+      "a root registered in lib.nvim.fs.roots resolves as the leading segment"
+    )
+    vim.env.REPOS_DIR = dir
+    H.eq(
+      marks.resolve_spec({ "$REPOS_DIR", "a.md" }),
+      a,
+      "$REPOS_DIR resolves through the registry"
+    )
+    vim.env.REPOS_DIR = nil
+    H.eq(marks.resolve_spec({ "$REPOS_DIR", "a.md" }), "", "an unset $REPOS_DIR skips the spec")
+    vim.env.REPOS_DIR = saved_repos
+    -- a registered root that has no value right now is skipped like an unset
+    -- $REPOS_DIR, not turned into a cwd-relative literal
+    local unregister_unset = roots.register("SESSIONS_SPEC_UNSET", function()
+      return nil
+    end)
+    H.eq(
+      marks.resolve_spec({ "$SESSIONS_SPEC_UNSET", "a.md" }),
+      "",
+      "a registered root without a value skips the spec"
+    )
+    unregister_unset()
+    unregister()
+    H.ok(
+      marks.resolve_spec({ "$SESSIONS_SPEC_ROOT", "a.md" }) ~= a,
+      "...and an unregistered name no longer resolves"
+    )
+  end
   H.eq(marks.resolve_spec({}), "", "an empty spec is no path")
   H.eq(marks.resolve_spec(b), b, "a plain string is taken as-is")
 

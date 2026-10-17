@@ -13,7 +13,7 @@
 ---
 ---   * a **mark** is any entry in the live list;
 ---   * a **default** is a path from `marks.defaults` in the config -- the
----     committed set, expanded from `$REPOS_DIR`/`$HOME`/`$NVIM_HOME`
+---     committed set, expanded from `$REPOS_DIR`/`$HOME`/`$NVIM_HOME` (or any named root)
 ---     segments so the same config works on every machine;
 ---   * a **pin** is a default added at runtime (`:Session marks pin`),
 ---     stored machine-locally, never in the config.
@@ -92,17 +92,33 @@ local function is_file(p)
 end
 
 ---@internal
----`$REPOS_DIR`, `$HOME` and `$NVIM_HOME` as the first segment of a default
----spec; anything else is taken literally.
+---The leading variable of a default spec: `$HOME` and `$NVIM_HOME` (this
+---plugin's own alias of the config directory) are resolved here; a `$NAME`
+---that is a root of lib.nvim's named-roots registry (`$REPOS_DIR`,
+---`$NVIM_CONFIG_DIR`, the user's own, those other plugins registered) goes
+---through `roots.expand`. Anything else is taken literally. A registry root
+---with no value (e.g. `$REPOS_DIR` unset) gives `""`, so the spec is skipped.
 ---@param sym string
 ---@return string
 local function expand_var(sym)
-  if sym == "$REPOS_DIR" then
-    return vim.env.REPOS_DIR or ""
-  elseif sym == "$HOME" then
+  if sym == "$HOME" then
     return (uv.os_homedir and uv.os_homedir()) or vim.fn.expand("~")
   elseif sym == "$NVIM_HOME" then
     return vim.fn.stdpath("config")
+  end
+  local roots = require("lib.nvim.fs.roots")
+  local expanded = roots.expand(sym)
+  if expanded ~= sym then
+    return expanded
+  end
+  local name = sym:match("^%$([%a_][%w_]*)$") or sym:match("^%${([%a_][%w_]*)}$")
+  if name then
+    -- status(), not names(): it also lists a configured root without a value
+    for _, known in ipairs(roots.status()) do
+      if known.name == name then
+        return ""
+      end
+    end
   end
   return sym
 end
