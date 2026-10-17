@@ -34,7 +34,9 @@ mark and it is simply gone.
 
 `marks.defaults` takes path *specs*: a list of segments whose first may be
 `$REPOS_DIR`, `$HOME` or `$NVIM_HOME` (the config directory), or one absolute
-string. A spec whose variable is unset resolves to nothing and is skipped —
+string. Any root of lib.nvim's named-roots registry (`lib.nvim.fs.roots`: your
+own `extra` roots, `$NVIM_CONFIG_DIR`, roots other plugins registered) works as
+the first segment too. A spec whose variable is unset resolves to nothing and is skipped —
 so a work-only path in a shared config costs nothing at home.
 
 ```lua
