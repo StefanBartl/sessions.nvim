@@ -165,12 +165,6 @@ local KNOWN = {
 ---a top-level one -- none currently needs it.
 ---@type table<string, true>
 local ALLOW_FALSE = { keymaps = true }
-
----What the last `setup()` had to reject or flag, for `:checkhealth`. Reset
----on every call so issues from an earlier setup() never linger.
----@type string[]
-local issues = {}
-
 ---@internal
 ---`key` with the nearest known one as a hint when there is a plausible one
 ---(edit distance <= 3).
@@ -282,63 +276,100 @@ local function validate(opts)
   return clean, found_issues
 end
 
----@param opts table|nil
-function M.setup(opts)
-  opts = opts or {}
-  local clean, found_issues = validate(opts)
-  issues = found_issues
+--- To the schema that `lib.lua.config` infers from the defaults, every option is open: the checks
+--- are `validate` above (it knows `KNOWN`, lists and open tables to any depth), run before the
+--- merge. An unknown top-level key is caught there as well.
+local ANY = "boolean|number|string|table|function"
+---@type table<string, string>
+local SCHEMA = {}
+for key in pairs(KNOWN) do
+  SCHEMA[key] = ANY
+end
 
-  M.cfg = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULTS), clean)
-  M.cfg.root = require("lib.nvim.cross.fs.expand_path")(M.cfg.root)
+-- Whether the user named `blacklist.paths` (read by the resolve hook), and whether `setup()` has
+-- run: the environment-dependent resolving below happens only then, as before.
+local user_set_paths = false
+local was_set_up = false
 
-  -- config/DEFAULTS.lua's own blacklist.paths is empty on purpose (LUA-06:
-  -- it must stay side-effect-free at require time) -- resolve the platform
-  -- default here unless the caller explicitly set their own.
-  local user_set_paths = clean.blacklist and clean.blacklist.paths ~= nil
-  if not user_set_paths then
-    M.cfg.blacklist.paths = default_blacklist_paths()
-  end
+local cfg = require("lib.lua.config").new(DEFAULTS, {
+  name = "sessions",
+  schema = SCHEMA,
+  normalize = function(opts, found)
+    local clean, found_issues = validate(opts)
+    user_set_paths = clean.blacklist ~= nil and clean.blacklist.paths ~= nil
+    for key in pairs(opts) do
+      opts[key] = nil
+    end
+    for key, value in pairs(clean) do
+      opts[key] = value
+    end
+    vim.list_extend(found, found_issues)
+  end,
+  resolve = function(current)
+    if not was_set_up then
+      return
+    end
+    current.root = require("lib.nvim.cross.fs.expand_path")(current.root)
 
-  -- Inject Windows %TEMP% into the blacklist automatically.
-  --
-  -- Both spellings, and that is the whole point: on Windows $TEMP is the 8.3
-  -- short form (`C:/Users/STEFAN~1/...`) for any profile name over eight
-  -- characters, while a buffer opened through a resolved path -- which is what
-  -- fs_realpath, an LSP or a picker hands you -- carries the long one. The
-  -- blacklist is a plain prefix compare, so registering only the short form
-  -- let every long-spelled temp buffer straight into the session file.
-  local temp = vim.fn.expand("$TEMP")
-  if temp and temp ~= "" and temp ~= "$TEMP" then
-    local uv = vim.uv or vim.loop
-    local spellings = { temp }
-    local real = uv.fs_realpath(temp)
-    if real and real ~= temp then
-      spellings[#spellings + 1] = real
+    -- config/DEFAULTS.lua's own blacklist.paths is empty on purpose (LUA-06:
+    -- it must stay side-effect-free at require time) -- resolve the platform
+    -- default here unless the caller explicitly set their own.
+    if not user_set_paths then
+      current.blacklist.paths = default_blacklist_paths()
     end
 
-    local candidates = {}
-    for _, spelling in ipairs(spellings) do
-      local win = spelling:gsub("/", "\\"):gsub("\\+$", "")
-      local nix = spelling:gsub("\\", "/"):gsub("/+$", "")
-      candidates[#candidates + 1] = win
-      candidates[#candidates + 1] = win .. "\\"
-      candidates[#candidates + 1] = nix
-      candidates[#candidates + 1] = nix .. "/"
-    end
+    -- Inject Windows %TEMP% into the blacklist automatically.
+    --
+    -- Both spellings, and that is the whole point: on Windows $TEMP is the 8.3
+    -- short form (`C:/Users/STEFAN~1/...`) for any profile name over eight
+    -- characters, while a buffer opened through a resolved path -- which is what
+    -- fs_realpath, an LSP or a picker hands you -- carries the long one. The
+    -- blacklist is a plain prefix compare, so registering only the short form
+    -- let every long-spelled temp buffer straight into the session file.
+    local temp = vim.fn.expand("$TEMP")
+    if temp and temp ~= "" and temp ~= "$TEMP" then
+      local uv = vim.uv or vim.loop
+      local spellings = { temp }
+      local real = uv.fs_realpath(temp)
+      if real and real ~= temp then
+        spellings[#spellings + 1] = real
+      end
 
-    for _, candidate in ipairs(candidates) do
-      local found = false
-      for _, p in ipairs(M.cfg.blacklist.paths) do
-        if p == candidate then
-          found = true
-          break
+      local candidates = {}
+      for _, spelling in ipairs(spellings) do
+        local win = spelling:gsub("/", "\\"):gsub("\\+$", "")
+        local nix = spelling:gsub("\\", "/"):gsub("/+$", "")
+        candidates[#candidates + 1] = win
+        candidates[#candidates + 1] = win .. "\\"
+        candidates[#candidates + 1] = nix
+        candidates[#candidates + 1] = nix .. "/"
+      end
+
+      for _, candidate in ipairs(candidates) do
+        local found = false
+        for _, p in ipairs(current.blacklist.paths) do
+          if p == candidate then
+            found = true
+            break
+          end
+        end
+        if not found then
+          current.blacklist.paths[#current.blacklist.paths + 1] = candidate
         end
       end
-      if not found then
-        M.cfg.blacklist.paths[#M.cfg.blacklist.paths + 1] = candidate
-      end
     end
-  end
+  end,
+  on_change = function(current)
+    M.cfg = current
+  end,
+})
+
+---Set the options over the defaults. Every call starts from the defaults.
+---@param opts table|nil
+function M.setup(opts)
+  was_set_up = true
+  user_set_paths = false
+  cfg.setup(type(opts) == "table" and opts or nil)
 end
 
 ---@return Sessions.Config
@@ -352,7 +383,7 @@ end
 ---and well-typed.
 ---@return string[]
 function M.issues()
-  return vim.list_extend({}, issues)
+  return cfg.issues()
 end
 
 return M
