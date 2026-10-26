@@ -18,10 +18,10 @@
 [![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io)
 [![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
 ![Status](https://img.shields.io/badge/status-beta-orange)
-[![CI](https://github.com/StefanBartl/sessions.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/StefanBartl/sessions.nvim/actions/workflows/ci.yml)
-[![wkd](https://img.shields.io/badge/wkd-family-c6ff3d)](https://stefanbartl.github.io/wkd/p/sessions/)
+[![CI](https://github.com/WKDSteve/sessions.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/WKDSteve/sessions.nvim/actions/workflows/ci.yml)
+[![wkd](https://img.shields.io/badge/wkd-family-c6ff3d)](https://wkdsteve.github.io/wkd/p/sessions/)
 
-> Part of the [wkd](https://stefanbartl.github.io/wkd/) family — see this plugin's [page](https://stefanbartl.github.io/wkd/p/sessions/) on the site.
+> Part of the [wkd](https://wkdsteve.github.io/wkd/) family — see this plugin's [page](https://wkdsteve.github.io/wkd/p/sessions/) on the site.
 
 Branch- and project-aware Neovim sessions. The session name resolves from the
 project root and the current git branch, so switching branches restores a
@@ -34,29 +34,29 @@ the handful of files you want one keypress away in every project.
 
 ## Around it
 
-> **[dap.nvim](https://github.com/StefanBartl/dap.nvim)** — debug
+> **[dap.nvim](https://github.com/WKDSteve/dap.nvim)** — debug
 > configurations that pick up where you left them, because the workspace they
 > belong to came back.
 >
-> **[language.nvim](https://github.com/StefanBartl/language.nvim)** — the same
+> **[language.nvim](https://github.com/WKDSteve/language.nvim)** — the same
 > for a spell session and its target language.
 >
-> **[pickers.nvim](https://github.com/StefanBartl/pickers.nvim)** — the other
+> **[pickers.nvim](https://github.com/WKDSteve/pickers.nvim)** — the other
 > way into a project: jump to the repository, and let this plugin restore what
 > you were doing in it.
 >
-> **[terminal.nvim](https://github.com/StefanBartl/terminal.nvim)** — listens to the
+> **[terminal.nvim](https://github.com/WKDSteve/terminal.nvim)** — listens to the
 > `SessionsSavePost` / `SessionsLoadPost` / `SessionsRenamePost` / `SessionsDeletePost` events and brings the project's terminals back
 > with the session (definitions only, reopened hidden; see its
-> [sessions page](https://github.com/StefanBartl/terminal.nvim/blob/main/docs/sessions.md)).
+> [sessions page](https://github.com/WKDSteve/terminal.nvim/blob/main/docs/sessions.md)).
 >
-> **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — renders this
+> **[ui.nvim](https://github.com/WKDSteve/ui.nvim)** — renders this
 > plugin's own `sessions.statusline` component in its statusline, so the
 > active session is visible without asking for it. This plugin owns the
 > text; ui.nvim only places it.
 >
 > All of the above are soft: without them everything else works unchanged.
-> [lib.nvim](https://github.com/StefanBartl/lib.nvim) is the one real
+> [lib.nvim](https://github.com/WKDSteve/lib.nvim) is the one real
 > dependency — see [Requirements](docs/installation.md#requirements).
 
 ---
@@ -93,7 +93,7 @@ question each page answers.
 - [Lua API](docs/api.md) — every function a config or another plugin can call.
 - [Troubleshooting](docs/troubleshooting.md) — using `:checkhealth sessions` to diagnose a setup.
 - [Contributing](docs/CONTRIBUTING.md) — ground rules, project layout, and where a change belongs.
-- [Feedback](https://github.com/StefanBartl/sessions.nvim/issues) — bugs, feature requests and usage questions; broader discussion in [Discussions](https://github.com/StefanBartl/sessions.nvim/discussions).
+- [Feedback](https://github.com/WKDSteve/sessions.nvim/issues) — bugs, feature requests and usage questions; broader discussion in [Discussions](https://github.com/WKDSteve/sessions.nvim/discussions).
 
 `:help sessions` is the same reference inside the editor.
 

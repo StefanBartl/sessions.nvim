@@ -3,7 +3,7 @@
 ## Requirements
 
 - Neovim **0.9+**
-- [lib.nvim](https://github.com/stefanbartl/lib.nvim) — **required**: the `:Session`/`:LastSession` commands are built on `lib.nvim.bindings.usercmd.composer`. `lib.nvim.notify` and `lib.nvim.git` stay soft-guarded (used when available, native fallback otherwise). `lib.nvim.bindings.keymap` does **not**: it is only touched when you configure `setup({ keymaps = {...} })`, but once you do, that submodule is a hard requirement — a checkout of lib.nvim missing it will throw rather than degrade (`:checkhealth sessions` flags this).
+- [lib.nvim](https://github.com/WKDSteve/lib.nvim) — **required**: the `:Session`/`:LastSession` commands are built on `lib.nvim.bindings.usercmd.composer`. `lib.nvim.notify` and `lib.nvim.git` stay soft-guarded (used when available, native fallback otherwise). `lib.nvim.bindings.keymap` does **not**: it is only touched when you configure `setup({ keymaps = {...} })`, but once you do, that submodule is a hard requirement — a checkout of lib.nvim missing it will throw rather than degrade (`:checkhealth sessions` flags this).
 
 Optional, each detected at runtime and degrading to nothing when absent:
 
@@ -12,15 +12,15 @@ Optional, each detected at runtime and degrading to nothing when absent:
 | `git` | Branch-aware session names. Without it the project part still works |
 | [snacks.nvim](https://github.com/folke/snacks.nvim) or telescope.nvim | `:SessionLoad`, the picker with live preview and multi-select delete |
 | A tabufline | The `vim.t.bufs` ordering sidecar, a no-op without one |
-| [ui.nvim](https://github.com/StefanBartl/ui.nvim) | `autoload = "ask"`'s confirmation prompt (`ui.kit.confirm`); a hand-rolled floating y/n prompt is used without it |
+| [ui.nvim](https://github.com/WKDSteve/ui.nvim) | `autoload = "ask"`'s confirmation prompt (`ui.kit.confirm`); a hand-rolled floating y/n prompt is used without it |
 
 ## lazy.nvim
 
 *Default (lazy-loaded on command use):*
 ```lua
 {
-  "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" },
+  "WKDSteve/sessions.nvim",
+  dependencies = { "WKDSteve/lib.nvim" },
   cmd = { "Session", "LastSession" },
   opts = {},
 }
@@ -29,8 +29,8 @@ Optional, each detected at runtime and degrading to nothing when absent:
 *Load after UI init (recommended for autoload/autosave):*
 ```lua
 {
-  "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" },
+  "WKDSteve/sessions.nvim",
+  dependencies = { "WKDSteve/lib.nvim" },
   event = "VimEnter",
   opts = {},
 }
@@ -39,8 +39,8 @@ Optional, each detected at runtime and degrading to nothing when absent:
 *Load at startup (for `nvim +LastSession` / `nvim '+Session load'` command-line args):*
 ```lua
 {
-  "stefanbartl/sessions.nvim",
-  dependencies = { "stefanbartl/lib.nvim" },
+  "WKDSteve/sessions.nvim",
+  dependencies = { "WKDSteve/lib.nvim" },
   lazy = false,
   opts = {},
 }
@@ -51,8 +51,8 @@ Optional, each detected at runtime and degrading to nothing when absent:
 *Default setup:*
 ```lua
 use {
-  "stefanbartl/sessions.nvim",
-  requires = { "stefanbartl/lib.nvim" },
+  "WKDSteve/sessions.nvim",
+  requires = { "WKDSteve/lib.nvim" },
   config = function()
     require("sessions").setup()
   end,
@@ -62,8 +62,8 @@ use {
 *With immediate load (packer equivalent of `lazy = false`):*
 ```lua
 use {
-  "stefanbartl/sessions.nvim",
-  requires = { "stefanbartl/lib.nvim" },
+  "WKDSteve/sessions.nvim",
+  requires = { "WKDSteve/lib.nvim" },
   module_pattern = "sessions", -- eager
   config = function()
     require("sessions").setup()

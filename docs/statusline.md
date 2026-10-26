@@ -79,7 +79,7 @@ one-shot `vim.notify` toast — easy to miss, and gone (and forgotten) five
 seconds later.
 
 `chip` adds a third option, **on by default**: a small editor-corner
-indicator (built on [ui.kit](https://github.com/StefanBartl/ui.nvim)'s
+indicator (built on [ui.kit](https://github.com/WKDSteve/ui.nvim)'s
 `ui.kit.chip`) showing the exact same text as `component()`. It appears at
 startup and on every save/load/autoload, flashing its colour once on top of
 its steady text, then auto-hides itself again after `cfg.chip.timeout_ms` (3
@@ -126,7 +126,7 @@ something live (e.g. your own statusline's current mode colour — pair with
 `track_mode = true` so it actually repaints when the mode changes, not just
 on the next incidental save/load), and dial `timeout_ms` to taste (a few
 hundred ms for a quick flash, `false` for the old always-on indicator). See
-[ui.kit's own README](https://github.com/StefanBartl/ui.nvim/blob/main/lua/ui/kit/README.md#chip-persistent-corner-status)
+[ui.kit's own README](https://github.com/WKDSteve/ui.nvim/blob/main/lua/ui/kit/README.md#chip-persistent-corner-status)
 for the primitive itself (any plugin can mount its own chip, not just this one).
 
 ### Chip text

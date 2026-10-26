@@ -3,7 +3,7 @@
                                                                 *sessions.nvim*
 
 Author:   Stefan Bartl
-Homepage: https://github.com/stefanbartl/sessions.nvim
+Homepage: https://github.com/WKDSteve/sessions.nvim
 
 ==============================================================================
 CONTENTS                                                    *sessions-contents*
@@ -60,8 +60,8 @@ Minimal setup: >lua
 
 With lazy.nvim (lazy-loaded on command use): >lua
   {
-    "stefanbartl/sessions.nvim",
-    dependencies = { "stefanbartl/lib.nvim" },
+    "WKDSteve/sessions.nvim",
+    dependencies = { "WKDSteve/lib.nvim" },
     cmd = { "Session", "LastSession" },
     opts = {},
   }
@@ -69,8 +69,8 @@ With lazy.nvim (lazy-loaded on command use): >lua
 
 With lazy.nvim (loaded at VimEnter, recommended for autoload/autosave): >lua
   {
-    "stefanbartl/sessions.nvim",
-    dependencies = { "stefanbartl/lib.nvim" },
+    "WKDSteve/sessions.nvim",
+    dependencies = { "WKDSteve/lib.nvim" },
     event = "VimEnter",
     opts = {},
   }
@@ -79,8 +79,8 @@ With lazy.nvim (loaded at VimEnter, recommended for autoload/autosave): >lua
 With lazy.nvim (eager, needed for `nvim +LastSession` / `nvim '+Session load'`
 command-line args): >lua
   {
-    "stefanbartl/sessions.nvim",
-    dependencies = { "stefanbartl/lib.nvim" },
+    "WKDSteve/sessions.nvim",
+    dependencies = { "WKDSteve/lib.nvim" },
     lazy = false,
     opts = {},
   }

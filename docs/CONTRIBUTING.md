@@ -1,7 +1,7 @@
 # Contributing to sessions.nvim
 
 Thank you for your interest! Bugs, ideas and questions are welcome in the
-[issue tracker](https://github.com/StefanBartl/sessions.nvim/issues); pull
+[issue tracker](https://github.com/WKDSteve/sessions.nvim/issues); pull
 requests very welcome.
 
 ## Getting the repository into a session
@@ -14,7 +14,7 @@ vim.opt.rtp:prepend("/path/to/sessions.nvim")
 require("sessions").setup({})
 ```
 
-[lib.nvim](https://github.com/StefanBartl/lib.nvim) has to be on the runtime
+[lib.nvim](https://github.com/WKDSteve/lib.nvim) has to be on the runtime
 path too — the `:Session` and `:LastSession` commands are built on it.
 
 Work on a throwaway session directory while developing. A bug in the save path

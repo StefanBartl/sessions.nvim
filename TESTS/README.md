@@ -1,6 +1,6 @@
 # TESTS/
 
-Headless spec suite, run by [testing.nvim](https://github.com/StefanBartl/testing.nvim).
+Headless spec suite, run by [testing.nvim](https://github.com/WKDSteve/testing.nvim).
 No plugin manager, no picker, no real session on disk except the fixtures the
 specs write themselves.
 

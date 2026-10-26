@@ -47,7 +47,7 @@ Defined in `lua/sessions/bindings/keymaps/init.lua`. There are no defaults for t
 strings themselves — every mapping is opt-in and only attached if you set it.
 
 Declared as named actions through
-[`lib.nvim.bindings.keymap`](https://github.com/StefanBartl/lib.nvim), so an
+[`lib.nvim.bindings.keymap`](https://github.com/WKDSteve/lib.nvim), so an
 lhs may also be a **list**: `load = { "<leader>slo", "<leader>l" }` binds
 both. The actions exist whether or not they are bound, which is what lets
 `:checkhealth` answer "what can be mapped" rather than only "what is
@@ -72,7 +72,7 @@ key, since it is a real subcommand and not a typo. Use `picker`
 ## User commands
 
 One command, `:Session <subcommand>` (built via
-[`lib.nvim.bindings.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+[`lib.nvim.bindings.usercmd.composer`](https://github.com/WKDSteve/lib.nvim), with
 `<Tab>` completion), plus a standalone `:LastSession` convenience command.
 
 | Command                | Purpose |

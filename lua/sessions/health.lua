@@ -56,7 +56,7 @@ function M.check()
   else
     vim.health.error(
       "lib.nvim not found — :Session/:LastSession will fail to load",
-      { 'Install "StefanBartl/lib.nvim"' }
+      { 'Install "WKDSteve/lib.nvim"' }
     )
   end
 
