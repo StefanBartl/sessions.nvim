@@ -166,24 +166,33 @@ local function confirm_pinned_removals(lines, done)
       done(lines)
       return
     end
-    dialog.choose(
+    local function answer(choice)
+      if choice == 2 then
+        local ok, err = marks.unpin(it.path)
+        if not ok then
+          notify().warn(tostring(err) .. " -- removed from the list only")
+        end
+      elseif choice == 3 or choice == 0 then
+        lines[#lines + 1] = it.path
+      end
+      step()
+    end
+    local asked, err = pcall(
+      dialog.choose,
       ("A pinned entry is about to leave the list:\n%s"):format(it.path),
       { "List only", "Unpin too", "Keep it" },
       1,
-      function(choice)
-        if choice == 2 then
-          local ok, err = marks.unpin(it.path)
-          if not ok then
-            notify().warn(tostring(err) .. " -- removed from the list only")
-          end
-        elseif choice == 3 or choice == 0 then
-          lines[#lines + 1] = it.path
-        end
-        step()
-      end
+      answer
     )
+    if not asked then
+      -- a dialog that raises must not leave the save waiting for ever: it counts as a dismissal
+      notify().warn("could not ask about a pinned entry (kept): " .. tostring(err))
+      answer(0)
+    end
   end
-  step()
+  -- The first question opens on the next loop turn: asked inside the `BufWriteCmd` that called
+  -- us, the dialog would lose the focus to the menu window once the write command returns.
+  vim.schedule(step)
 end
 
 ---@internal
@@ -200,9 +209,12 @@ local function apply(buf, done)
   PENDING[buf] = true
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local before = #lines
-  confirm_pinned_removals(lines, function(out)
+  local tick = vim.api.nvim_buf_get_changedtick(buf)
+  local ok, err = pcall(confirm_pinned_removals, lines, function(out)
     PENDING[buf] = nil
     local alive = vim.api.nvim_buf_is_valid(buf)
+    -- the answer may come late: only a buffer untouched since the question counts as saved by it
+    local untouched = alive and vim.api.nvim_buf_get_changedtick(buf) == tick
     if alive and #out > before then
       -- confirm_pinned_removals() only ever appends a kept pinned path to
       -- the end of `lines` -- write those lines into the BUFFER too, or the
@@ -214,16 +226,21 @@ local function apply(buf, done)
       for i = before + 1, #out do
         kept[#kept + 1] = out[i]
       end
-      vim.api.nvim_buf_set_lines(buf, before, before, false, kept)
+      local at = vim.api.nvim_buf_line_count(buf)
+      vim.api.nvim_buf_set_lines(buf, at, at, false, kept)
     end
     local items = marks.set_paths(out)
-    if alive then
+    if untouched then
       vim.bo[buf].modified = false
     end
     if done then
       done(items)
     end
   end)
+  if not ok then
+    PENDING[buf] = nil
+    error(err, 0)
+  end
 end
 
 ---@internal

@@ -389,6 +389,12 @@ return function(H)
   end
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c })
   vim.cmd("write")
+  -- the question opens on the next loop turn: asked inside the BufWriteCmd the dialog would
+  -- lose the focus to the menu window when the write command returns
+  H.eq(asked, 0, "the question is not asked inside the :w itself")
+  vim.wait(500, function()
+    return asked > 0
+  end, 5)
   dialog.choose = real_choose
   H.eq(asked, 1, "removing a pinned line asks once")
   H.eq(#marks.list(), 2, "...and 'keep it' keeps it")
@@ -422,6 +428,10 @@ return function(H)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c })
   vim.cmd("write")
   vim.cmd("write")
+  vim.wait(500, function()
+    return #waiting > 0
+  end, 5)
+  vim.wait(30) -- a second question, were one scheduled, would be in by now
   H.eq(#waiting, 1, "a second :w while the question is open asks nothing more")
   H.eq(#marks.list(), 2, "...and nothing changed before the answer")
   waiting[1](3)
@@ -431,7 +441,64 @@ return function(H)
     table.concat({ c, a }, "\n"),
     "...and writes it back into the buffer"
   )
+  H.falsy(vim.bo[buf].modified, "...and the untouched buffer counts as saved")
+
+  -- An edit made while the question is open: the late answer saves the old snapshot, the buffer
+  -- keeps the edit (it stays modified) and the kept path goes to its end.
+  waiting = {}
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c })
+  vim.cmd("write")
+  vim.wait(500, function()
+    return #waiting > 0
+  end, 5)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c, "scratch" })
+  waiting[1](3)
+  H.ok(vim.bo[buf].modified, "an edit made during the question is not marked as saved")
+  H.eq(
+    table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n"),
+    table.concat({ c, "scratch", a }, "\n"),
+    "...and the kept path is appended to the current buffer"
+  )
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c, a })
+  vim.bo[buf].modified = false
+
+  -- Dismissing (0) keeps the entry; a dialog that raises counts as a dismissal and frees the
+  -- buffer for the next save.
+  waiting = {}
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c })
+  vim.cmd("write")
+  vim.wait(500, function()
+    return #waiting > 0
+  end, 5)
+  waiting[1](0)
+  H.eq(#marks.list(), 2, "a dismissed question keeps the entry")
+  local raised = 0
+  dialog.choose = function()
+    raised = raised + 1
+    error("kit exploded")
+  end
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c })
+  vim.cmd("write")
+  vim.wait(500, function()
+    return raised > 0
+  end, 5)
+  vim.wait(30)
+  H.eq(raised, 1, "a raising dialog is asked once")
+  H.eq(#marks.list(), 2, "...and counts as a dismissal: the entry stays")
+  waiting = {}
+  dialog.choose = function(_, _, _, cb)
+    waiting[#waiting + 1] = cb
+  end
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c })
+  vim.cmd("write")
+  vim.wait(500, function()
+    return #waiting > 0
+  end, 5)
+  H.eq(#waiting, 1, "...and the next save asks again (the buffer is not stuck pending)")
+  waiting[1](1)
+  H.eq(#marks.list(), 1, "'List only' removes the entry from the list")
   dialog.choose = real_choose
+  marks.add(a)
 
   menu.open_edit()
   H.falsy(menu.is_open(), "opening again toggles it closed")
