@@ -4,7 +4,7 @@
 -- Everything runs against a fixture directory: the store under a private
 -- session root, the marked files created on the spot. Nothing here reads
 -- the real `stdpath("data")` -- the one code path that would (the harpoon
--- import) is pointed at a fixture data directory. `vim.fn.confirm` is
+-- import) is pointed at a fixture data directory. `dialog.choose` is
 -- replaced for the pinned-removal prompt, since a headless run cannot
 -- answer one.
 
@@ -380,15 +380,16 @@ return function(H)
   H.falsy(vim.bo[buf].modified, "...and the buffer is clean again")
 
   -- Deleting a pinned line asks; answer "keep it".
-  local real_confirm = vim.fn.confirm
+  local dialog = require("lib.nvim.ui.dialog")
+  local real_choose = dialog.choose
   local asked = 0
-  vim.fn.confirm = function()
+  dialog.choose = function(_, _, _, cb)
     asked = asked + 1
-    return 3
+    cb(3)
   end
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c })
   vim.cmd("write")
-  vim.fn.confirm = real_confirm
+  dialog.choose = real_choose
   H.eq(asked, 1, "removing a pinned line asks once")
   H.eq(#marks.list(), 2, "...and 'keep it' keeps it")
   H.ok(marks.index(a), "...listed still")
@@ -403,27 +404,47 @@ return function(H)
     "'keep it' writes the kept path back into the buffer"
   )
   local asked_again = 0
-  vim.fn.confirm = function()
+  dialog.choose = function(_, _, _, cb)
     asked_again = asked_again + 1
-    return 3
+    cb(3)
   end
   vim.cmd("write")
-  vim.fn.confirm = real_confirm
+  dialog.choose = real_choose
   H.eq(asked_again, 0, "a second :w with nothing changed does not re-ask")
   H.eq(#marks.list(), 2, "...the kept entry is still there")
+
+  -- A question answered later (a real float): a second :w meanwhile does not stack another one,
+  -- and the late answer is applied to the list and the buffer.
+  local waiting = {}
+  dialog.choose = function(_, _, _, cb)
+    waiting[#waiting + 1] = cb
+  end
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { c })
+  vim.cmd("write")
+  vim.cmd("write")
+  H.eq(#waiting, 1, "a second :w while the question is open asks nothing more")
+  H.eq(#marks.list(), 2, "...and nothing changed before the answer")
+  waiting[1](3)
+  H.eq(#marks.list(), 2, "a late 'keep it' keeps the entry")
+  H.eq(
+    table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n"),
+    table.concat({ c, a }, "\n"),
+    "...and writes it back into the buffer"
+  )
+  dialog.choose = real_choose
 
   menu.open_edit()
   H.falsy(menu.is_open(), "opening again toggles it closed")
 
   -- Deleting a non-pinned line does not ask.
   buf = menu.open_edit()
-  vim.fn.confirm = function()
+  dialog.choose = function(_, _, _, cb)
     asked = asked + 1
-    return 3
+    cb(3)
   end
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { a })
   vim.cmd("write")
-  vim.fn.confirm = real_confirm
+  dialog.choose = real_choose
   H.eq(asked, 1, "a non-pinned removal is not asked about")
   H.eq(#marks.list(), 1, "...and just happens")
   menu.open_edit()

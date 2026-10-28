@@ -170,9 +170,10 @@ return function(H)
     H.excludes(last(), "last  [", "...and not the exit snapshot")
 
     -- Declining the confirm changes nothing.
-    local real_confirm = vim.fn.confirm
-    vim.fn.confirm = function()
-      return 2 -- "No"
+    local dialog = require("lib.nvim.ui.dialog")
+    local real_yesno = dialog.yesno
+    dialog.yesno = function(_, _, cb)
+      cb(false)
     end
     vim.cmd("Session delete-stale")
     H.eq(
@@ -182,8 +183,8 @@ return function(H)
     )
 
     -- Accepting deletes exactly the stale one.
-    vim.fn.confirm = function()
-      return 1 -- "Yes"
+    dialog.yesno = function(_, _, cb)
+      cb(true)
     end
     vim.cmd("Session delete-stale")
     H.contains(last(), "info: deleted: has-a-gone-branch", "delete-stale reports what it removed")
@@ -200,7 +201,7 @@ return function(H)
     vim.cmd("Session stale")
     H.contains(last(), "No stale sessions.", "nothing left to report")
 
-    vim.fn.confirm = real_confirm
+    dialog.yesno = real_yesno
     git_stub()
     config.setup({
       root = root,

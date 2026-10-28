@@ -119,15 +119,23 @@ local function mark_pins(buf, pinned)
 end
 
 ---@internal
+---Buffers with a removal question open: a second apply() for the same buffer waits for the answer.
+---@type table<integer, true>
+local PENDING = {}
+
+---@internal
 ---The pinned entries that `lines` no longer contain, each confirmed with
----the user. Returns the lines to persist -- a declined removal is put back.
+---the user through the shared dialog (one question at a time). Calls
+---`done(lines)` once with the lines to persist -- a declined removal is put
+---back. Dismissing a question keeps the entry.
 ---@param lines string[]
----@return string[]
-local function confirm_pinned_removals(lines)
+---@param done fun(lines: string[])
+local function confirm_pinned_removals(lines, done)
   local normkey = require("lib.nvim.fs.normkey")
   local pinned = marks.pinned_set()
   if not next(pinned) then
-    return lines
+    done(lines)
+    return
   end
   local present = {}
   for _, line in ipairs(lines) do
@@ -136,54 +144,86 @@ local function confirm_pinned_removals(lines)
       present[normkey(p, { realpath = true })] = true
     end
   end
+  local leaving = {}
   for _, it in ipairs(marks.list()) do
     local k = normkey(it.path, { realpath = true })
     if pinned[k] and not present[k] then
-      local choice = vim.fn.confirm(
-        ("A pinned entry is about to leave the list:\n%s"):format(it.path),
-        "&List only\n&Unpin too\n&Keep it",
-        1
-      )
-      if choice == 2 then
-        local ok, err = marks.unpin(it.path)
-        if not ok then
-          notify().warn(tostring(err) .. " -- removed from the list only")
-        end
-      elseif choice == 3 or choice == 0 then
-        lines[#lines + 1] = it.path
-        present[k] = true
-      end
+      present[k] = true
+      leaving[#leaving + 1] = it
     end
   end
-  return lines
+  if #leaving == 0 then
+    done(lines)
+    return
+  end
+
+  local dialog = require("lib.nvim.ui.dialog")
+  local i = 0
+  local function step()
+    i = i + 1
+    local it = leaving[i]
+    if not it then
+      done(lines)
+      return
+    end
+    dialog.choose(
+      ("A pinned entry is about to leave the list:\n%s"):format(it.path),
+      { "List only", "Unpin too", "Keep it" },
+      1,
+      function(choice)
+        if choice == 2 then
+          local ok, err = marks.unpin(it.path)
+          if not ok then
+            notify().warn(tostring(err) .. " -- removed from the list only")
+          end
+        elseif choice == 3 or choice == 0 then
+          lines[#lines + 1] = it.path
+        end
+        step()
+      end
+    )
+  end
+  step()
 end
 
 ---@internal
----Persist the buffer's lines as the new list.
+---Persist the buffer's lines as the new list. A pinned entry that left the
+---list is asked about first, so `done(items)` may run after this returns
+---(at once when nothing is asked); it runs once, and not at all when the
+---buffer is gone or an earlier apply() of it is still waiting for its answer.
 ---@param buf integer
-local function apply(buf)
-  if not vim.api.nvim_buf_is_valid(buf) then
+---@param done? fun(items: table[])
+local function apply(buf, done)
+  if PENDING[buf] or not vim.api.nvim_buf_is_valid(buf) then
     return
   end
+  PENDING[buf] = true
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local before = #lines
-  lines = confirm_pinned_removals(lines)
-  if #lines > before then
-    -- confirm_pinned_removals() only ever appends a kept pinned path to
-    -- the end of `lines` -- write those lines into the BUFFER too, or the
-    -- buffer stays out of sync with the store (it still looks like the
-    -- entry was removed) and the same "about to leave the list" prompt
-    -- fires again on the very next apply(), e.g. a second `:w`, or
-    -- leaving the window right after one.
-    local kept = {}
-    for i = before + 1, #lines do
-      kept[#kept + 1] = lines[i]
+  confirm_pinned_removals(lines, function(out)
+    PENDING[buf] = nil
+    local alive = vim.api.nvim_buf_is_valid(buf)
+    if alive and #out > before then
+      -- confirm_pinned_removals() only ever appends a kept pinned path to
+      -- the end of `lines` -- write those lines into the BUFFER too, or the
+      -- buffer stays out of sync with the store (it still looks like the
+      -- entry was removed) and the same "about to leave the list" prompt
+      -- fires again on the very next apply(), e.g. a second `:w`, or
+      -- leaving the window right after one.
+      local kept = {}
+      for i = before + 1, #out do
+        kept[#kept + 1] = out[i]
+      end
+      vim.api.nvim_buf_set_lines(buf, before, before, false, kept)
     end
-    vim.api.nvim_buf_set_lines(buf, before, before, false, kept)
-  end
-  local items = marks.set_paths(lines)
-  vim.bo[buf].modified = false
-  return items
+    local items = marks.set_paths(out)
+    if alive then
+      vim.bo[buf].modified = false
+    end
+    if done then
+      done(items)
+    end
+  end)
 end
 
 ---@internal
@@ -257,19 +297,25 @@ function M.open_edit()
     group = group,
     buffer = buf,
     callback = function()
-      apply(buf)
-      notify().info("marks saved")
+      apply(buf, function()
+        notify().info("marks saved")
+      end)
     end,
   })
   -- Leaving the window is a close: harpoon's menu behaves the same, and a
   -- float that lingers behind the buffer it opened is a nuisance.
+  -- While a removal question is open the dialog takes the focus; that is not
+  -- leaving the menu, so the autocmd stays armed until the real close.
   vim.api.nvim_create_autocmd({ "BufLeave", "WinClosed" }, {
     group = group,
     buffer = buf,
-    once = true,
     callback = function()
+      if PENDING[buf] then
+        return false
+      end
       apply(buf)
       vim.schedule(close)
+      return true
     end,
   })
 
@@ -280,20 +326,22 @@ function M.open_edit()
   map("<Esc>", close, "sessions marks: close")
   map("<CR>", function()
     local line = vim.trim(vim.api.nvim_get_current_line())
-    apply(buf)
-    close()
-    if line ~= "" then
-      open_with("edit", line)
-    end
+    apply(buf, function()
+      close()
+      if line ~= "" then
+        open_with("edit", line)
+      end
+    end)
   end, "sessions marks: open entry")
   for _, spec in ipairs({ { "<C-v>", "vsplit" }, { "<C-x>", "split" }, { "<C-t>", "tabedit" } }) do
     map(spec[1], function()
       local line = vim.trim(vim.api.nvim_get_current_line())
-      apply(buf)
-      close()
-      if line ~= "" then
-        open_with(spec[2], line)
-      end
+      apply(buf, function()
+        close()
+        if line ~= "" then
+          open_with(spec[2], line)
+        end
+      end)
     end, "sessions marks: open entry in " .. spec[2])
   end
   return buf

@@ -284,30 +284,32 @@ function M.enable()
           for _, s in ipairs(stale) do
             names[#names + 1] = s.name
           end
-          local choice = vim.fn.confirm(
+          require("lib.nvim.ui.dialog").yesno(
             ("Delete %d stale session(s)?\n\n%s"):format(#stale, table.concat(names, "\n")),
-            "&Yes\n&No",
-            2
+            "delete them",
+            function(yes)
+              if not yes then
+                return
+              end
+              local deleted, failed = {}, {}
+              for _, s in ipairs(stale) do
+                local ok = require("sessions.core").delete(s.name)
+                if ok then
+                  deleted[#deleted + 1] = s.name
+                else
+                  failed[#failed + 1] = s.name
+                end
+              end
+              if #deleted > 0 then
+                n().info("deleted: " .. table.concat(deleted, ", "))
+                require("sessions.chip").refresh()
+              end
+              if #failed > 0 then
+                n().error("failed to delete: " .. table.concat(failed, ", "))
+              end
+            end,
+            { kind = "danger" }
           )
-          if choice ~= 1 then
-            return
-          end
-          local deleted, failed = {}, {}
-          for _, s in ipairs(stale) do
-            local ok = require("sessions.core").delete(s.name)
-            if ok then
-              deleted[#deleted + 1] = s.name
-            else
-              failed[#failed + 1] = s.name
-            end
-          end
-          if #deleted > 0 then
-            n().info("deleted: " .. table.concat(deleted, ", "))
-            require("sessions.chip").refresh()
-          end
-          if #failed > 0 then
-            n().error("failed to delete: " .. table.concat(failed, ", "))
-          end
         end,
       },
 
