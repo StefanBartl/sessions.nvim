@@ -70,6 +70,7 @@ end
 ---tabpage carries a `vim.t.bufs` list.
 ---@param session_path string
 ---@return boolean wrote
+---@return string|nil err  `"<sidecar path>: <reason>"` when there was something to write and the write failed
 function M.save(session_path)
   local tabs = {}
   local any = false
@@ -89,8 +90,11 @@ function M.save(session_path)
     return false
   end
 
-  local ok = require("lib.nvim.fs.json").write(path, { tabs = tabs })
-  return ok == true
+  local ok, err = require("lib.nvim.fs.json").write(path, { tabs = tabs })
+  if not ok then
+    return false, path .. ": " .. tostring(err)
+  end
+  return true, nil
 end
 
 ---Reapply the saved per-tabpage buffer ordering for `session_path`.

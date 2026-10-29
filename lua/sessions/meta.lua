@@ -70,11 +70,16 @@ end
 
 ---@param session_path string
 ---@param data Sessions.Meta
----@return boolean
+---@return boolean ok
+---@return string|nil err  `"<sidecar path>: <reason>"` when the write failed
 ---@see sessions.core
 function M.write(session_path, data)
-  local ok = require("lib.nvim.fs.json").write(meta_path(session_path), data)
-  return ok
+  local path = meta_path(session_path)
+  local ok, err = require("lib.nvim.fs.json").write(path, data)
+  if not ok then
+    return false, path .. ": " .. tostring(err)
+  end
+  return true, nil
 end
 
 ---@param session_path string

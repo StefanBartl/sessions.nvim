@@ -318,7 +318,13 @@ return function(H)
     vim.fs.find = real_find
     H.contains(last(), "not inside a git repo", "a root outside git explains why it cannot work")
 
-    -- The git calls themselves. Both are captured; neither runs.
+    -- The git calls themselves. Both are captured; neither runs. The upward
+    -- `.git` search is answered here too: a copy of this repository without
+    -- its `.git` (a scratch checkout, an exported tree) must not turn every
+    -- case below into "not inside a git repo".
+    vim.fs.find = function()
+      return { root .. "/.git" }
+    end
     local calls = {}
     local real_system = vim.system
     local ls_stdout = "H TESTS/session.vim"
@@ -406,6 +412,7 @@ return function(H)
     no_argv()
 
     vim.system = real_system
+    vim.fs.find = real_find
   end
 
   -- -------------------------------------------------------------- notify_title

@@ -227,6 +227,56 @@ return function(H)
     setup()
   end
 
+  -- ------------------------------------------------- a sidecar that cannot be written
+
+  -- A sidecar whose write fails (on Windows: a path of 260 characters or more
+  -- without long-path support) used to be dropped without a word: the save
+  -- reported success and the metadata / buffer order were simply gone. The
+  -- failure is provoked portably here by a directory sitting where the
+  -- writer's temporary file has to go.
+  do
+    local said = {} ---@type string[]
+    local restore_notify = H.stub("lib.nvim.notify", {
+      create = function(prefix)
+        local rec = {}
+        for _, level in ipairs({ "info", "warn", "error" }) do
+          rec[level] = function(msg)
+            said[#said + 1] = level .. ": " .. prefix .. " " .. tostring(msg)
+          end
+        end
+        return rec
+      end,
+    })
+    setup({ metadata = true, restore_buffer_order = true })
+    vim.fn.mkdir(root .. "/.blocked.json.tmp", "p")
+    vim.fn.mkdir(root .. "/.blocked.bufs.json.tmp", "p")
+    local file = dir .. "/blocked.lua"
+    vim.fn.writefile({ "-- blocked" }, file)
+    vim.cmd.edit(vim.fn.fnameescape(file))
+    vim.t.bufs = { api.nvim_get_current_buf() }
+
+    local saved = core.save("blocked")
+    local all = table.concat(said, "\n")
+    H.ok(saved, "the session file itself is written, so the save still succeeds")
+    H.contains(
+      all,
+      "warn: [sessions] could not write the metadata sidecar",
+      "the lost metadata is reported"
+    )
+    H.contains(all, ".blocked.json", "naming the sidecar")
+    H.contains(all, "could not write the buffer-order sidecar", "and so is the lost buffer order")
+    H.contains(all, ".blocked.bufs.json", "naming that sidecar too")
+
+    vim.t.bufs = nil
+    restore_notify()
+    vim.fn.delete(root .. "/.blocked.json.tmp", "rf")
+    vim.fn.delete(root .. "/.blocked.bufs.json.tmp", "rf")
+    core.delete("blocked")
+    vim.cmd("silent! %bwipeout!")
+    os.remove(file)
+    setup()
+  end
+
   -- ------------------------------------------------------------------- list
 
   H.ok(core.save("gamma"))
@@ -613,7 +663,13 @@ return function(H)
     local load_ok, _, _, load_stale = core.load("ghost")
     H.ok(load_ok, "load still succeeds even though a file it names is now gone")
     H.eq(#load_stale, 1, "the resurrected-but-blank buffer is reported")
-    H.eq(load_stale[1], ghost, "naming the missing file")
+    -- Compared as absolute, normalized paths: `:mksession` writes a file under
+    -- $HOME as `~/...`, so the buffer name comes back absolute when this
+    -- checkout lives below the home directory and relative otherwise.
+    local function abs(p)
+      return vim.fs.normalize(vim.fn.fnamemodify(p, ":p"))
+    end
+    H.eq(abs(load_stale[1]), abs(ghost), "naming the missing file")
     H.falsy(
       vim.fn.bufexists(ghost) == 1,
       "and is not left behind as a blank buffer under the old name"

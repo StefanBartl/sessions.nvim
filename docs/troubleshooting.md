@@ -45,3 +45,19 @@ since-deleted path is wiped instead of left blank). A modified buffer is
 never touched by this, even if its file is missing, so in-memory unsaved
 content is never discarded. Dropped paths are reported by `:Session save`
 and `:Session load` as `dropped (file no longer exists): ...`.
+
+## "could not write the ... sidecar" after a save
+
+Next to each session file sessions.nvim keeps hidden sidecars:
+`.<name>.json` (metadata), `.<name>.bufs.json` (tabline buffer order) and
+`.<name>.pins.json` (pinned buffers). The session file itself is written
+first, so the save still succeeds when a sidecar cannot be written, but the
+metadata, order or pins of that save are lost. Earlier this happened
+silently; now each failed sidecar is reported as a warning naming the file
+and the reason.
+
+The usual cause on Windows is a path of 260 characters or more while long
+paths are not enabled (the warning then says so and gives the length). Pick
+a shorter `root`, or enable long paths for the system
+(`LongPathsEnabled`). Other causes are the usual ones: no write permission
+in `root`, a full disk, or a directory sitting where the file should be.

@@ -80,6 +80,7 @@ end
 ---`ui.nvim` is not installed or no tabpage has anything pinned.
 ---@param session_path string
 ---@return boolean wrote
+---@return string|nil err  `"<sidecar path>: <reason>"` when there was something to write and the write failed
 function M.save(session_path)
   local path = sidecar_path(session_path)
   local state = tabufline_state()
@@ -105,8 +106,11 @@ function M.save(session_path)
     return false
   end
 
-  local ok = require("lib.nvim.fs.json").write(path, { tabs = tabs })
-  return ok == true
+  local ok, err = require("lib.nvim.fs.json").write(path, { tabs = tabs })
+  if not ok then
+    return false, path .. ": " .. tostring(err)
+  end
+  return true, nil
 end
 
 ---Reapply the saved per-tabpage pin state for `session_path`. A no-op when

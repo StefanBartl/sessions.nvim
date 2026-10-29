@@ -1,5 +1,8 @@
 ---@module 'sessions.core'
----@brief Save, load, list, delete, rename logic. No UI side-effects.
+---@brief Save, load, list, delete, rename logic. No UI side-effects, with one
+---exception: a sidecar that could not be written is reported as a warning
+---(see `warn_sidecar`), because every save path -- autosave on exit included --
+---would otherwise lose it without a trace.
 
 require("sessions.@types")
 
@@ -493,6 +496,35 @@ local function build_meta(branch)
   }
 end
 
+---@internal
+---Windows refuses a path of `MAX_PATH` (260) characters or more unless long
+---paths are enabled for the system and the process.
+local WIN_MAX_PATH = 260
+
+---@internal
+---Report a sidecar (`.<name>.json`, `.<name>.bufs.json`, `.<name>.pins.json`)
+---that could not be written. The session file itself is already on disk at
+---this point, so the save still succeeds -- but the metadata, buffer order or
+---pins are gone, and a silent loss is what made a too-long path on Windows
+---look like a working save. The notifier is resolved per call so a stubbed
+---`lib.nvim.notify` is honoured.
+---@param what string  Which sidecar, as shown to the user
+---@param err string|nil  `"<sidecar path>: <reason>"` from the writer
+local function warn_sidecar(what, err)
+  local msg = ("could not write the %s sidecar: %s"):format(what, tostring(err))
+  local path = err and err:match("^(.-): ") or nil
+  local len = path and #fn.fnamemodify(path, ":p") or 0
+  if fn.has("win32") == 1 and len >= WIN_MAX_PATH then
+    msg = msg
+      .. (" (the path is %d characters long; Windows allows %d unless long paths are enabled)"):format(
+        len,
+        WIN_MAX_PATH - 1
+      )
+      .. " -- choose a shorter `root`"
+  end
+  require("sessions.util.notify").create("[sessions]").warn(msg)
+end
+
 -- =========================================================
 -- Public API
 -- =========================================================
@@ -545,15 +577,24 @@ function M.save(name, opts)
 
   if cfg.metadata then
     local branch = git_aware(cfg) and require("sessions.git").current_branch() or nil
-    require("sessions.meta").write(si.path, build_meta(branch))
+    local meta_ok, meta_err = require("sessions.meta").write(si.path, build_meta(branch))
+    if not meta_ok then
+      warn_sidecar("metadata", meta_err)
+    end
   end
 
   if cfg.restore_buffer_order then
-    require("sessions.buforder").save(si.path)
+    local _, order_err = require("sessions.buforder").save(si.path)
+    if order_err then
+      warn_sidecar("buffer-order", order_err)
+    end
   end
 
   if cfg.restore_pinned_buffers then
-    require("sessions.pins").save(si.path)
+    local _, pins_err = require("sessions.pins").save(si.path)
+    if pins_err then
+      warn_sidecar("pinned-buffers", pins_err)
+    end
   end
 
   if cfg.hooks.on_save and not snapshot then
