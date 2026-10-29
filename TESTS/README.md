@@ -69,6 +69,7 @@ which is all the process-free branch resolution ever reads.
 | `picker_spec.lua` | what `:SessionLoad` hands a backend and what its actions do: item list, preview text, delete bookkeeping, and the fallback chain when nothing is installed |
 | `health_spec.lua` | the `:checkhealth` report, per dependency present and absent |
 | `keymaps_spec.lua` | the opt-in mappings: what is declared vs. bound, the unmappable names, and the computed which-key prefix |
+| `keymaps_press_spec.lua` | every mark-list keymap (`<leader>ha/hA/hd/hp/hs/hD/hE/hm`, `<leader>h1`..`h9`) pressed with `nvim_feedkeys(..., "mx")`, its effect read back through `sessions.marks`, the current buffer and the notifications -- all in a fixture store |
 | `usercmds_spec.lua` | every `:Session` subcommand, `:LastSession`, `:SessionLoad` and the completion types — driven through real `:` commands |
 | `usercmds_help_spec.lua` | every flag of `:Session` (`marks add`, `marks pin`) has a line in lib.nvim's option float: `composer.help.undocumented("Session")` is empty |
 | `autocmds_spec.lua` | the VimEnter autoload, the VimLeavePre autosave and the dirty-tracking events, fired with `nvim_exec_autocmds` |
