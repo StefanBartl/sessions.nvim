@@ -513,10 +513,12 @@ local WIN_MAX_PATH = 260
 local function warn_sidecar(what, err)
   local msg = ("could not write the %s sidecar: %s"):format(what, tostring(err))
   local path = err and err:match("^(.-): ") or nil
-  local len = path and #fn.fnamemodify(path, ":p") or 0
+  -- The writer goes through `<path>.tmp` first (lib.nvim.fs.json), so that
+  -- longer path is the one Windows measures against MAX_PATH.
+  local len = path and #fn.fnamemodify(path, ":p") + #".tmp" or 0
   if fn.has("win32") == 1 and len >= WIN_MAX_PATH then
     msg = msg
-      .. (" (the path is %d characters long; Windows allows %d unless long paths are enabled)"):format(
+      .. (" (its temporary file's path is %d characters long; Windows allows %d unless long paths are enabled)"):format(
         len,
         WIN_MAX_PATH - 1
       )
