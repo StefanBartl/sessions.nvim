@@ -248,13 +248,19 @@ return function(H)
       end,
     })
     setup({ metadata = true, restore_buffer_order = true })
-    vim.fn.mkdir(root .. "/.blocked.json.tmp", "p")
-    vim.fn.mkdir(root .. "/.blocked.bufs.json.tmp", "p")
     local file = dir .. "/blocked.lua"
     vim.fn.writefile({ "-- blocked" }, file)
     vim.cmd.edit(vim.fn.fnameescape(file))
     vim.t.bufs = { api.nvim_get_current_buf() }
 
+    -- An earlier, working save leaves both sidecars behind ...
+    H.ok(core.save("blocked"), "the first save writes normally")
+    H.eq(vim.fn.filereadable(root .. "/.blocked.json"), 1, "with its metadata sidecar")
+    H.eq(vim.fn.filereadable(root .. "/.blocked.bufs.json"), 1, "and its buffer-order sidecar")
+    said = {}
+
+    vim.fn.mkdir(root .. "/.blocked.json.tmp", "p")
+    vim.fn.mkdir(root .. "/.blocked.bufs.json.tmp", "p")
     local saved = core.save("blocked")
     local all = table.concat(said, "\n")
     H.ok(saved, "the session file itself is written, so the save still succeeds")
@@ -266,6 +272,15 @@ return function(H)
     H.contains(all, ".blocked.json", "naming the sidecar")
     H.contains(all, "could not write the buffer-order sidecar", "and so is the lost buffer order")
     H.contains(all, ".blocked.bufs.json", "naming that sidecar too")
+    -- ... and the failed save must not leave them to be applied to the new
+    -- session file on the next load.
+    H.eq(vim.fn.filereadable(root .. "/.blocked.json"), 0, "the stale metadata sidecar is gone")
+    H.falsy(core.metadata("blocked"), "so no previous saved_at / buffers are reported")
+    H.eq(
+      vim.fn.filereadable(root .. "/.blocked.bufs.json"),
+      0,
+      "the stale buffer-order sidecar is gone"
+    )
 
     vim.t.bufs = nil
     restore_notify()
@@ -274,6 +289,54 @@ return function(H)
     core.delete("blocked")
     vim.cmd("silent! %bwipeout!")
     os.remove(file)
+    setup()
+  end
+
+  -- The Windows MAX_PATH hint has to measure the writer's `<sidecar>.tmp`,
+  -- the path that actually fails: a sidecar of 256 characters is fine on its
+  -- own, but its temporary file (260) is not. The writer is stubbed with
+  -- such a path, and `has("win32")` is forced so the branch runs everywhere.
+  do
+    local said = {} ---@type string[]
+    local restore_notify = H.stub("lib.nvim.notify", {
+      create = function(prefix)
+        local rec = {}
+        for _, level in ipairs({ "info", "warn", "error" }) do
+          rec[level] = function(msg)
+            said[#said + 1] = level .. ": " .. prefix .. " " .. tostring(msg)
+          end
+        end
+        return rec
+      end,
+    })
+    local drive = vim.fn.has("win32") == 1 and "C:/" or "/"
+    local long = drive .. string.rep("x", 256 - #drive)
+    H.eq(#vim.fn.fnamemodify(long, ":p"), 256, "the fake sidecar path is 256 characters")
+    local restore_meta = H.stub("sessions.meta", {
+      write = function()
+        return false, long .. ": rename failed"
+      end,
+    })
+    local real_has = vim.fn.has
+    vim.fn.has = function(feature)
+      if feature == "win32" then
+        return 1
+      end
+      return real_has(feature)
+    end
+    setup({ metadata = true })
+
+    local hint_ok, hint_err = pcall(core.save, "hint")
+    vim.fn.has = real_has
+    restore_meta()
+    restore_notify()
+    H.ok(hint_ok, "save does not raise: " .. tostring(hint_err))
+    local all = table.concat(said, "\n")
+    H.contains(all, "could not write the metadata sidecar", "the lost metadata is reported")
+    H.contains(all, "is 260 characters long", "with the length of the temporary file's path")
+    H.contains(all, "choose a shorter `root`", "and the hint to shorten root")
+
+    core.delete("hint")
     setup()
   end
 

@@ -128,6 +128,71 @@ return function(H)
     restore()
   end
 
+  -- A write that fails: the reason comes back, the stale sidecar goes ------------
+  -- Provoked by a directory where lib.nvim.fs.json puts its temporary file.
+  do
+    local pins_by_tab, restore = stub_ui_state()
+    pins_by_tab[cur_tab] = { a }
+    H.ok(pins.save(session), "a working save first")
+    H.eq(vim.fn.filereadable(sidecar), 1, "leaves a sidecar behind")
+    vim.fn.mkdir(sidecar .. ".tmp", "p")
+    local wrote, err = pins.save(session)
+    vim.fn.delete(sidecar .. ".tmp", "rf")
+    H.falsy(wrote, "the blocked write reports it wrote nothing")
+    H.contains(tostring(err), ".work.pins.json: ", "the error names the sidecar")
+    H.eq(
+      vim.fn.filereadable(sidecar),
+      0,
+      "the stale sidecar of the earlier save is removed, not applied on the next load"
+    )
+    restore()
+  end
+
+  -- core.save reports the lost pins sidecar as a warning -----------------------
+  do
+    local pins_by_tab, restore = stub_ui_state()
+    local said = {} ---@type string[]
+    local restore_notify = H.stub("lib.nvim.notify", {
+      create = function(prefix)
+        local rec = {}
+        for _, level in ipairs({ "info", "warn", "error" }) do
+          rec[level] = function(msg)
+            said[#said + 1] = level .. ": " .. prefix .. " " .. tostring(msg)
+          end
+        end
+        return rec
+      end,
+    })
+    local core = require("sessions.core")
+    local cfg_mod = require("sessions.config")
+    local wroot = dir .. "/wroot"
+    cfg_mod.setup({
+      root = wroot,
+      branch_aware = false,
+      project_aware = false,
+      metadata = false,
+      restore_buffer_order = false,
+      autosave = false,
+    })
+    vim.fn.mkdir(wroot .. "/.warned.pins.json.tmp", "p")
+    pins_by_tab[api.nvim_get_current_tabpage()] = { a }
+
+    H.ok(core.save("warned"), "the session file is written, so the save still succeeds")
+    local all = table.concat(said, "\n")
+    H.contains(
+      all,
+      "warn: [sessions] could not write the pinned-buffers sidecar",
+      "the lost pins are reported"
+    )
+    H.contains(all, ".warned.pins.json", "naming the sidecar")
+
+    vim.fn.delete(wroot .. "/.warned.pins.json.tmp", "rf")
+    core.delete("warned")
+    cfg_mod.setup({})
+    restore_notify()
+    restore()
+  end
+
   -- Full core.save -> core.load roundtrip, stubbed ui.nvim, confirming
   -- core.lua calls pins at the right moments (gated by restore_pinned_buffers,
   -- and after restore_buffer_order on load).
