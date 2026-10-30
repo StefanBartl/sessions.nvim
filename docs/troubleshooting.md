@@ -60,9 +60,11 @@ metadata to the new session file (if the old file cannot be removed either,
 e.g. because it is locked, it stays).
 
 The usual cause on Windows is a path of 260 characters or more while long
-paths are not enabled. The sidecar is written through a temporary
-`<sidecar>.tmp` first, so that path (4 characters longer) is the one that
-counts; the warning then says so and gives its length. Pick
+paths are not enabled. The sidecar is written through a temporary file
+next to it first, named uniquely per write
+(for `.<name>.json` that is `.<name>.<pid>-<n>-<hrtime>.json.tmp`, roughly
+20 to 30 characters longer than the sidecar's own path), so that path is the one that counts; the
+warning then says so and gives its length. Pick
 a shorter `root`, or enable long paths for the system
 (`LongPathsEnabled`). Other causes are the usual ones: no write permission
 in `root`, a full disk, or a directory sitting where the file should be.
