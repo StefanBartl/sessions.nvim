@@ -348,6 +348,57 @@ return function(H)
     setup()
   end
 
+  -- A lib.nvim checkout from before `tmp_path` existed writes through the
+  -- fixed `<sidecar>.tmp`. The hint must measure that instead of raising
+  -- inside the save: a failed metadata write would otherwise abort the rest
+  -- of the save (the other sidecars, `hooks.on_save`, SessionsSavePost).
+  do
+    local said = {} ---@type string[]
+    local restore_notify = H.stub("lib.nvim.notify", {
+      create = function(prefix)
+        local rec = {}
+        for _, level in ipairs({ "info", "warn", "error" }) do
+          rec[level] = function(msg)
+            said[#said + 1] = level .. ": " .. prefix .. " " .. tostring(msg)
+          end
+        end
+        return rec
+      end,
+    })
+    local real_json = require("lib.nvim.fs.json")
+    local restore_json =
+      H.stub("lib.nvim.fs.json", { read = real_json.read, write = real_json.write })
+    local drive = vim.fn.has("win32") == 1 and "C:/" or "/"
+    local long = drive .. string.rep("x", 256 - #drive - #".json") .. ".json"
+    H.eq(#vim.fn.fnamemodify(long, ":p"), 256, "the fake sidecar path is 256 characters")
+    local restore_meta = H.stub("sessions.meta", {
+      write = function()
+        return false, long .. ": rename failed"
+      end,
+    })
+    local real_has = vim.fn.has
+    vim.fn.has = function(feature)
+      if feature == "win32" then
+        return 1
+      end
+      return real_has(feature)
+    end
+    setup({ metadata = true })
+
+    local old_ok, old_err = pcall(core.save, "oldlib")
+    vim.fn.has = real_has
+    restore_meta()
+    restore_json()
+    restore_notify()
+    H.ok(old_ok, "save does not raise with an older lib.nvim: " .. tostring(old_err))
+    local all = table.concat(said, "\n")
+    H.contains(all, "could not write the metadata sidecar", "the lost metadata is reported")
+    H.contains(all, "is 260 characters long", "measured as the fixed `<sidecar>.tmp`")
+
+    core.delete("oldlib")
+    setup()
+  end
+
   -- ------------------------------------------------------------------- list
 
   H.ok(core.save("gamma"))

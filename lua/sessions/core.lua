@@ -515,8 +515,15 @@ local function warn_sidecar(what, err)
   local path = err and err:match("^(.-): ") or nil
   -- The writer goes through a unique temporary file first
   -- (`<stem>.<pid>-<n>-<hrtime><ext>.tmp`, lib.nvim.fs.json `tmp_path`), so
-  -- that longer path is the one Windows measures against MAX_PATH.
-  local len = path and #require("lib.nvim.fs.json").tmp_path(fn.fnamemodify(path, ":p")) or 0
+  -- that longer path is the one Windows measures against MAX_PATH. A lib.nvim
+  -- from before `tmp_path` wrote through the fixed `<path>.tmp`; measure that
+  -- rather than raise in the middle of a save.
+  local len = 0
+  if path then
+    local abs = fn.fnamemodify(path, ":p")
+    local tmp_path = require("lib.nvim.fs.json").tmp_path
+    len = tmp_path and #tmp_path(abs) or #abs + #".tmp"
+  end
   if fn.has("win32") == 1 and len >= WIN_MAX_PATH then
     msg = msg
       .. (" (its temporary file's path is %d characters long; Windows allows %d unless long paths are enabled)"):format(
