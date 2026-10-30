@@ -290,10 +290,12 @@ return function(H)
     setup()
   end
 
-  -- The Windows MAX_PATH hint has to measure the writer's `<sidecar>.tmp`,
-  -- the path that actually fails: a sidecar of 256 characters is fine on its
-  -- own, but its temporary file (260) is not. The writer is stubbed with
-  -- such a path, and `has("win32")` is forced so the branch runs everywhere.
+  -- The Windows MAX_PATH hint has to measure the writer's temporary file
+  -- (lib.nvim.fs.json `tmp_path`: `<stem>.<pid>-<n>-<hrtime><ext>.tmp`), the
+  -- path that actually fails: a sidecar of 245 characters is fine on its own,
+  -- and so would be `<sidecar>.tmp` (249), but the unique temporary name is
+  -- 260 or longer. The writer is stubbed with such a path, and `has("win32")`
+  -- is forced so the branch runs everywhere.
   do
     local said = {} ---@type string[]
     local restore_notify = H.stub("lib.nvim.notify", {
@@ -308,8 +310,12 @@ return function(H)
       end,
     })
     local drive = vim.fn.has("win32") == 1 and "C:/" or "/"
-    local long = drive .. string.rep("x", 256 - #drive)
-    H.eq(#vim.fn.fnamemodify(long, ":p"), 256, "the fake sidecar path is 256 characters")
+    local long = drive .. string.rep("x", 245 - #drive - #".json") .. ".json"
+    H.eq(#vim.fn.fnamemodify(long, ":p"), 245, "the fake sidecar path is 245 characters")
+    H.ok(
+      #require("lib.nvim.fs.json").tmp_path(long) >= 260,
+      "its unique temporary file's path reaches MAX_PATH"
+    )
     local restore_meta = H.stub("sessions.meta", {
       write = function()
         return false, long .. ": rename failed"
@@ -331,7 +337,11 @@ return function(H)
     H.ok(hint_ok, "save does not raise: " .. tostring(hint_err))
     local all = table.concat(said, "\n")
     H.contains(all, "could not write the metadata sidecar", "the lost metadata is reported")
-    H.contains(all, "is 260 characters long", "with the length of the temporary file's path")
+    local reported = tonumber(all:match("its temporary file's path is (%d+) characters long"))
+    H.ok(
+      reported and reported >= 260,
+      "with the length of the unique temporary file's path: " .. tostring(reported)
+    )
     H.contains(all, "choose a shorter `root`", "and the hint to shorten root")
 
     core.delete("hint")
