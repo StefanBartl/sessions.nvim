@@ -259,9 +259,9 @@ return function(H)
     H.eq(vim.fn.filereadable(root .. "/.blocked.bufs.json"), 1, "and its buffer-order sidecar")
     said = {}
 
-    vim.fn.mkdir(root .. "/.blocked.json.tmp", "p")
-    vim.fn.mkdir(root .. "/.blocked.bufs.json.tmp", "p")
+    local restore_json = H.fail_json_writes({ ".blocked.json", ".blocked.bufs.json" })
     local saved = core.save("blocked")
+    restore_json()
     local all = table.concat(said, "\n")
     H.ok(saved, "the session file itself is written, so the save still succeeds")
     H.contains(
@@ -284,8 +284,6 @@ return function(H)
 
     vim.t.bufs = nil
     restore_notify()
-    vim.fn.delete(root .. "/.blocked.json.tmp", "rf")
-    vim.fn.delete(root .. "/.blocked.bufs.json.tmp", "rf")
     core.delete("blocked")
     vim.cmd("silent! %bwipeout!")
     os.remove(file)

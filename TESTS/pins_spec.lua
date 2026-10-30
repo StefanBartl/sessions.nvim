@@ -129,15 +129,15 @@ return function(H)
   end
 
   -- A write that fails: the reason comes back, the stale sidecar goes ------------
-  -- Provoked by a directory where lib.nvim.fs.json puts its temporary file.
+  -- Provoked by a lib.nvim.fs.json whose write fails for this sidecar.
   do
     local pins_by_tab, restore = stub_ui_state()
     pins_by_tab[cur_tab] = { a }
     H.ok(pins.save(session), "a working save first")
     H.eq(vim.fn.filereadable(sidecar), 1, "leaves a sidecar behind")
-    vim.fn.mkdir(sidecar .. ".tmp", "p")
+    local restore_json = H.fail_json_writes({ ".work.pins.json" })
     local wrote, err = pins.save(session)
-    vim.fn.delete(sidecar .. ".tmp", "rf")
+    restore_json()
     H.falsy(wrote, "the blocked write reports it wrote nothing")
     H.contains(tostring(err), ".work.pins.json: ", "the error names the sidecar")
     H.eq(
@@ -174,10 +174,12 @@ return function(H)
       restore_buffer_order = false,
       autosave = false,
     })
-    vim.fn.mkdir(wroot .. "/.warned.pins.json.tmp", "p")
+    local restore_json = H.fail_json_writes({ ".warned.pins.json" })
     pins_by_tab[api.nvim_get_current_tabpage()] = { a }
 
-    H.ok(core.save("warned"), "the session file is written, so the save still succeeds")
+    local saved = core.save("warned")
+    restore_json()
+    H.ok(saved, "the session file is written, so the save still succeeds")
     local all = table.concat(said, "\n")
     H.contains(
       all,
@@ -186,7 +188,6 @@ return function(H)
     )
     H.contains(all, ".warned.pins.json", "naming the sidecar")
 
-    vim.fn.delete(wroot .. "/.warned.pins.json.tmp", "rf")
     core.delete("warned")
     cfg_mod.setup({})
     restore_notify()

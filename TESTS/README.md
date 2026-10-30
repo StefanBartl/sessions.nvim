@@ -79,8 +79,10 @@ Adding one: write `TESTS/<name>_spec.lua` returning `function(H) ... end`.
 It is discovered by its `_spec.lua` suffix. `H` is the harness — `eq`, `ok`, `falsy`, `contains`,
 `excludes`, `read` (a file back as one string), `fixture` (a scratch directory
 plus its cleanup function), `stub` (replace a module, or make it look
-uninstalled, and get a restore function back) and `fresh` (re-require a module
-so it re-resolves its soft dependencies against the stubs in place right now).
+uninstalled, and get a restore function back), `fail_json_writes` (make
+`lib.nvim.fs.json.write` fail for the named sidecar files, to provoke a failed
+sidecar write) and `fresh` (re-require a module so it re-resolves its soft
+dependencies against the stubs in place right now).
 
 Every spec file runs in its own nvim (`isolated = "file"` in `.testing.lua`),
 so no order matters: `statusline_spec` asserts what the component renders with

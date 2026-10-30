@@ -108,6 +108,33 @@ function H.stub(name, value)
   end
 end
 
+--- Make `lib.nvim.fs.json.write` fail for the files named in `basenames`,
+--- while every other write (and every other function) goes to the real module.
+---
+--- The way to provoke a failed sidecar write that does not depend on how the
+--- writer names its temporary file: lib.nvim gives that file a fresh unique
+--- name per call, so a directory squatting on a fixed `<path>.tmp` no longer
+--- blocks anything. Works for code that requires the module at call time.
+---@param basenames string[] # file names (no directory) whose write must fail
+---@param reason? string # the error the stubbed write returns
+---@return fun() restore
+function H.fail_json_writes(basenames, reason)
+  local real = require("lib.nvim.fs.json")
+  local blocked = {} ---@type table<string, true>
+  for _, b in ipairs(basenames) do
+    blocked[b] = true
+  end
+  local stub = setmetatable({
+    write = function(path, ...)
+      if blocked[vim.fs.basename(path)] then
+        return false, reason or "write blocked (test stub)"
+      end
+      return real.write(path, ...)
+    end,
+  }, { __index = real })
+  return H.stub("lib.nvim.fs.json", stub)
+end
+
 --- Require `name` with a cleared cache, so a module that resolves its soft
 --- dependencies once at load time (`local ok = pcall(require, ...)`) sees
 --- whatever `H.stub` has put in place right now.
